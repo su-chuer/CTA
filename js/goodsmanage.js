@@ -30,6 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentMovements = [];
   const GOODS_MANAGE_ROLE_KEY = 'cta_goodsmanage_role';
   const GOODS_MANAGE_TAB_KEY = 'cta_goodsmanage_active_tab';
+  const GOODS_MANAGE_STORAGE_KEY = 'cta_goodsmanage_state_v1';
 
   const saveGoodsManageSessionUI = (tabKey = '') => {
     try {
@@ -1441,8 +1442,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
 
-  // ==================== API 串接設定與狀態快照工具（V349，基於 V346 重構） ====================
+  // ==================== localStorage 持久化與 API 設定（V351） ====================
   const GOODS_API_CONFIG = window.GOODS_API_CONFIG || {
+    enableApi: false,
     baseUrl: '/api/goods-manage',
     fallbackJsonUrl: 'json/goods_manage_data.json?v=349',
     endpoints: {
@@ -1529,11 +1531,51 @@ document.addEventListener("DOMContentLoaded", () => {
     return true;
   };
 
+  const saveGoodsStateToLocalStorage = (snapshot) => {
+    try {
+      const dataToSave = snapshot || buildGoodsStateSnapshot();
+      localStorage.setItem(GOODS_MANAGE_STORAGE_KEY, JSON.stringify(dataToSave));
+      return true;
+    } catch (err) {
+      console.error('寫入 localStorage 失敗：', err);
+      return false;
+    }
+  };
+
+  const loadGoodsStateFromLocalStorage = () => {
+    try {
+      const raw = localStorage.getItem(GOODS_MANAGE_STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return (parsed && typeof parsed === 'object') ? parsed : null;
+    } catch (err) {
+      console.error('讀取 localStorage 失敗：', err);
+      return null;
+    }
+  };
+
+  const clearGoodsStateLocalStorage = () => {
+    try {
+      localStorage.removeItem(GOODS_MANAGE_STORAGE_KEY);
+    } catch (_) {}
+  };
+
   const syncGoodsApi = async (endpointPath, method = 'POST', payload = {}) => {
+    const snapshot = buildGoodsStateSnapshot();
+    if (endpointPath === GOODS_API_CONFIG.endpoints.clearAll) {
+      clearGoodsStateLocalStorage();
+    } else {
+      saveGoodsStateToLocalStorage(snapshot);
+    }
+
+    if (!GOODS_API_CONFIG.enableApi) {
+      return { ok: true, mode: 'local-storage', data: snapshot };
+    }
+
     const url = `${GOODS_API_CONFIG.baseUrl}${endpointPath}`;
     const bodyObj = {
       ...payload,
-      _snapshot: buildGoodsStateSnapshot()
+      _snapshot: snapshot
     };
     try {
       const res = await fetch(url, {
@@ -1546,6 +1588,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (data && typeof data === 'object') {
           const nextState = data.state || data.data || (data.warehouses ? data : null);
           if (nextState && applyGoodsStateFromPayload(nextState)) {
+            saveGoodsStateToLocalStorage();
             populateSelectOptions();
             renderVendorInTable();
             renderSignInTable();
@@ -1556,26 +1599,27 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         return { ok: true, mode: 'api', data };
       }
-      return { ok: false, mode: 'static-fallback', status: res ? res.status : 0 };
+      return { ok: true, mode: 'local-storage', status: res ? res.status : 0 };
     } catch (err) {
-      return { ok: false, mode: 'static-fallback', error: err };
+      return { ok: true, mode: 'local-storage', error: err };
     }
   };
 
-  // ==================== 資料載入（優先呼叫後端 API，無後端時自動回退至靜態 JSON） ====================
+  // ==================== 資料載入（優先讀取 localStorage，無資料時載入初始 JSON） ====================
   const loadInitialGoodsState = async () => {
-    let loadedJson = null;
-    try {
-      const apiRes = await fetch(`${GOODS_API_CONFIG.baseUrl}${GOODS_API_CONFIG.endpoints.state}`, {
-        method: 'GET',
-        cache: 'no-store'
-      });
-      if (apiRes && apiRes.ok) {
-        const apiData = await apiRes.json().catch(() => null);
-        loadedJson = (apiData && (apiData.state || apiData.data || (apiData.warehouses ? apiData : null))) || null;
-      }
-    } catch (_) {
-      // 靜態環境（如 GitHub Pages 或本機開檔）無後端 API，忽略並改讀 fallback JSON
+    let loadedJson = loadGoodsStateFromLocalStorage();
+
+    if (!loadedJson && GOODS_API_CONFIG.enableApi) {
+      try {
+        const apiRes = await fetch(`${GOODS_API_CONFIG.baseUrl}${GOODS_API_CONFIG.endpoints.state}`, {
+          method: 'GET',
+          cache: 'no-store'
+        });
+        if (apiRes && apiRes.ok) {
+          const apiData = await apiRes.json().catch(() => null);
+          loadedJson = (apiData && (apiData.state || apiData.data || (apiData.warehouses ? apiData : null))) || null;
+        }
+      } catch (_) {}
     }
 
     if (!loadedJson) {
@@ -3335,6 +3379,7 @@ document.addEventListener("DOMContentLoaded", () => {
         renderDiffTable();
         updateTransferCurrentStockDisplay();
 
+        clearGoodsStateLocalStorage();
         syncGoodsApi(GOODS_API_CONFIG.endpoints.clearAll, 'POST', { action: 'clearAll' });
         toast('已清空所有庫存與單據紀錄。');
       }
