@@ -3395,12 +3395,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   dataReady.then(() => {
     resetUnsavedFieldsOnLoad();
+    let savedRole = '';
     try {
-      const savedRole = sessionStorage.getItem(GOODS_MANAGE_ROLE_KEY) || '';
-      if (savedRole) {
-        currentRole = savedRole;
-        applyRoleUI();
-      }
+      savedRole = sessionStorage.getItem(GOODS_MANAGE_ROLE_KEY) || '';
     } catch (_) {}
+    currentRole = savedRole || 'hq';
+    applyRoleUI();
+    saveGoodsManageSessionUI();
   });
 });
