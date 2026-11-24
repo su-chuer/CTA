@@ -3387,11 +3387,32 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   $('simulated-role').addEventListener('change', (e) => {
-    currentRole = e.target.value;
-    try { sessionStorage.removeItem(GOODS_MANAGE_TAB_KEY); } catch (_) {}
-    applyRoleUI();
-    saveGoodsManageSessionUI();
+    e.currentTarget.classList.remove('highlight-error');
   });
+
+  const confirmRoleBtn = $('btn-confirm-role');
+  if (confirmRoleBtn) {
+    confirmRoleBtn.addEventListener('click', () => {
+      const roleSelect = $('simulated-role');
+      const selectedVal = roleSelect ? roleSelect.value : '';
+      if (!selectedVal) {
+        if (roleSelect) {
+          roleSelect.classList.add('highlight-error');
+          roleSelect.focus();
+        }
+        openAlertModal('請先選擇「作業倉庫」！');
+        return;
+      }
+      if (roleSelect) roleSelect.classList.remove('highlight-error');
+      const isRoleChanged = currentRole !== selectedVal;
+      currentRole = selectedVal;
+      if (isRoleChanged) {
+        try { sessionStorage.removeItem(GOODS_MANAGE_TAB_KEY); } catch (_) {}
+      }
+      applyRoleUI();
+      saveGoodsManageSessionUI();
+    });
+  }
 
   dataReady.then(() => {
     resetUnsavedFieldsOnLoad();
@@ -3399,8 +3420,12 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       savedRole = sessionStorage.getItem(GOODS_MANAGE_ROLE_KEY) || '';
     } catch (_) {}
-    currentRole = savedRole || 'hq';
-    applyRoleUI();
-    saveGoodsManageSessionUI();
+    if (savedRole) {
+      currentRole = savedRole;
+      applyRoleUI();
+    } else {
+      currentRole = '';
+      applyRoleUI();
+    }
   });
 });
