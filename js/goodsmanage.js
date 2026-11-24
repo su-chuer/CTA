@@ -28,104 +28,6 @@ document.addEventListener("DOMContentLoaded", () => {
   let editingDiffRecordId = null;
   let nextMovementId = 500;
   let currentMovements = [];
-  const GOODS_API_CONFIG = Object.assign({
-    baseUrl: '/api/goods-manage',
-    endpoints: {
-      state: '/state',
-      vendorIn: '/vendor-in',
-      transferOut: '/transfer-out',
-      signIn: '/sign-in',
-      diff: '/diff',
-      clear: '/clear'
-    },
-    fallbackJsonUrl: 'json/goods_manage_data.json?v=347',
-    timeoutMs: 8000
-  }, (window.CTA_GOODS_API_CONFIG && typeof window.CTA_GOODS_API_CONFIG === 'object') ? window.CTA_GOODS_API_CONFIG : {});
-
-  let apiOnlineMode = false;
-
-  const buildGoodsApiUrl = (pathSuffix = '') => {
-    const base = String(GOODS_API_CONFIG.baseUrl || '').replace(/\/+$/, '');
-    const suffix = String(pathSuffix || '');
-    if (!suffix) return base;
-    return `${base}${suffix.startsWith('/') ? '' : '/'}${suffix}`;
-  };
-
-  const buildGoodsManageSnapshotPayload = () => ({
-    warehouses,
-    regionalWarehouses,
-    areaWarehouses,
-    areaWarehouseRegions,
-    goodsItems,
-    diffReasons,
-    inventoryDatasets,
-    regionalInventoryDatasets,
-    areaInventoryDatasets,
-    vendorInRecords,
-    signInRecords,
-    transferOutRecords,
-    diffRecords,
-    counters: {
-      nextVendorRecordId,
-      nextSignInRecordId,
-      nextTransferRecordId,
-      nextDiffRecordId,
-      nextMovementId
-    }
-  });
-
-  const requestGoodsApi = async (pathSuffix, options = {}) => {
-    const url = buildGoodsApiUrl(pathSuffix);
-    if (!url || url === '/api/goods-manage' && !GOODS_API_CONFIG.forceApi) {
-      // Attempt real API call if available; fall back gracefully on 404/network error in static mode
-    }
-    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-    const timer = controller ? setTimeout(() => controller.abort(), GOODS_API_CONFIG.timeoutMs || 8000) : null;
-    try {
-      const headers = Object.assign({
-        'Content-Type': 'application/json; charset=utf-8',
-        'Accept': 'application/json'
-      }, options.headers || {});
-      const resp = await fetch(url, Object.assign({}, options, {
-        headers,
-        cache: 'no-store',
-        signal: controller ? controller.signal : undefined
-      }));
-      if (!resp.ok) {
-        throw new Error(`HTTP ${resp.status}`);
-      }
-      apiOnlineMode = true;
-      const text = await resp.text();
-      return text ? JSON.parse(text) : {};
-    } catch (err) {
-      if (!GOODS_API_CONFIG.strictApi) {
-        apiOnlineMode = false;
-        return null;
-      }
-      throw err;
-    } finally {
-      if (timer) clearTimeout(timer);
-    }
-  };
-
-  const syncGoodsManageApi = async (resource, method, payload) => {
-    const epMap = GOODS_API_CONFIG.endpoints || {};
-    const pathSuffix = epMap[resource] || epMap.state || '/state';
-    const bodyData = Object.assign({}, payload || {}, {
-      _resource: resource,
-      _snapshot: buildGoodsManageSnapshotPayload()
-    });
-    try {
-      const res = await requestGoodsApi(pathSuffix, {
-        method,
-        body: JSON.stringify(bodyData)
-      });
-      return res;
-    } catch (err) {
-      console.warn(`[GoodsManage API] ${method} ${pathSuffix} 同步失敗：`, err);
-      return null;
-    }
-  };
   const GOODS_MANAGE_ROLE_KEY = 'cta_goodsmanage_role';
   const GOODS_MANAGE_TAB_KEY = 'cta_goodsmanage_active_tab';
 
@@ -1209,7 +1111,7 @@ document.addEventListener("DOMContentLoaded", () => {
             updateTransferCurrentStockDisplay();
             transferFilter.reset();
             signinFilter.reset();
-            syncGoodsManageApi('signIn', 'POST', { id: rec.id, action: 'receive', outWarehouse: rec.outWarehouse, inWarehouse: rec.inWarehouse, goodsItem: rec.goodsItem, outQty: qty });
+            syncGoodsApi(GOODS_API_CONFIG.endpoints.signInConfirm, 'POST', { action: 'confirm', signInId: rec.id, transferId: rec.transferId });
             toast(`已完成「${rec.inWarehouse} - ${rec.goodsItem}」簽收入庫，庫存數量已更新。`);
           }
         );
@@ -1253,7 +1155,7 @@ document.addEventListener("DOMContentLoaded", () => {
             renderTransferOutTable();
             renderSignInTable();
             updateTransferCurrentStockDisplay();
-            syncGoodsManageApi('signIn', 'POST', { id: rec.id, action: 'return', outWarehouse: rec.outWarehouse, inWarehouse: rec.inWarehouse, goodsItem: rec.goodsItem, outQty: Number(rec.outQty || 0) });
+            syncGoodsApi(GOODS_API_CONFIG.endpoints.signInReturn, 'POST', { action: 'return', signInId: rec.id, transferId: rec.transferId });
             toast(`已退回「${rec.outWarehouse} → ${rec.inWarehouse}」的「${rec.goodsItem}」。`);
           }
         );
@@ -1538,93 +1440,175 @@ document.addEventListener("DOMContentLoaded", () => {
     renderDiffTable();
   });
 
-  // ==================== 資料載入 ====================
-  const loadGoodsManageInitialJson = () =>
-    fetch(GOODS_API_CONFIG.fallbackJsonUrl || 'json/goods_manage_data.json?v=347', { cache: 'no-store' })
-      .then(res => res.ok ? res.json() : null);
 
-  const dataReady = requestGoodsApi((GOODS_API_CONFIG.endpoints && GOODS_API_CONFIG.endpoints.state) || '/state', { method: 'GET' })
-    .then(apiJson => (apiJson && typeof apiJson === 'object' ? apiJson : loadGoodsManageInitialJson()))
-    .then(res => res.ok ? res.json() : null)
-    .then(json => {
-      if (json && typeof json === 'object') {
-        if (Array.isArray(json.warehouses)) {
-          warehouses = json.warehouses;
-        }
-        if (Array.isArray(json.regionalWarehouses)) {
-          regionalWarehouses = json.regionalWarehouses;
-        }
-        if (Array.isArray(json.areaWarehouses)) {
-          areaWarehouses = json.areaWarehouses;
-        }
-        if (json.areaWarehouseRegions && typeof json.areaWarehouseRegions === 'object') {
-          areaWarehouseRegions = json.areaWarehouseRegions;
-        }
-        if (Array.isArray(json.goodsItems)) {
-          goodsItems = json.goodsItems;
-        }
-        if (Array.isArray(json.diffReasons)) {
-          diffReasons = json.diffReasons;
-        }
-        if (json.inventoryDatasets && typeof json.inventoryDatasets === 'object') {
-          inventoryDatasets = json.inventoryDatasets;
-          Object.values(inventoryDatasets).forEach(whBook => {
-            Object.values(whBook || {}).forEach(itemRec => {
-              if (itemRec && Array.isArray(itemRec.regionalStocks)) {
-                itemRec.regionalStocks = sortRegionalStocksFixedOrder(itemRec.regionalStocks);
-              }
-            });
-          });
-        }
-        if (json.regionalInventoryDatasets && typeof json.regionalInventoryDatasets === 'object') {
-          regionalInventoryDatasets = json.regionalInventoryDatasets;
-        }
-        if (json.areaInventoryDatasets && typeof json.areaInventoryDatasets === 'object') {
-          areaInventoryDatasets = json.areaInventoryDatasets;
-        }
-        if (Array.isArray(json.vendorInRecords)) {
-          vendorInRecords = json.vendorInRecords.map(r => ({ ...r }));
-          nextVendorRecordId = vendorInRecords.reduce((m, r) => Math.max(m, Number(r.id || 0)), 0) + 1;
-        }
-        if (Array.isArray(json.signInRecords)) {
-          signInRecords = json.signInRecords.map(r => ({ ...r }));
-          nextSignInRecordId = signInRecords.reduce((m, r) => Math.max(m, Number(r.id || 0)), 0) + 1;
-        }
-        if (Array.isArray(json.transferOutRecords)) {
-          transferOutRecords = json.transferOutRecords.map(r => ({ ...r }));
-          nextTransferRecordId = transferOutRecords.reduce((m, r) => Math.max(m, Number(r.id || 0)), 0) + 1;
-        }
-        if (Array.isArray(json.diffRecords)) {
-          diffRecords = json.diffRecords.map(r => ({ ...r }));
-          nextDiffRecordId = diffRecords.reduce((m, r) => Math.max(m, Number(r.id || 0)), 0) + 1;
-        }
+  // ==================== API 串接設定與狀態快照工具（V349，基於 V346 重構） ====================
+  const GOODS_API_CONFIG = window.GOODS_API_CONFIG || {
+    baseUrl: '/api/goods-manage',
+    fallbackJsonUrl: 'json/goods_manage_data.json?v=349',
+    endpoints: {
+      state: '/state',
+      vendorIn: '/vendor-in',
+      transferOut: '/transfer-out',
+      signInConfirm: '/sign-in/confirm',
+      signInReturn: '/sign-in/return',
+      diff: '/diff',
+      clearAll: '/clear-all'
+    }
+  };
+
+  const buildGoodsStateSnapshot = () => ({
+    warehouses: [...warehouses],
+    regionalWarehouses: [...regionalWarehouses],
+    areaWarehouses: [...areaWarehouses],
+    areaWarehouseRegions: { ...areaWarehouseRegions },
+    goodsItems: [...goodsItems],
+    diffReasons: [...diffReasons],
+    inventoryDatasets: JSON.parse(JSON.stringify(inventoryDatasets || {})),
+    regionalInventoryDatasets: JSON.parse(JSON.stringify(regionalInventoryDatasets || {})),
+    areaInventoryDatasets: JSON.parse(JSON.stringify(areaInventoryDatasets || {})),
+    vendorInRecords: vendorInRecords.map(r => ({ ...r })),
+    signInRecords: signInRecords.map(r => ({ ...r })),
+    transferOutRecords: transferOutRecords.map(r => ({ ...r })),
+    diffRecords: diffRecords.map(r => ({ ...r })),
+    counters: {
+      nextVendorRecordId,
+      nextSignInRecordId,
+      nextTransferRecordId,
+      nextDiffRecordId,
+      nextMovementId
+    }
+  });
+
+  const applyGoodsStateFromPayload = (json) => {
+    if (!json || typeof json !== 'object') return false;
+    if (Array.isArray(json.warehouses)) warehouses = json.warehouses;
+    if (Array.isArray(json.regionalWarehouses)) regionalWarehouses = json.regionalWarehouses;
+    if (Array.isArray(json.areaWarehouses)) areaWarehouses = json.areaWarehouses;
+    if (json.areaWarehouseRegions && typeof json.areaWarehouseRegions === 'object') {
+      areaWarehouseRegions = json.areaWarehouseRegions;
+    }
+    if (Array.isArray(json.goodsItems)) goodsItems = json.goodsItems;
+    if (Array.isArray(json.diffReasons)) diffReasons = json.diffReasons;
+    if (json.inventoryDatasets && typeof json.inventoryDatasets === 'object') {
+      inventoryDatasets = json.inventoryDatasets;
+      Object.values(inventoryDatasets).forEach(whBook => {
+        Object.values(whBook || {}).forEach(itemRec => {
+          if (itemRec && Array.isArray(itemRec.regionalStocks)) {
+            itemRec.regionalStocks = sortRegionalStocksFixedOrder(itemRec.regionalStocks);
+          }
+        });
+      });
+    }
+    if (json.regionalInventoryDatasets && typeof json.regionalInventoryDatasets === 'object') {
+      regionalInventoryDatasets = json.regionalInventoryDatasets;
+    }
+    if (json.areaInventoryDatasets && typeof json.areaInventoryDatasets === 'object') {
+      areaInventoryDatasets = json.areaInventoryDatasets;
+    }
+    if (Array.isArray(json.vendorInRecords)) {
+      vendorInRecords = json.vendorInRecords.map(r => ({ ...r }));
+      nextVendorRecordId = vendorInRecords.reduce((m, r) => Math.max(m, Number(r.id || 0)), 0) + 1;
+    }
+    if (Array.isArray(json.signInRecords)) {
+      signInRecords = json.signInRecords.map(r => ({ ...r }));
+      nextSignInRecordId = signInRecords.reduce((m, r) => Math.max(m, Number(r.id || 0)), 0) + 1;
+    }
+    if (Array.isArray(json.transferOutRecords)) {
+      transferOutRecords = json.transferOutRecords.map(r => ({ ...r }));
+      nextTransferRecordId = transferOutRecords.reduce((m, r) => Math.max(m, Number(r.id || 0)), 0) + 1;
+    }
+    if (Array.isArray(json.diffRecords)) {
+      diffRecords = json.diffRecords.map(r => ({ ...r }));
+      nextDiffRecordId = diffRecords.reduce((m, r) => Math.max(m, Number(r.id || 0)), 0) + 1;
+    }
+    if (json.counters && typeof json.counters === 'object') {
+      if (Number.isFinite(Number(json.counters.nextMovementId))) {
+        nextMovementId = Math.max(nextMovementId, Number(json.counters.nextMovementId));
       }
-      if (typeof window.CTA.syncRecordedFloorMs === 'function') {
-        window.CTA.syncRecordedFloorMs([
-          ...vendorInRecords,
-          ...signInRecords,
-          ...transferOutRecords,
-          ...diffRecords
-        ]);
+    }
+    return true;
+  };
+
+  const syncGoodsApi = async (endpointPath, method = 'POST', payload = {}) => {
+    const url = `${GOODS_API_CONFIG.baseUrl}${endpointPath}`;
+    const bodyObj = {
+      ...payload,
+      _snapshot: buildGoodsStateSnapshot()
+    };
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bodyObj)
+      });
+      if (res && res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data && typeof data === 'object') {
+          const nextState = data.state || data.data || (data.warehouses ? data : null);
+          if (nextState && applyGoodsStateFromPayload(nextState)) {
+            populateSelectOptions();
+            renderVendorInTable();
+            renderSignInTable();
+            renderTransferOutTable();
+            renderDiffTable();
+            updateTransferCurrentStockDisplay();
+          }
+        }
+        return { ok: true, mode: 'api', data };
       }
-      populateSelectOptions();
-      renderVendorInTable();
-      renderSignInTable();
-      renderTransferOutTable();
-      renderDiffTable();
-    })
-    .catch(err => {
-      console.error('讀取 json/goods_manage_data.json 失敗：', err);
-      inventoryDatasets = {};
-      vendorInRecords = [];
-      signInRecords = [];
-      transferOutRecords = [];
-      diffRecords = [];
-      renderVendorInTable();
-      renderSignInTable();
-      renderTransferOutTable();
-      renderDiffTable();
-    });
+      return { ok: false, mode: 'static-fallback', status: res ? res.status : 0 };
+    } catch (err) {
+      return { ok: false, mode: 'static-fallback', error: err };
+    }
+  };
+
+  // ==================== 資料載入（優先呼叫後端 API，無後端時自動回退至靜態 JSON） ====================
+  const loadInitialGoodsState = async () => {
+    let loadedJson = null;
+    try {
+      const apiRes = await fetch(`${GOODS_API_CONFIG.baseUrl}${GOODS_API_CONFIG.endpoints.state}`, {
+        method: 'GET',
+        cache: 'no-store'
+      });
+      if (apiRes && apiRes.ok) {
+        const apiData = await apiRes.json().catch(() => null);
+        loadedJson = (apiData && (apiData.state || apiData.data || (apiData.warehouses ? apiData : null))) || null;
+      }
+    } catch (_) {
+      // 靜態環境（如 GitHub Pages 或本機開檔）無後端 API，忽略並改讀 fallback JSON
+    }
+
+    if (!loadedJson) {
+      try {
+        const fallbackRes = await fetch(GOODS_API_CONFIG.fallbackJsonUrl, { cache: 'no-store' });
+        if (fallbackRes && fallbackRes.ok) {
+          loadedJson = await fallbackRes.json();
+        }
+      } catch (err) {
+        console.error('讀取初始資料失敗：', err);
+      }
+    }
+
+    if (loadedJson && typeof loadedJson === 'object') {
+      applyGoodsStateFromPayload(loadedJson);
+    }
+
+    if (typeof window.CTA.syncRecordedFloorMs === 'function') {
+      window.CTA.syncRecordedFloorMs([
+        ...vendorInRecords,
+        ...signInRecords,
+        ...transferOutRecords,
+        ...diffRecords
+      ]);
+    }
+    populateSelectOptions();
+    renderVendorInTable();
+    renderSignInTable();
+    renderTransferOutTable();
+    renderDiffTable();
+  };
+
+  const dataReady = loadInitialGoodsState();
 
 
   // ==================== 次分頁頁籤切換 ====================
@@ -1826,7 +1810,7 @@ document.addEventListener("DOMContentLoaded", () => {
     vendorPager.setPage(1);
     vendorFilter.reset();
     updateTransferCurrentStockDisplay();
-    syncGoodsManageApi('vendorIn', 'POST', { warehouse: whVal, goodsItem: itemVal, inQty: intQty, date: todayHyphen, operator: operatorName });
+    syncGoodsApi(GOODS_API_CONFIG.endpoints.vendorIn, 'POST', { action: 'create', record: vendorInRecords[0] });
     toast(`已新增「${whVal} - ${itemVal}」入庫 ${money(intQty)} 件，庫存數量已更新。`);
   });
 
@@ -1897,7 +1881,7 @@ document.addEventListener("DOMContentLoaded", () => {
     vendorFilter.reset();
     exitVendorEditMode();
     updateTransferCurrentStockDisplay();
-    syncGoodsManageApi('vendorIn', 'PUT', { id: rec.id, warehouse: whVal, goodsItem: itemVal, inQty: intQty });
+    syncGoodsApi(`${GOODS_API_CONFIG.endpoints.vendorIn}/${encodeURIComponent(rec.id)}`, 'PUT', { action: 'update', record: { ...rec } });
     toast('已成功儲存入庫紀錄，庫存數量已更新。');
   });
 
@@ -1941,7 +1925,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
           exitVendorEditMode();
       updateTransferCurrentStockDisplay();
-      syncGoodsManageApi('vendorIn', 'DELETE', { id: editingVendorRecordId });
+      syncGoodsApi(`${GOODS_API_CONFIG.endpoints.vendorIn}/${encodeURIComponent(rec.id)}`, 'DELETE', { action: 'delete', id: rec.id });
       toast('已成功刪除入庫紀錄，庫存數量已更新。');
     });
   });
@@ -2120,7 +2104,7 @@ document.addEventListener("DOMContentLoaded", () => {
     signInPager.setPage(1);
     transferFilter.reset();
     signinFilter.reset();
-    syncGoodsManageApi('transferOut', 'POST', { id: createdTransferId, signInId: createdSignInId, mode, outWarehouse: outWh, inWarehouse: inWh, goodsItem: itemVal, outQty: intQty, date: todayHyphen, operator: operatorName });
+    syncGoodsApi(GOODS_API_CONFIG.endpoints.transferOut, 'POST', { action: 'create', transferRecord: transferOutRecords[0], signInRecord: signInRecords[0] });
     toast(`已新增「${outWh} → ${inWh}」${mode} ${itemVal} ${money(intQty)} 件（待簽收）。`);
   });
 
@@ -2202,7 +2186,7 @@ document.addEventListener("DOMContentLoaded", () => {
     transferFilter.reset();
     signinFilter.reset();
     exitTransferEditMode();
-    syncGoodsManageApi('transferOut', 'PUT', { id: rec.id, mode, outWarehouse: outWh, inWarehouse: inWh, goodsItem: itemVal, outQty: intQty });
+    syncGoodsApi(`${GOODS_API_CONFIG.endpoints.transferOut}/${encodeURIComponent(rec.id)}`, 'PUT', { action: 'update', record: { ...rec } });
     toast('已成功儲存出庫 / 調貨紀錄。');
     });
   });
@@ -2230,7 +2214,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
           exitTransferEditMode();
       renderSignInTable();
-      syncGoodsManageApi('transferOut', 'DELETE', { id: editingTransferRecordId });
+      const delTransferId = editingTransferRecordId;
+      syncGoodsApi(`${GOODS_API_CONFIG.endpoints.transferOut}/${encodeURIComponent(delTransferId)}`, 'DELETE', { action: 'delete', id: delTransferId });
       toast('已成功刪除出庫 / 調貨紀錄。');
     });
   });
@@ -2508,7 +2493,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     diffFilter.reset();
     updateTransferCurrentStockDisplay();
-    syncGoodsManageApi('diff', 'POST', { id: createdDiffId, warehouse: targetWh, goodsItem: itemVal, diffQty: intQty, diffReason: reasonVal, date: todayHyphen, operator: operatorName });
+    syncGoodsApi(GOODS_API_CONFIG.endpoints.diff, 'POST', { action: 'create', record: diffRecords[0] });
     toast(`已新增「${targetWh} - ${itemVal}」盤差紀錄（${intQty > 0 ? '+' + money(intQty) : money(intQty)}），庫存數量已更新。`);
   });
 
@@ -2765,7 +2750,7 @@ document.addEventListener("DOMContentLoaded", () => {
     diffFilter.reset();
     exitDiffEditMode();
     updateTransferCurrentStockDisplay();
-    syncGoodsManageApi('diff', 'PUT', { id: rec.id, warehouse: newTargetWh, goodsItem: newItemVal, diffQty: intQty, diffReason: reasonVal });
+    syncGoodsApi(`${GOODS_API_CONFIG.endpoints.diff}/${encodeURIComponent(rec.id)}`, 'PUT', { action: 'update', record: { ...rec } });
     toast('已成功儲存盤差紀錄，庫存數量已更新。');
   });
 
@@ -2786,7 +2771,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
           exitDiffEditMode();
       updateTransferCurrentStockDisplay();
-      syncGoodsManageApi('diff', 'DELETE', { id: editingDiffRecordId });
+      const delDiffId = editingDiffRecordId;
+      syncGoodsApi(`${GOODS_API_CONFIG.endpoints.diff}/${encodeURIComponent(delDiffId)}`, 'DELETE', { action: 'delete', id: delDiffId });
       toast('已成功刪除盤差紀錄，庫存數量已更新。');
     });
   });
@@ -3349,7 +3335,7 @@ document.addEventListener("DOMContentLoaded", () => {
         renderDiffTable();
         updateTransferCurrentStockDisplay();
 
-        syncGoodsManageApi('clear', 'POST', { action: 'clearAll' });
+        syncGoodsApi(GOODS_API_CONFIG.endpoints.clearAll, 'POST', { action: 'clearAll' });
         toast('已清空所有庫存與單據紀錄。');
       }
     );

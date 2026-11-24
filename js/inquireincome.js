@@ -89,7 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // 從外部資料表 json/inquire_data.json 載入資料（不寫死於前端程式）
-  const dataReady = fetch('json/inquire_data.json?v=347', { cache: 'no-store' })
+  const dataReady = fetch('json/inquire_data.json?v=346', { cache: 'no-store' })
     .then(res => {
       if (!res.ok) throw new Error('HTTP ' + res.status);
       return res.json();

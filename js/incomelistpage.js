@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let ledgerData = [];
   let currentLedgerRecords = [];
 
-  const dataReady = fetch('json/ledger_data.json?v=347', { cache: 'no-store' })
+  const dataReady = fetch('json/ledger_data.json?v=346', { cache: 'no-store' })
     .then(res => {
       if (!res.ok) throw new Error('HTTP ' + res.status);
       return res.json();

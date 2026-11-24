@@ -23,8 +23,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let heqiOptions = [];
 
   const dataReady = Promise.all([
-    fetch('json/goods_data.json?v=347', { cache: 'no-store' }).then(res => res.ok ? res.json() : null).catch(() => null),
-    fetch('json/member_master.json?v=347', { cache: 'no-store' }).then(res => res.ok ? res.json() : null).catch(() => null)
+    fetch('json/goods_data.json?v=346', { cache: 'no-store' }).then(res => res.ok ? res.json() : null).catch(() => null),
+    fetch('json/member_master.json?v=346', { cache: 'no-store' }).then(res => res.ok ? res.json() : null).catch(() => null)
   ]).then(([gData, masterData]) => {
     if (gData && typeof gData === 'object') {
       goodsDatasets = gData.goodsDatasets && typeof gData.goodsDatasets === 'object' ? gData.goodsDatasets : {};

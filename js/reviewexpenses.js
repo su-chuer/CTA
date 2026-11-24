@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let selectedReviewIds = new Set();
   let currentDetailId = null;
 
-  const dataReady = fetch('json/review_expenses_data.json?v=347', { cache: 'no-store' })
+  const dataReady = fetch('json/review_expenses_data.json?v=346', { cache: 'no-store' })
     .then(res => res.ok ? res.json() : null)
     .then(json => {
       if (json && json.reviewDatasets && typeof json.reviewDatasets === 'object') {

@@ -50,8 +50,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
   const reviewDataReady = Promise.all([
-    fetch('json/review_data.json?v=347', { cache: 'no-store' }).then(res => res.ok ? res.json() : null).catch(() => null),
-    fetch('json/data.json?v=347', { cache: 'no-store' }).then(res => res.ok ? res.json() : null).catch(() => null)
+    fetch('json/review_data.json?v=346', { cache: 'no-store' }).then(res => res.ok ? res.json() : null).catch(() => null),
+    fetch('json/data.json?v=346', { cache: 'no-store' }).then(res => res.ok ? res.json() : null).catch(() => null)
   ]).then(([revJson, unitList]) => {
     if (revJson && Array.isArray(revJson.heqiList)) {
       heqiData = revJson.heqiList.map(item => ({

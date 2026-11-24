@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let activeReceiveRecord = null;
   let currentReceiveRecords = [];
 
-  const dataReady = fetch('json/goods_receive_data.json?v=347', { cache: 'no-store' })
+  const dataReady = fetch('json/goods_receive_data.json?v=346', { cache: 'no-store' })
     .then(res => res.ok ? res.json() : null)
     .catch(() => null)
     .then(rData => {

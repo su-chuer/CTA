@@ -82,7 +82,7 @@ function sortDropdownByStroke(id) {
 // ==========================================
 // 三、外部資料載入 (data.json)
 // ==========================================
-const dataReady = fetch('json/data.json?v=347', { cache: 'no-store' })
+const dataReady = fetch('json/data.json?v=346', { cache: 'no-store' })
   .then(res => res.json())
   .then(list => {
     const entries = Array.isArray(list) ? list : [];

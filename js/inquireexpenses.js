@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
       list.map(name => `<option value="${name}">${name}</option>`).join('');
   };
 
-  const dataReady = fetch('json/inquire_expenses_data.json?v=347', { cache: 'no-store' })
+  const dataReady = fetch('json/inquire_expenses_data.json?v=346', { cache: 'no-store' })
     .then(res => res.ok ? res.json() : null)
     .then(json => {
       if (json && typeof json === 'object') {
