@@ -1,0 +1,434 @@
+{
+  "expenseDatasets": {
+    "仁德和氣 ETE05": [
+      {
+        "id": 201,
+        "name": "浴佛節專案",
+        "type": "活動金",
+        "applyDate": "2026/11/18",
+        "processDate": "2026/11/18",
+        "activityDate": "2026/11/18",
+        "receiptCount": 1,
+        "remark": "",
+        "member": "",
+        "charity": "",
+        "amount": 100,
+        "status": "待修正",
+        "items": [
+          {
+            "name": "各項設備",
+            "amount": 100
+          }
+        ],
+        "createdAtStr": "2026/11/18 08:01:34.199",
+        "createdAtMs": 1794960094199,
+        "updatedAtStr": "2026/11/18 08:06:03.339",
+        "updatedAtMs": 1794960363339
+      },
+      {
+        "id": 202,
+        "name": "浴佛節專案",
+        "type": "活動金",
+        "applyDate": "2026/11/18",
+        "processDate": "2026/11/18",
+        "activityDate": "2026/11/18",
+        "receiptCount": 1,
+        "remark": "",
+        "member": "",
+        "charity": "",
+        "amount": 100,
+        "status": "待修正",
+        "items": [
+          {
+            "name": "伙食費",
+            "amount": 100
+          }
+        ],
+        "createdAtStr": "2026/11/18 08:01:20.742",
+        "createdAtMs": 1794960080742,
+        "updatedAtStr": "2026/11/18 08:05:49.882",
+        "updatedAtMs": 1794960349882
+      },
+      {
+        "id": 203,
+        "name": "一般",
+        "type": "活動金",
+        "applyDate": "2026/11/18",
+        "processDate": "2026/11/18",
+        "activityDate": "2026/11/18",
+        "receiptCount": 1,
+        "remark": "",
+        "member": "",
+        "charity": "",
+        "amount": 200,
+        "status": "新申請",
+        "items": [
+          {
+            "name": "文具印刷費",
+            "amount": 200
+          }
+        ],
+        "createdAtStr": "2026/11/18 08:01:07.285",
+        "createdAtMs": 1794960067285,
+        "updatedAtStr": "2026/11/18 08:05:36.425",
+        "updatedAtMs": 1794960336425
+      },
+      {
+        "id": 204,
+        "name": "一般",
+        "type": "活動金",
+        "applyDate": "2026/11/18",
+        "processDate": "2026/11/18",
+        "activityDate": "2026/11/18",
+        "receiptCount": 1,
+        "remark": "",
+        "member": "",
+        "charity": "",
+        "amount": 200,
+        "status": "新申請",
+        "items": [
+          {
+            "name": "交通費",
+            "amount": 200
+          }
+        ],
+        "createdAtStr": "2026/11/18 08:00:53.828",
+        "createdAtMs": 1794960053828,
+        "updatedAtStr": "2026/11/18 08:05:22.968",
+        "updatedAtMs": 1794960322968
+      },
+      {
+        "id": 205,
+        "name": "一般",
+        "type": "活動金",
+        "applyDate": "2026/11/18",
+        "processDate": "2026/11/18",
+        "activityDate": "2026/11/18",
+        "receiptCount": 1,
+        "remark": "",
+        "member": "",
+        "charity": "",
+        "amount": 200,
+        "status": "待修正",
+        "items": [
+          {
+            "name": "水電費",
+            "amount": 200
+          }
+        ],
+        "createdAtStr": "2026/11/18 08:00:40.371",
+        "createdAtMs": 1794960040371,
+        "updatedAtStr": "2026/11/18 08:05:09.511",
+        "updatedAtMs": 1794960309511
+      },
+      {
+        "id": 206,
+        "name": "王1",
+        "type": "聯誼金",
+        "applyDate": "2026/11/20",
+        "processDate": "2026/11/19",
+        "receiptCount": 1,
+        "remark": "",
+        "member": "04102",
+        "charity": "",
+        "dharmaName": "慈玉",
+        "fellowshipItem": "住院慰問",
+        "relation": "本人",
+        "amount": 100,
+        "status": "新申請",
+        "items": [],
+        "createdAtStr": "2026/11/19 08:00:26.914",
+        "createdAtMs": 1795046426914,
+        "updatedAtStr": "2026/11/20 08:04:56.054",
+        "updatedAtMs": 1795133096054
+      },
+      {
+        "id": 207,
+        "name": "林1",
+        "type": "聯誼金",
+        "applyDate": "2026/11/20",
+        "processDate": "2026/11/19",
+        "receiptCount": 1,
+        "remark": "",
+        "member": "04102",
+        "charity": "00898",
+        "dharmaName": "濟鎮",
+        "fellowshipItem": "住院慰問",
+        "relation": "本人",
+        "amount": 100,
+        "status": "新申請",
+        "items": [],
+        "createdAtStr": "2026/11/19 08:00:13.457",
+        "createdAtMs": 1795046413457,
+        "updatedAtStr": "2026/11/20 08:04:42.597",
+        "updatedAtMs": 1795133082597
+      }
+    ],
+    "三峽和氣 NTN65": [
+      {
+        "id": 1,
+        "name": "一般",
+        "type": "活動金",
+        "applyDate": "2026/06/08",
+        "processDate": "2026/06/09",
+        "activityDate": "2026/06/08",
+        "receiptCount": 2,
+        "remark": "",
+        "member": "",
+        "charity": "",
+        "amount": 12600,
+        "status": "待修正",
+        "items": [
+          {
+            "name": "各項設備",
+            "amount": 12600
+          }
+        ],
+        "createdAtStr": "2026/06/09 08:02:01.113",
+        "createdAtMs": 1780963321113,
+        "updatedAtStr": "2026/06/08 08:06:30.253",
+        "updatedAtMs": 1780877190253
+      },
+      {
+        "id": 2,
+        "name": "一般",
+        "type": "活動金",
+        "applyDate": "2026/04/10",
+        "processDate": "2026/06/09",
+        "activityDate": "2026/04/10",
+        "receiptCount": 1,
+        "remark": "",
+        "member": "",
+        "charity": "",
+        "amount": 19869,
+        "status": "待修正",
+        "items": [
+          {
+            "name": "文宣印刷費",
+            "amount": 19869
+          }
+        ],
+        "createdAtStr": "2026/06/09 08:01:47.656",
+        "createdAtMs": 1780963307656,
+        "updatedAtStr": "2026/04/10 08:06:16.796",
+        "updatedAtMs": 1775779576796
+      },
+      {
+        "id": 3,
+        "name": "一般",
+        "type": "活動金",
+        "applyDate": "2026/04/08",
+        "processDate": "2026/06/09",
+        "activityDate": "2026/04/08",
+        "receiptCount": 1,
+        "remark": "",
+        "member": "",
+        "charity": "",
+        "amount": 9819,
+        "status": "新申請",
+        "items": [
+          {
+            "name": "伙食費",
+            "amount": 9819
+          }
+        ],
+        "createdAtStr": "2026/06/09 08:01:34.199",
+        "createdAtMs": 1780963294199,
+        "updatedAtStr": "2026/04/08 08:06:03.339",
+        "updatedAtMs": 1775606763339
+      },
+      {
+        "id": 4,
+        "name": "一般",
+        "type": "活動金",
+        "applyDate": "2026/03/04",
+        "processDate": "2026/06/09",
+        "activityDate": "2026/03/04",
+        "receiptCount": 1,
+        "remark": "",
+        "member": "",
+        "charity": "",
+        "amount": 2111,
+        "status": "新申請",
+        "items": [
+          {
+            "name": "交通費",
+            "amount": 2111
+          }
+        ],
+        "createdAtStr": "2026/06/09 08:01:20.742",
+        "createdAtMs": 1780963280742,
+        "updatedAtStr": "2026/03/04 08:05:49.882",
+        "updatedAtMs": 1772582749882
+      },
+      {
+        "id": 5,
+        "name": "一般",
+        "type": "活動金",
+        "applyDate": "2026/06/22",
+        "processDate": "2026/06/28",
+        "activityDate": "2026/06/22",
+        "receiptCount": 3,
+        "remark": "",
+        "member": "",
+        "charity": "",
+        "amount": 15958,
+        "status": "待修正",
+        "items": [
+          {
+            "name": "各項設備",
+            "amount": 15958
+          }
+        ],
+        "createdAtStr": "2026/06/28 08:01:07.285",
+        "createdAtMs": 1782604867285,
+        "updatedAtStr": "2026/06/22 08:05:36.425",
+        "updatedAtMs": 1782086736425
+      },
+      {
+        "id": 6,
+        "name": "一般",
+        "type": "活動金",
+        "applyDate": "2026/08/18",
+        "processDate": "2026/08/18",
+        "activityDate": "2026/08/18",
+        "receiptCount": 1,
+        "remark": "",
+        "member": "",
+        "charity": "",
+        "amount": 300,
+        "status": "新申請",
+        "items": [
+          {
+            "name": "其他",
+            "amount": 300
+          }
+        ],
+        "createdAtStr": "2026/08/18 08:00:53.828",
+        "createdAtMs": 1787011253828,
+        "updatedAtStr": "2026/08/18 08:05:22.968",
+        "updatedAtMs": 1787011522968
+      },
+      {
+        "id": 7,
+        "name": "一般",
+        "type": "活動金",
+        "applyDate": "2026/07/04",
+        "processDate": "2026/06/28",
+        "activityDate": "2026/07/04",
+        "receiptCount": 1,
+        "remark": "",
+        "member": "",
+        "charity": "",
+        "amount": 4614,
+        "status": "待修正",
+        "items": [
+          {
+            "name": "其他",
+            "amount": 4614
+          }
+        ],
+        "createdAtStr": "2026/06/28 08:00:40.371",
+        "createdAtMs": 1782604840371,
+        "updatedAtStr": "2026/07/04 08:05:09.511",
+        "updatedAtMs": 1783123509511
+      },
+      {
+        "id": 8,
+        "name": "一般",
+        "type": "活動金",
+        "applyDate": "2026/04/20",
+        "processDate": "2026/06/09",
+        "activityDate": "2026/04/20",
+        "receiptCount": 2,
+        "remark": "",
+        "member": "",
+        "charity": "",
+        "amount": 8610,
+        "status": "待修正",
+        "items": [
+          {
+            "name": "關懷慰問金",
+            "amount": 8610
+          }
+        ],
+        "createdAtStr": "2026/06/09 08:00:26.914",
+        "createdAtMs": 1780963226914,
+        "updatedAtStr": "2026/04/20 08:04:56.054",
+        "updatedAtMs": 1776643496054
+      },
+      {
+        "id": 9,
+        "name": "一般",
+        "type": "活動金",
+        "applyDate": "2026/02/01",
+        "processDate": "2026/06/09",
+        "activityDate": "2026/02/01",
+        "receiptCount": 1,
+        "remark": "",
+        "member": "",
+        "charity": "",
+        "amount": 1743,
+        "status": "新申請",
+        "items": [
+          {
+            "name": "伙食費",
+            "amount": 1743
+          }
+        ],
+        "createdAtStr": "2026/06/09 08:00:13.457",
+        "createdAtMs": 1780963213457,
+        "updatedAtStr": "2026/02/01 08:04:42.597",
+        "updatedAtMs": 1769904282597
+      }
+    ],
+    "大里和氣一 NTN66": [
+      {
+        "id": 101,
+        "name": "王3",
+        "type": "聯誼金",
+        "applyDate": "2026/05/12",
+        "processDate": "2026/05/15",
+        "receiptCount": 1,
+        "remark": "",
+        "member": "12840",
+        "charity": "",
+        "dharmaName": "慈貞",
+        "fellowshipItem": "住院慰問",
+        "relation": "本人",
+        "amount": 2000,
+        "status": "待修正",
+        "items": [],
+        "createdAtStr": "2026/05/15 08:00:26.914",
+        "createdAtMs": 1778803226914,
+        "updatedAtStr": "2026/05/12 08:04:56.054",
+        "updatedAtMs": 1778544296054
+      },
+      {
+        "id": 102,
+        "name": "一般",
+        "type": "活動金",
+        "applyDate": "2026/06/18",
+        "processDate": "2026/06/20",
+        "activityDate": "2026/06/18",
+        "receiptCount": 2,
+        "remark": "",
+        "member": "",
+        "charity": "",
+        "amount": 15200,
+        "status": "新申請",
+        "items": [
+          {
+            "name": "各項設備",
+            "amount": 15200
+          }
+        ],
+        "createdAtStr": "2026/06/20 08:00:13.457",
+        "createdAtMs": 1781913613457,
+        "updatedAtStr": "2026/06/18 08:04:42.597",
+        "updatedAtMs": 1781741082597
+      }
+    ],
+    "三民和氣二 HTE02": []
+  }
+}

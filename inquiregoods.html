@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>支出管理｜聯誼物資支出查詢</title>
+<link rel="stylesheet" href="css/style.css?v=347">
+<link rel="icon" href="https://tcit-qa.tzuchi.net/CTA/favicon.ico">
+</head>
+<body>
+
+<main class="page">
+  <nav class="crumb" id="page-crumb">
+    <span class="home-icon">
+      <svg class="ico " aria-hidden="true"><use href="#ico-package-search"></use></svg>
+    </span>
+    <span class="sep">│</span>
+    <span>支出管理</span>
+    <span class="sep">/</span>
+    <strong id="crumb-current">聯誼物資支出查詢</strong>
+  </nav>
+
+  <!-- 查詢條件 -->
+  <section class="panel filters" aria-label="查詢條件">
+    <div class="field">
+      <label for="filter-year">年份 <b>*</b></label>
+      <select id="filter-year">
+        <option value="2026" selected>2026</option>
+        <option value="2025">2025</option>
+        <option value="2024">2024</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="filter-heqi">和氣組別</label>
+      <div class="combo-select-wrap wide" id="heqi-combo-wrap">
+        <input type="text" id="filter-heqi" class="filter-input" autocomplete="off" placeholder="請選擇或輸入文字" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="heqi-combo-menu">
+        <button type="button" class="combo-clear-btn hidden" id="btn-clear-heqi" title="清除和氣組別" aria-label="清除和氣組別">&times;</button>
+        <button type="button" class="combo-arrow-btn" id="btn-toggle-heqi" title="展開和氣組別選單" aria-label="展開和氣組別選單">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <div class="combo-dropdown-menu hidden" id="heqi-combo-menu" role="listbox"></div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="filter-item">項目</label>
+      <select id="filter-item" style="min-width: 150px;">
+        <option value="全部" selected>全部</option>
+        <option value="生育禮盒">生育禮盒</option>
+        <option value="飛天">飛天</option>
+        <option value="賀匾">賀匾</option>
+        <option value="法船">法船</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="filter-keyword">快速搜尋</label>
+      <input type="text" id="filter-keyword" class="filter-input" style="width: 220px;" placeholder="姓名 / 委員號 / 慈誠號">
+    </div>
+
+    <div class="search-actions" style="margin-left: 6px;">
+      <button type="button" class="btn primary" id="btn-search"><svg class="ico " aria-hidden="true"><use href="#ico-search"></use></svg>搜尋</button>
+      <button type="button" class="btn" id="btn-reset"><svg class="ico " aria-hidden="true"><use href="#ico-refresh-cw"></use></svg>清除</button>
+    </div>
+  </section>
+
+  <!-- 查詢結果列表 -->
+  <section class="panel table-panel" style="margin-top: 15px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 12px;">
+      <div style="font-size: 15px; color: #556477; font-weight: 600;">查詢結果：<span id="result-count-display" style="color: #14264b; font-weight: 700;">0</span> 筆</div>
+    </div>
+
+    <div class="table-scroll">
+      <table class="detail-table" id="inquire-goods-table">
+        <thead>
+          <tr>
+            <th class="center" style="width: 60px;">序號</th>
+            <th>組別</th>
+            <th>姓名</th>
+            <th>項目</th>
+            <th>申請日</th>
+            <th>作業日</th>
+            <th>委員號</th>
+            <th>慈誠號</th>
+            <th class="center">狀態</th>
+            <th class="center" style="width: 80px;">詳細</th>
+          </tr>
+        </thead>
+        <tbody id="inquire-goods-tbody">
+          <tr><td colspan="10" class="empty">請選擇條件搜尋</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 分頁元件 -->
+    <div class="pagination hidden" id="pagination">
+      <select id="per-page-select" class="page-select" aria-label="每頁顯示筆數">
+        <option value="10" selected>10 筆 / 頁</option>
+        <option value="20">20 筆 / 頁</option>
+        <option value="50">50 筆 / 頁</option>
+        <option value="100">100 筆 / 頁</option>
+      </select>
+      <button type="button" class="page-btn disabled" id="page-prev" aria-label="上一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-left"></use></svg></button>
+      <div id="page-numbers" style="display:flex; gap:6px; align-items:center;"></div>
+      <button type="button" class="page-btn" id="page-next" aria-label="下一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-right"></use></svg></button>
+      <span class="page-info">共 <span id="total-pages">1</span> 頁 / <span id="total-items">0</span> 筆</span>
+    </div>
+
+    <div id="table-loading" class="block-loading hidden"><div class="spinner"></div></div>
+  </section>
+</main>
+
+<!-- 請領單詳細資料彈窗 -->
+<div class="overlay hidden" id="detail-modal" style="z-index: 1280;">
+  <div class="modal" style="width: min(980px, 100%);">
+    <div class="modal-head">
+      <h2 id="detail-modal-title">支出管理 / 聯誼物資支出查詢 / 詳細</h2>
+      <button type="button" class="x" id="close-detail" aria-label="關閉">&times;</button>
+    </div>
+    <div class="modal-body" id="detail-modal-body"></div>
+    <div class="modal-foot">
+      <button type="button" class="btn primary" id="btn-detail-close">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- 單一按鈕提示彈窗 -->
+<div class="overlay hidden" id="alert-modal" style="z-index: 1350;">
+  <div class="modal dialog-modal">
+    <div class="modal-head dialog-head">
+      <h2>提示訊息</h2>
+      <button type="button" class="x" id="close-alert" aria-label="關閉">&times;</button>
+    </div>
+    <div class="modal-body dialog-body" id="alert-modal-body">請選擇「和氣組別」或輸入「快速搜尋」再按搜尋！</div>
+    <div class="modal-foot dialog-foot">
+      <button type="button" class="btn primary" id="btn-alert-ok">確定</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="js/navbar.js?v=347"></script>
+<script src="js/common.js?v=347"></script>
+<script src="js/inquiregoods.js?v=347"></script>
+
+</body>
+</html>

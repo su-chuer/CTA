@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>收入管理｜編輯收入明細</title>
+<link rel="stylesheet" href="css/style.css?v=347">
+<link rel="icon" href="https://tcit-qa.tzuchi.net/CTA/favicon.ico">
+</head>
+<body>
+
+<main class="page">
+  <nav class="crumb"><span class="home-icon"><svg class="ico " aria-hidden="true"><use href="#ico-edit"></use></svg></span><span class="sep">│</span><span>收入管理</span><span class="sep">/</span><strong>編輯收入明細</strong></nav>
+  <section class="panel filters" aria-label="查詢條件">
+    <div class="field year"><label for="year">年份 <b>*</b></label><select id="year"><option>2026</option><option>2025</option><option>2024</option></select></div>
+    <div class="field heqi"><label for="heqi">合心和氣 <b>*</b></label><select id="heqi" required><option value="" selected disabled>請選擇</option><option>三民和氣二</option><option>三民和氣一</option></select></div>
+    <div class="field xieli"><label for="xieli">互愛協力 <b>*</b></label><select id="xieli" required><option value="" selected disabled>請選擇</option><option>互愛一 協力一</option><option>互愛一 協力二</option></select></div>
+    <div class="choice" style="margin: 0 6px 0 2px; height: 42px;"><label><input type="radio" name="unit" value="隊" checked>隊</label><label><input type="radio" name="unit" value="組">組</label></div>
+    <div class="search-actions"><button type="button" class="btn primary" id="search"><svg class="ico " aria-hidden="true"><use href="#ico-search"></use></svg>搜尋</button><button type="button" class="btn" id="reset"><svg class="ico " aria-hidden="true"><use href="#ico-refresh-cw"></use></svg>清除</button><button type="button" class="btn" id="total"><svg class="ico " aria-hidden="true"><use href="#ico-calculator"></use></svg>和氣總金額</button></div>
+  </section>
+  <section class="panel status hidden" id="income-status" aria-label="收入狀態">
+    <div class="status-left">
+      <span class="doc-icon"><svg class="ico " aria-hidden="true"><use href="#ico-file-text"></use></svg></span>
+      <strong id="section-title">2026 年度｜三民和氣二 - 互愛一 協力一 (隊)</strong>
+      <a href="#" class="pill" id="status-label" style="text-decoration:none;">未編輯</a>
+      
+    </div>
+    <div class="status-right" style="display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px;">
+      <div class="choice" style="margin:0;" id="filter-paid-wrapper">
+        <label style="font-size:14px; cursor:pointer;"><input type="checkbox" id="filter-paid-checkbox">顯示本次繳款</label>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center;">
+        <span style="white-space:nowrap; display:inline-flex; align-items:center; color:#5c6b7d;">
+          <span style="color:#a3b0c2; margin-right:8px;">│</span>
+          本次繳交 / 總人數：<strong id="paid-count" style="margin-left:6px; color:#122a55;">0 / 9</strong>
+        </span>
+        <span style="white-space:nowrap; display:inline-flex; align-items:center; color:#5c6b7d;">
+          <span style="color:#a3b0c2; margin-right:8px;">│</span>
+          本次總額：<strong id="paid-sum" style="margin-left:6px; color:#122a55;">0</strong>
+        </span>
+      </div>
+    </div>
+  </section>
+  <section class="panel table-panel">
+    
+    <div class="table-scroll"><table id="income-table"><thead><tr id="headers"></tr></thead><tbody id="tbody"></tbody></table></div>
+    <!-- 分頁元件 -->
+    <div class="pagination hidden" id="pagination">
+      <select id="per-page-select" class="page-select">
+        <option value="10">10 筆 / 頁</option>
+        <option value="20" selected>20 筆 / 頁</option>
+        <option value="50">50 筆 / 頁</option>
+        <option value="100">100 筆 / 頁</option>
+      </select>
+      <button class="page-btn disabled" id="page-prev"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-left"></use></svg></button>
+      <div id="page-numbers" style="display:flex; gap:6px;"></div>
+      <button class="page-btn" id="page-next"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-right"></use></svg></button>
+      <span class="page-info">共 <span id="total-pages">1</span> 頁 / <span id="total-items">0</span> 筆</span>
+    </div>
+
+    <!-- 表格區塊讀取動畫 (預設隱藏) -->
+    <div id="table-loading" class="block-loading hidden"><div class="spinner"></div></div>
+  </section>
+  <div class="footer"><button class="btn" id="leave">返回首頁</button><button class="btn primary hidden" id="submit">送審</button></div>
+</main>
+<div class="overlay hidden" id="overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal"><div class="modal-head"><h2 id="modal-title">繳款明細</h2><button type="button" class="x" id="close" aria-label="關閉">×</button></div><div class="modal-body" id="modal-content"></div><div class="modal-foot" id="modal-foot"></div></div></div>
+<!-- 操作確認彈窗 (Level 2) -->
+<div class="overlay hidden" id="confirm-modal" style="z-index: 1300;">
+  <div class="modal" style="width: min(420px, 100%);">
+    <div class="modal-head" style="padding: 18px 24px; border-bottom: 1px solid #e1e7f0; display: flex; align-items: center; justify-content: space-between;">
+      <h2 style="margin: 0; font-size: 17px; color: #14264b;" id="confirm-modal-title">操作確認</h2>
+      <button type="button" class="x" id="close-confirm">&times;</button>
+    </div>
+    <div class="modal-body" style="padding: 24px; font-size: 15px; color: #3d5176; line-height: 1.6; text-align: left;" id="confirm-modal-body"></div>
+    <div class="modal-foot" style="padding: 16px 24px; border-top: 1px solid #e1e7f0; background: #f8fafc; display: flex; justify-content: flex-end; gap: 12px;">
+      <button type="button" class="btn primary" id="btn-confirm-ok">確定</button>
+      <button type="button" class="btn" id="btn-confirm-cancel">取消</button>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast hidden"></div>
+<script src="js/navbar.js?v=347"></script>
+<script src="js/common.js?v=347"></script>
+<script src="js/searchincome.js?v=347"></script>
+</body></html>

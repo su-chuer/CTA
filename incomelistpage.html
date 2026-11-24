@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>收入管理｜收入列帳</title>
+<link rel="stylesheet" href="css/style.css?v=347">
+<link rel="icon" href="https://tcit-qa.tzuchi.net/CTA/favicon.ico">
+</head>
+<body>
+
+
+<main class="page">
+  <nav class="crumb">
+    <span class="home-icon"><svg class="ico " aria-hidden="true"><use href="#ico-book-open"></use></svg></span>
+    <span class="sep">│</span>
+    <span>收入管理</span>
+    <span class="sep">/</span>
+    <strong>收入列帳</strong>
+  </nav>
+
+  <!-- 頂部搜尋分類 -->
+  <section class="panel filters" aria-label="查詢條件">
+    <div class="field">
+      <label for="filter-year">年份 <b>*</b></label>
+      <select id="filter-year">
+        <option value="2026">2026</option>
+        <option value="2025">2025</option>
+        <option value="2024">2024</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="filter-area">作業區 <b>*</b></label>
+      <select id="filter-area">
+        <option value="" selected disabled>請選擇</option>
+        <option value="全部">全部</option>
+        <option value="北">北</option>
+        <option value="中">中</option>
+        <option value="南">南</option>
+        <option value="東">東</option>
+      </select>
+    </div>
+    <div class="search-actions" style="margin-left: 10px;">
+      <button type="button" class="btn primary" id="btn-search"><svg class="ico " aria-hidden="true"><use href="#ico-search"></use></svg>搜尋</button>
+      <button type="button" class="btn" id="btn-reset"><svg class="ico " aria-hidden="true"><use href="#ico-refresh-cw"></use></svg>清除</button>
+    </div>
+  </section>
+
+  <!-- 下方資料清單 -->
+  <section class="panel table-panel">
+    <div class="table-scroll">
+      <table class="detail-table" id="master-table">
+        <thead>
+          <tr>
+            <th class="center" style="width: 60px;">序號</th>
+            <th>作業區</th>
+            <th>組別</th>
+            <th class="center">狀態</th>
+            <th class="center">匯款日</th>
+            <th>匯款戶名</th>
+            <th>匯款銀行</th>
+            <th>匯款帳號</th>
+            <th class="center">備註</th>
+            <th class="num-col">金額</th>
+            <th class="center" style="width: 140px;">是否列帳</th>
+          </tr>
+        </thead>
+        <tbody id="master-tbody">
+          <!-- 資料由 json/ledger_data.json 動態載入產生 -->
+        </tbody>
+      </table>
+    </div>
+    <!-- 分頁元件 -->
+    <div class="pagination hidden" id="pagination">
+      <select id="per-page-select" class="page-select" aria-label="每頁顯示筆數">
+        <option value="10" selected>10 筆 / 頁</option>
+        <option value="20">20 筆 / 頁</option>
+        <option value="50">50 筆 / 頁</option>
+        <option value="100">100 筆 / 頁</option>
+      </select>
+      <button type="button" class="page-btn disabled" id="page-prev" aria-label="上一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-left"></use></svg></button>
+      <div id="page-numbers" style="display:flex; gap:6px; align-items:center;"></div>
+      <button type="button" class="page-btn" id="page-next" aria-label="下一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-right"></use></svg></button>
+      <span class="page-info">共 <span id="total-pages">1</span> 頁 / <span id="total-items">0</span> 筆</span>
+    </div>
+    <div id="table-loading" class="block-loading hidden"><div class="spinner"></div></div>
+  </section>
+</main>
+
+<!-- 操作確認彈窗 -->
+<div class="overlay hidden" id="confirm-modal" style="z-index: 1300;">
+  <div class="modal" style="width: min(420px, 100%);">
+    <div class="modal-head" style="padding: 18px 24px; border-bottom: 1px solid #e1e7f0; display: flex; align-items: center; justify-content: space-between;">
+      <h2 style="margin: 0; font-size: 17px; color: #14264b;" id="confirm-modal-title">操作確認</h2>
+      <button type="button" class="x" id="close-confirm">&times;</button>
+    </div>
+    <div class="modal-body" style="padding: 24px; font-size: 15px; color: #3d5176; line-height: 1.6; text-align: left;" id="confirm-modal-body"></div>
+    <div class="modal-foot" style="padding: 16px 24px; border-top: 1px solid #e1e7f0; background: #f8fafc; display: flex; justify-content: flex-end; gap: 12px;">
+      <button type="button" class="btn primary" id="btn-confirm-ok">確定</button>
+      <button type="button" class="btn" id="btn-confirm-cancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 備註彈窗 -->
+<div class="overlay hidden" id="remark-modal" style="z-index: 1400;">
+  <div class="modal" style="width: min(420px, 100%);">
+    <div class="modal-head" style="padding: 18px 24px; border-bottom: 1px solid #e1e7f0; display: flex; align-items: center; justify-content: space-between;">
+      <h2 style="margin: 0; font-size: 17px; color: #14264b;">檢視備註</h2>
+      <button type="button" class="x" id="close-remark">&times;</button>
+    </div>
+    <div class="modal-body" style="padding: 24px; font-size: 15px; color: #3d5176; line-height: 1.6; text-align: left;" id="remark-modal-body"></div>
+    <div class="modal-foot" style="padding: 16px 24px; border-top: 1px solid #e1e7f0; background: #f8fafc; display: flex; justify-content: flex-end; gap: 12px;">
+      <button type="button" class="btn primary" id="btn-remark-ok">關閉</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+<script src="js/navbar.js?v=347"></script>
+<script src="js/common.js?v=347"></script>
+<script src="js/incomelistpage.js?v=347"></script>
+</body>
+</html>

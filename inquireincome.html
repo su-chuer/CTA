@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>收入管理｜查詢收入明細</title>
+<link rel="stylesheet" href="css/style.css?v=347">
+<link rel="icon" href="https://tcit-qa.tzuchi.net/CTA/favicon.ico">
+</head>
+<body>
+
+<main class="page">
+  <nav class="crumb">
+    <span class="home-icon"><svg class="ico " aria-hidden="true"><use href="#ico-file-search"></use></svg></span>
+    <span class="sep">│</span>
+    <span>收入管理</span>
+    <span class="sep">/</span>
+    <strong>查詢收入明細</strong>
+  </nav>
+
+  <!-- 頂部查詢條件 -->
+  <section class="panel filters" aria-label="查詢條件">
+    <div class="field">
+      <label for="filter-year">年份 <b>*</b></label>
+      <select id="filter-year">
+        <option value="2026" selected>2026</option>
+        <option value="2025">2025</option>
+        <option value="2024">2024</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="filter-heqi">和氣組別</label>
+      <div class="combo-select-wrap" id="heqi-combo-wrap">
+        <input type="text" id="filter-heqi" class="filter-input" autocomplete="off" placeholder="請選擇或輸入文字" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="heqi-combo-menu">
+        <button type="button" class="combo-clear-btn hidden" id="btn-clear-heqi" title="清除和氣組別" aria-label="清除和氣組別">&times;</button>
+        <button type="button" class="combo-arrow-btn" id="btn-toggle-heqi" title="展開和氣組別選單" aria-label="展開和氣組別選單">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <div class="combo-dropdown-menu hidden" id="heqi-combo-menu" role="listbox"></div>
+      </div>
+    </div>
+
+    <div class="choice" style="margin: 0 6px 0 2px; height: 42px;">
+      <label><input type="radio" name="unit" value="全部" checked>全部</label>
+      <label><input type="radio" name="unit" value="隊">隊</label>
+      <label><input type="radio" name="unit" value="組">組</label>
+    </div>
+
+    <div class="field">
+      <label for="filter-member-keyword">快速搜尋</label>
+      <input type="text" id="filter-member-keyword" class="filter-input" style="width: 210px;" placeholder="姓名 / 委員號 / 慈誠號">
+    </div>
+
+    <div class="search-actions" style="margin-left: 6px;">
+      <button type="button" class="btn primary" id="btn-search"><svg class="ico " aria-hidden="true"><use href="#ico-search"></use></svg>搜尋</button>
+      <button type="button" class="btn" id="btn-reset"><svg class="ico " aria-hidden="true"><use href="#ico-refresh-cw"></use></svg>清除</button>
+    </div>
+  </section>
+
+  <!-- 下方雙欄結果區塊：左側組別彙總 + 右側會員明細 -->
+  <div class="inquire-split-grid" id="main-grid">
+    <!-- 左側：組別彙總表 -->
+    <section class="panel table-panel" aria-label="組別彙總">
+      <div class="panel-subhead">
+        <div class="panel-subhead-title">組別彙總</div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <span class="pill" id="unit-count-pill">查詢結果，0 筆</span>
+          <span class="pill" id="unit-total-pill" style="background:#e8f1ff; color:#0869ed; display:none;">總金額 NT$ 0</span>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table id="unit-summary-table">
+          <thead>
+            <tr>
+              <th>組別</th>
+              <th>互愛協力</th>
+              <th class="center">總人數</th>
+              <th class="num-col">總額</th>
+              <th class="center" style="width: 80px;">成員</th>
+            </tr>
+          </thead>
+          <tbody id="unit-summary-tbody">
+            <tr><td colspan="5" class="empty">請選擇條件搜尋</td></tr>
+          </tbody>
+        </table>
+      </div>
+    <!-- 分頁元件 -->
+    <div class="pagination hidden" id="pagination">
+      <select id="per-page-select" class="page-select" aria-label="每頁顯示筆數">
+        <option value="10" selected>10 筆 / 頁</option>
+        <option value="20">20 筆 / 頁</option>
+        <option value="50">50 筆 / 頁</option>
+        <option value="100">100 筆 / 頁</option>
+      </select>
+      <button type="button" class="page-btn disabled" id="page-prev" aria-label="上一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-left"></use></svg></button>
+      <div id="page-numbers" style="display:flex; gap:6px; align-items:center;"></div>
+      <button type="button" class="page-btn" id="page-next" aria-label="下一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-right"></use></svg></button>
+      <span class="page-info">共 <span id="total-pages">1</span> 頁 / <span id="total-items">0</span> 筆</span>
+    </div>
+      <div id="left-loading" class="block-loading hidden"><div class="spinner"></div></div>
+    </section>
+
+  </div>
+</main>
+
+
+<!-- 組別會員名單彈窗 (Level 2 彈窗規格) -->
+<div class="overlay hidden" id="unit-detail-modal" style="z-index: 1100;">
+  <div class="modal" style="width: min(1040px, 100%); display: flex; flex-direction: column; max-height: 90vh; padding: 0;">
+    <div class="modal-head" style="padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e1e7f0; background: #fff;">
+      <h2 style="margin:0; font-size:17px; color:#14264b;" id="selected-unit-title">會員繳款明細</h2>
+      <button type="button" class="x" id="close-unit-detail">&times;</button>
+    </div>
+    <div class="kpi-row" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; background: #f8fafc; border-bottom: 1px solid #e1e7f0;">
+      <div style="display:flex; align-items:center; gap:18px; flex-wrap:wrap; font-size:14px; color:#556477;">
+        <div>總人數：<strong id="kpi-people" style="color:#14264b; font-size:15px;">0</strong> 人</div>
+        <span style="color:#d9e3f1;">│</span>
+        <div>總額：<strong style="color:#0869ed; font-size:15px;">NT$ <span id="kpi-amount">0</span></strong></div>
+      </div>
+
+    </div>
+    <div class="modal-body" style="padding: 0; overflow-y: auto; flex: 1; background: #fff;">
+      <div class="table-scroll" style="border:none; border-radius:0;">
+        <table class="detail-table" id="member-list-table" style="min-width:680px; width:100%;">
+          <thead style="position: sticky; top: 0; z-index: 10;">
+            <tr>
+              <th class="center" style="width: 64px;">序號</th>
+              <th>名字</th>
+              <th>委員號</th>
+              <th>慈誠號</th>
+              <th class="center">繳交次數</th>
+              <th class="num-col">會費金額</th>
+              <th class="center" style="width: 84px;">詳細</th>
+            </tr>
+          </thead>
+          <tbody id="member-list-tbody">
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div style="padding: 14px 24px; border-top: 1px solid #e1e7f0; background: #f8fafc; display: flex; justify-content: flex-end;">
+      <button type="button" class="btn" id="btn-unit-detail-ok">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- 個人詳細繳款明細彈窗 (統一 Level 3 彈窗規格) -->
+<div class="overlay hidden" id="member-detail-modal" style="z-index: 1200;">
+  <div class="modal" style="width: min(880px, 100%); display: flex; flex-direction: column; max-height: 90vh; padding: 0;">
+    <div class="modal-head" style="padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e1e7f0; background: #fff;">
+      <h2 style="margin:0; font-size:17px; color:#14264b;" id="member-detail-title">2026 年度｜會員繳款明細</h2>
+      <button type="button" class="x" id="close-member-detail">&times;</button>
+    </div>
+    <div class="modal-body" style="padding: 20px 24px; overflow-y: auto; flex: 1; background: #fff; font-size: 15px;" id="member-detail-body"></div>
+    <div style="padding: 14px 24px; border-top: 1px solid #e1e7f0; background: #f8fafc; display: flex; justify-content: flex-end;">
+      <button type="button" class="btn" id="btn-member-detail-ok">關閉</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- 查詢條件提示彈窗 -->
+<div class="overlay hidden" id="alert-modal" style="z-index: 1300;">
+  <div class="modal dialog-modal">
+    <div class="modal-head dialog-head">
+      <h2>提示訊息</h2>
+      <button type="button" class="x" id="close-alert" aria-label="關閉">&times;</button>
+    </div>
+    <div class="modal-body dialog-body" id="alert-modal-body">請選擇「和氣組別」或輸入「快速搜尋」再按搜尋！</div>
+    <div class="modal-foot dialog-foot">
+      <button type="button" class="btn primary" id="btn-alert-ok">確定</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+<script src="js/navbar.js?v=347"></script>
+<script src="js/common.js?v=347"></script>
+<script src="js/inquireincome.js?v=347"></script>
+</body>
+</html>

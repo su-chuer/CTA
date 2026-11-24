@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>支出管理｜申請 / 編輯活動、聯誼金</title>
+<!-- 載入共用 CSS -->
+<link rel="stylesheet" href="css/style.css?v=347">
+<link rel="icon" href="https://tcit-qa.tzuchi.net/CTA/favicon.ico">
+</head>
+<body>
+
+<!-- 主要內容區塊 -->
+<main class="page">
+  <nav class="crumb" id="page-crumb">
+    <span class="home-icon">
+      <svg class="ico " aria-hidden="true"><use href="#ico-file-plus"></use></svg>
+    </span>
+    <span class="sep">│</span>
+    <span>支出管理</span>
+    <span class="sep">/</span>
+    <strong id="crumb-current">申請 / 編輯活動、聯誼金</strong>
+  </nav>
+
+  <!-- ==================== 視圖一：請領單列表 ==================== -->
+  <div id="list-view">
+    <!-- 查詢條件 -->
+    <section class="panel filters" aria-label="查詢條件">
+      <div class="field">
+        <label for="filter-heqi">和氣組別 <b>*</b></label>
+        <div class="combo-select-wrap wide" id="heqi-combo-wrap">
+          <input type="text" id="filter-heqi" class="filter-input" autocomplete="off" placeholder="請選擇或輸入文字" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="heqi-combo-menu">
+          <button type="button" class="combo-clear-btn hidden" id="btn-clear-heqi" title="清除和氣組別" aria-label="清除和氣組別">&times;</button>
+          <button type="button" class="combo-arrow-btn" id="btn-toggle-heqi" title="展開和氣組別選單" aria-label="展開和氣組別選單">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="combo-dropdown-menu hidden" id="heqi-combo-menu" role="listbox"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label for="filter-category">類別</label>
+        <select id="filter-category" style="min-width: 130px;">
+          <option value="全部" selected>全部</option>
+          <option value="活動金">活動金</option>
+          <option value="聯誼金">聯誼金</option>
+        </select>
+      </div>
+      <div class="search-actions" style="margin-left: 10px;">
+        <button type="button" class="btn primary" id="btn-search"><svg class="ico " aria-hidden="true"><use href="#ico-search"></use></svg>搜尋</button>
+        <button type="button" class="btn" id="btn-reset"><svg class="ico " aria-hidden="true"><use href="#ico-refresh-cw"></use></svg>清除</button>
+      </div>
+    </section>
+
+    <!-- 狀態列與資料列表 -->
+    <section class="panel table-panel" style="margin-top: 15px;">
+      <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 12px;">
+        <div style="font-size: 16px; color: #3d5176; font-weight: 600;">總金額：<span id="total-amount-display" style="color: #14264b; margin-left: 4px;">0</span></div>
+      </div>
+
+      <div class="table-scroll">
+        <table class="detail-table" id="expense-table">
+          <thead>
+            <tr>
+              <th class="center" style="width: 60px;">序號</th>
+              <th>姓名 / 活動別</th>
+              <th>類別</th>
+              <th>申請日</th>
+              <th>作業日</th>
+              <th>委員號</th>
+              <th>慈誠號</th>
+              <th class="num-col">金額</th>
+              <th class="center">狀態</th>
+              <th class="center" style="width: 80px;">詳細</th>
+              <th class="center" style="width: 96px;"><label class="submit-check-all-label"><input type="checkbox" id="check-all-submit" title="全選 / 取消全選可送審項目" disabled><span>全選</span></label></th>
+            </tr>
+          </thead>
+          <tbody id="expense-tbody">
+            <tr><td colspan="11" class="empty">請選擇條件搜尋</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    <!-- 分頁元件 -->
+    <div class="pagination hidden" id="pagination">
+      <select id="per-page-select" class="page-select" aria-label="每頁顯示筆數">
+        <option value="10" selected>10 筆 / 頁</option>
+        <option value="20">20 筆 / 頁</option>
+        <option value="50">50 筆 / 頁</option>
+        <option value="100">100 筆 / 頁</option>
+      </select>
+      <button type="button" class="page-btn disabled" id="page-prev" aria-label="上一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-left"></use></svg></button>
+      <div id="page-numbers" style="display:flex; gap:6px; align-items:center;"></div>
+      <button type="button" class="page-btn" id="page-next" aria-label="下一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-right"></use></svg></button>
+      <span class="page-info">共 <span id="total-pages">1</span> 頁 / <span id="total-items">0</span> 筆</span>
+    </div>
+
+      <!-- 表格區塊讀取動畫 (預設隱藏) -->
+      <div id="table-loading" class="block-loading hidden"><div class="spinner"></div></div>
+
+      <div class="footer hidden" id="list-footer" style="margin-top: 20px;">
+        <button type="button" class="btn" id="btn-add-form">新增請領單</button>
+        <button type="button" class="btn primary" id="btn-submit-forms">送審請領單</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- ==================== 視圖二：新增 / 編輯請領單 (活動金 & 聯誼金) ==================== -->
+  <div id="form-view" class="hidden">
+    <section class="panel claim-form-panel" aria-label="請領單表單">
+      <!-- 支出類別（開過的單不可切換活動金 / 聯誼金） -->
+      <div class="claim-category-bar">
+        <span class="claim-category-label">支出類別：</span>
+        <div class="choice claim-category-choice" id="claim-category-choice" style="margin: 0; height: auto;">
+          <label id="label-cat-activity"><input type="radio" name="claim-category" value="活動金" checked>活動金</label>
+          <label id="label-cat-fellowship"><input type="radio" name="claim-category" value="聯誼金">聯誼金</label>
+        </div>
+      </div>
+
+      <!-- 第一排：作業日期 / 填表人 / 目前狀態 / 申請日 / 金額 / 單據張數 -->
+      <div class="claim-grid-6">
+        <div class="claim-field">
+          <label for="form-process-date">作業日期</label>
+          <input type="text" id="form-process-date" class="claim-control" value="2026-11-18" readonly>
+        </div>
+        <div class="claim-field">
+          <label for="form-creator">填表人</label>
+          <input type="text" id="form-creator" class="claim-control" value="蘇2" readonly>
+        </div>
+        <div class="claim-field">
+          <label for="form-status">目前狀態</label>
+          <input type="text" id="form-status" class="claim-control" value="新申請" readonly>
+        </div>
+        <div class="claim-field">
+          <label for="form-apply-date">申請日 <b>*</b></label>
+          <input type="date" id="form-apply-date" class="claim-control">
+        </div>
+        <div class="claim-field">
+          <label for="form-total-amount">金額 (不可為 0) <b>*</b></label>
+          <input type="text" id="form-total-amount" class="claim-control num-col" value="0" readonly>
+        </div>
+        <div class="claim-field">
+          <label for="form-receipt-count">單據 / 張</label>
+          <input type="number" id="form-receipt-count" class="claim-control" min="0" step="1" placeholder="請輸入張數">
+        </div>
+      </div>
+
+      <!-- 第二排：備註 -->
+      <div class="claim-field" style="margin-bottom: 18px;">
+        <label for="form-remark">備註</label>
+        <input type="text" id="form-remark" class="claim-control" placeholder="請輸入備註...">
+      </div>
+
+      <!-- ==================== 【活動金】專屬區塊 ==================== -->
+      <div id="activity-section">
+        <!-- 第三排：組別名稱 / 組別代碼 / 活動別 / 活動日期 -->
+        <div class="claim-grid-4">
+          <div class="claim-field">
+            <label for="form-group-name">組別名稱</label>
+            <input type="text" id="form-group-name" class="claim-control" value="仁德和氣" readonly>
+          </div>
+          <div class="claim-field">
+            <label for="form-group-code">組別代碼</label>
+            <input type="text" id="form-group-code" class="claim-control" value="ETE05" readonly>
+          </div>
+          <div class="claim-field">
+            <label for="form-activity-type">活動別 <b>*</b></label>
+            <select id="form-activity-type" class="claim-control">
+              <option value="" selected disabled>請選擇</option>
+              <option value="一般">一般</option>
+              <option value="浴佛節專案">浴佛節專案</option>
+              <option value="吉祥月專案">吉祥月專案</option>
+              <option value="歲末祝福專案">歲末祝福專案</option>
+            </select>
+          </div>
+          <div class="claim-field">
+            <label for="form-activity-date">活動日期 <b>*</b></label>
+            <input type="date" id="form-activity-date" class="claim-control">
+          </div>
+        </div>
+
+        <!-- 第四排：左側細項列表 + 右側新增細項表單 -->
+        <div class="claim-items-split">
+          <div class="table-scroll">
+            <table class="detail-table" id="claim-items-table">
+              <thead>
+                <tr>
+                  <th>品項名稱</th>
+                  <th class="num-col">金額</th>
+                  <th class="center" style="width: 90px;">刪除</th>
+                </tr>
+              </thead>
+              <tbody id="claim-items-tbody">
+                <tr><td colspan="3" class="empty" style="padding: 28px;">尚未新增品項細項</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="claim-add-box">
+            <div class="claim-field">
+              <label for="item-name-select">項目 <b>*</b></label>
+              <select id="item-name-select" class="claim-control">
+                <option value="" selected disabled>請選擇</option>
+                <option value="關懷慰問金">關懷慰問金</option>
+                <option value="各項設備">各項設備</option>
+                <option value="文具印刷費">文具印刷費</option>
+                <option value="伙食費">伙食費</option>
+                <option value="維護修繕費">維護修繕費</option>
+                <option value="交通費">交通費</option>
+                <option value="水電費">水電費</option>
+                <option value="其他">其他</option>
+                <option value="贊助收入">贊助收入</option>
+                <option value="活動收入">活動收入</option>
+              </select>
+            </div>
+            <div class="claim-field">
+              <label for="item-amount-input">金額 (不可為 0) <b>*</b></label>
+              <input type="text" id="item-amount-input" class="claim-control" inputmode="numeric" placeholder="請輸入金額">
+            </div>
+            <button type="button" class="btn primary" id="btn-add-line-item" style="width: 100%; height: 40px; font-size: 15px; font-weight: 600;">新增</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== 【聯誼金】專屬區塊（圖二優化） ==================== -->
+      <div id="fellowship-section" class="hidden">
+        <!-- 橘黃色必填提示橫幅 -->
+        <div class="fellowship-notice-bar" role="status">
+          <span class="fellowship-notice-icon" aria-hidden="true">!</span>
+          <span>請輸入「委員號」或「慈誠號」再按查詢，感恩。</span>
+        </div>
+
+        <!-- 委員號 / 慈誠號 / 查詢按鈕 -->
+        <div class="fellowship-lookup-row">
+          <div class="claim-field">
+            <label for="fellowship-lookup-id">委員號 / 慈誠號</label>
+            <input type="text" id="fellowship-lookup-id" class="claim-control" placeholder="請輸入編號">
+          </div>
+          <button type="button" class="btn primary" id="btn-lookup-member" style="height: 40px; padding: 0 20px; font-size: 15px; font-weight: 600;">查詢</button>
+        </div>
+
+        <!-- 姓名 / 法號 / 組別名稱 / 組別代碼 / 項目* / 與申請人關係* -->
+        <div class="claim-grid-6" style="margin-bottom: 6px;">
+          <div class="claim-field">
+            <label for="fellowship-name">姓名</label>
+            <input type="text" id="fellowship-name" class="claim-control" readonly placeholder="查詢後自動帶入">
+          </div>
+          <div class="claim-field">
+            <label for="fellowship-dharma">法號</label>
+            <input type="text" id="fellowship-dharma" class="claim-control" readonly placeholder="查詢後自動帶入">
+          </div>
+          <div class="claim-field">
+            <label for="fellowship-group-name">組別名稱</label>
+            <input type="text" id="fellowship-group-name" class="claim-control" value="仁德和氣" readonly>
+          </div>
+          <div class="claim-field">
+            <label for="fellowship-group-code">組別代碼</label>
+            <input type="text" id="fellowship-group-code" class="claim-control" value="ETE05" readonly>
+          </div>
+          <div class="claim-field">
+            <label for="fellowship-item">項目 <b>*</b></label>
+            <select id="fellowship-item" class="claim-control">
+              <option value="" selected disabled>請選擇</option>
+              <option value="住院慰問">住院慰問</option>
+              <option value="香奠">香奠</option>
+            </select>
+          </div>
+          <div class="claim-field">
+            <label for="fellowship-relation">與申請人關係 <b>*</b></label>
+            <select id="fellowship-relation" class="claim-control">
+              <option value="" selected disabled>請選擇</option>
+              <option value="配偶">配偶</option>
+              <option value="祖父母">祖父母</option>
+              <option value="父母親">父母親</option>
+              <option value="子女">子女</option>
+              <option value="孫子女">孫子女</option>
+              <option value="公婆 / 岳父母">公婆 / 岳父母</option>
+              <option value="媳婦 / 女婿">媳婦 / 女婿</option>
+              <option value="本人">本人</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部操作按鈕列 -->
+      <div class="claim-form-footer" id="claim-form-footer">
+        <button type="button" class="btn" id="btn-form-leave">離開</button>
+        <button type="button" class="btn primary" id="btn-form-save">儲存</button>
+        <button type="button" class="btn btn-danger-solid hidden" id="btn-form-delete">刪除</button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- 操作確認彈窗（送審確認 / 離開確認 / 刪除確認） -->
+<div class="overlay hidden" id="confirm-modal" style="z-index: 1300;">
+  <div class="modal dialog-modal">
+    <div class="modal-head dialog-head">
+      <h2 id="confirm-modal-title">操作確認</h2>
+      <button type="button" class="x" id="close-confirm" aria-label="關閉">&times;</button>
+    </div>
+    <div class="modal-body dialog-body" id="confirm-modal-body"></div>
+    <div class="modal-foot dialog-foot">
+      <button type="button" class="btn primary" id="btn-confirm-ok">確定</button>
+      <button type="button" class="btn" id="btn-confirm-cancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 單一按鈕提示彈窗 -->
+<div class="overlay hidden" id="alert-modal" style="z-index: 1350;">
+  <div class="modal dialog-modal">
+    <div class="modal-head dialog-head">
+      <h2>提示訊息</h2>
+      <button type="button" class="x" id="close-alert" aria-label="關閉">&times;</button>
+    </div>
+    <div class="modal-body dialog-body" id="alert-modal-body">欄位填寫不完整！</div>
+    <div class="modal-foot dialog-foot">
+      <button type="button" class="btn primary" id="btn-alert-ok">確定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 聯誼金：查詢委員號或慈誠號時若有多筆符合人員供選擇彈窗 -->
+<div class="overlay hidden" id="person-select-modal" style="z-index: 1320;">
+  <div class="modal dialog-modal-wide">
+    <div class="modal-head dialog-head">
+      <h2>請選擇人員</h2>
+      <button type="button" class="x" id="close-person-select" aria-label="關閉">&times;</button>
+    </div>
+    <div class="modal-body dialog-body">
+      <div class="table-scroll" style="border-radius: 6px; border: 1px solid #e5ebf5;">
+        <table class="detail-table" id="person-select-table" style="min-width: 0; width: 100%;">
+          <thead style="background: #f5e6d8;">
+            <tr>
+              <th style="color: #3d2c1e; height: 44px; font-size: 15px;">姓名</th>
+              <th style="color: #3d2c1e; height: 44px; font-size: 15px;">法號</th>
+              <th style="color: #3d2c1e; height: 44px; font-size: 15px;">委員號</th>
+              <th style="color: #3d2c1e; height: 44px; font-size: 15px;">慈誠號</th>
+              <th style="color: #3d2c1e; height: 44px; font-size: 15px;">組隊名</th>
+              <th class="center" style="color: #3d2c1e; height: 44px; font-size: 15px; width: 84px;">選用</th>
+            </tr>
+          </thead>
+          <tbody id="person-select-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-foot dialog-foot">
+      <button type="button" class="btn" id="btn-person-select-leave">離開</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<!-- 載入共用頂部選單 (自動生成) -->
+<script src="js/navbar.js?v=347"></script>
+<script src="js/common.js?v=347"></script>
+
+<script src="js/applicationexpenses.js?v=347"></script>
+
+</body>
+</html>
