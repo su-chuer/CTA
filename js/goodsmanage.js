@@ -3416,16 +3416,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   dataReady.then(() => {
     resetUnsavedFieldsOnLoad();
-    let savedRole = '';
     try {
-      savedRole = sessionStorage.getItem(GOODS_MANAGE_ROLE_KEY) || '';
+      sessionStorage.removeItem(GOODS_MANAGE_ROLE_KEY);
+      sessionStorage.removeItem(GOODS_MANAGE_TAB_KEY);
     } catch (_) {}
-    if (savedRole) {
-      currentRole = savedRole;
-      applyRoleUI();
-    } else {
-      currentRole = '';
-      applyRoleUI();
-    }
+    currentRole = '';
+    applyRoleUI();
   });
 });
