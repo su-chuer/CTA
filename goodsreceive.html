@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>支出管理｜聯誼物資領取作業</title>
+<!-- 載入共用 CSS -->
+<link rel="stylesheet" href="css/style.css?v=346">
+<link rel="icon" href="https://tcit-qa.tzuchi.net/CTA/favicon.ico">
+</head>
+<body>
+
+<!-- 主要內容區塊 -->
+<main class="page">
+  <nav class="crumb" id="page-crumb">
+    <span class="home-icon">
+      <svg class="ico " aria-hidden="true"><use href="#ico-package-check"></use></svg>
+    </span>
+    <span class="sep">│</span>
+    <span>支出管理</span>
+    <span class="sep">/</span>
+    <strong id="crumb-current">聯誼物資領取作業</strong>
+  </nav>
+
+  <!-- 查詢條件 -->
+  <section class="panel filters" aria-label="查詢條件">
+    <div class="field">
+      <label for="filter-area">作業區 <b>*</b></label>
+      <div class="combo-select-wrap" id="area-combo-wrap">
+        <input type="text" id="filter-area" class="filter-input" autocomplete="off" placeholder="請選擇或輸入文字" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="area-combo-menu">
+        <button type="button" class="combo-clear-btn hidden" id="btn-clear-area" title="清除作業區" aria-label="清除作業區">&times;</button>
+        <button type="button" class="combo-arrow-btn" id="btn-toggle-area" title="展開作業區選單" aria-label="展開作業區選單">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <div class="combo-dropdown-menu hidden" id="area-combo-menu" role="listbox"></div>
+      </div>
+    </div>
+    <div class="field">
+      <label for="filter-item">項目</label>
+      <select id="filter-item" style="min-width: 150px;">
+        <option value="全部" selected>全部</option>
+        <option value="飛天">飛天</option>
+        <option value="生育禮盒">生育禮盒</option>
+        <option value="賀匾">賀匾</option>
+        <option value="法船">法船</option>
+      </select>
+    </div>
+    <div class="search-actions" style="margin-left: 10px;">
+      <button type="button" class="btn primary" id="btn-search"><svg class="ico " aria-hidden="true"><use href="#ico-search"></use></svg>搜尋</button>
+      <button type="button" class="btn" id="btn-reset"><svg class="ico " aria-hidden="true"><use href="#ico-refresh-cw"></use></svg>清除</button>
+    </div>
+  </section>
+
+  <!-- 待領取物資列表 -->
+  <section class="panel table-panel" style="margin-top: 15px;">
+    <div class="table-scroll">
+      <table class="detail-table" id="receive-goods-table">
+        <thead>
+          <tr>
+            <th class="center" style="width: 60px;">序號</th>
+            <th>組別</th>
+            <th>姓名</th>
+            <th>項目</th>
+            <th>申請日</th>
+            <th>作業日</th>
+            <th>委員號</th>
+            <th>慈誠號</th>
+            <th class="center" style="width: 96px;">是否領取</th>
+          </tr>
+        </thead>
+        <tbody id="receive-goods-tbody">
+          <tr><td colspan="9" class="empty">請選擇條件搜尋</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 分頁元件 -->
+    <div class="pagination hidden" id="pagination">
+      <select id="per-page-select" class="page-select" aria-label="每頁顯示筆數">
+        <option value="10" selected>10 筆 / 頁</option>
+        <option value="20">20 筆 / 頁</option>
+        <option value="50">50 筆 / 頁</option>
+        <option value="100">100 筆 / 頁</option>
+      </select>
+      <button type="button" class="page-btn disabled" id="page-prev" aria-label="上一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-left"></use></svg></button>
+      <div id="page-numbers" style="display:flex; gap:6px; align-items:center;"></div>
+      <button type="button" class="page-btn" id="page-next" aria-label="下一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-right"></use></svg></button>
+      <span class="page-info">共 <span id="total-pages">1</span> 頁 / <span id="total-items">0</span> 筆</span>
+    </div>
+
+    <!-- 表格區塊讀取動畫 (預設隱藏) -->
+    <div id="table-loading" class="block-loading hidden"><div class="spinner"></div></div>
+  </section>
+</main>
+
+<!-- 領取作業彈窗 -->
+<div class="overlay hidden" id="receive-modal" role="dialog" aria-modal="true" aria-labelledby="receive-modal-title" style="z-index: 1300;">
+  <div class="modal dialog-modal">
+    <div class="modal-head dialog-head">
+      <h2 id="receive-modal-title">領取作業</h2>
+      <button type="button" class="x" id="close-receive" aria-label="關閉">&times;</button>
+    </div>
+    <div class="modal-body dialog-body">
+      <p id="receive-modal-message" style="margin: 0;"></p>
+      <div id="receive-plaque-fields" class="receive-plaque-fields hidden">
+        <div class="claim-field">
+          <label for="receive-embed-date">繡字日期 <b>*</b></label>
+          <input type="date" id="receive-embed-date" class="claim-control">
+        </div>
+        <div class="claim-field">
+          <label for="receive-frame-date">裱框日期 <b>*</b></label>
+          <input type="date" id="receive-frame-date" class="claim-control">
+        </div>
+        <div class="claim-field">
+          <label for="receive-finish-date">完成日期 <b>*</b></label>
+          <input type="date" id="receive-finish-date" class="claim-control">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot dialog-foot">
+      <button type="button" class="btn primary" id="btn-receive-confirm">確定</button>
+      <button type="button" class="btn" id="btn-receive-cancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 單一按鈕提示彈窗 -->
+<div class="overlay hidden" id="alert-modal" style="z-index: 1350;">
+  <div class="modal dialog-modal">
+    <div class="modal-head dialog-head">
+      <h2>提示訊息</h2>
+      <button type="button" class="x" id="close-alert" aria-label="關閉">&times;</button>
+    </div>
+    <div class="modal-body dialog-body" id="alert-modal-body">欄位填寫不完整！</div>
+    <div class="modal-foot dialog-foot">
+      <button type="button" class="btn primary" id="btn-alert-ok">確定</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<!-- 載入共用頂部選單 (自動生成) -->
+<script src="js/navbar.js?v=350"></script>
+<script src="js/common.js?v=346"></script>
+
+<script src="js/goodsreceive.js?v=346"></script>
+
+</body>
+</html>

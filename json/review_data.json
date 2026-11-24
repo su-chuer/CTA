@@ -1,0 +1,497 @@
+{
+  "heqiList": [
+    {
+      "id": 101,
+      "year": "2026",
+      "name": "三民和氣二",
+      "status": "pending",
+      "statusText": "待審核",
+      "date": "2026/11/10 09:30",
+      "updatedAtStr": "2026/11/10 09:30:00.000",
+      "people": 3,
+      "teamAmount": 1000,
+      "groupAmount": 500,
+      "amount": 1500
+    },
+    {
+      "id": 102,
+      "year": "2026",
+      "name": "大里和氣一",
+      "status": "pending",
+      "statusText": "待審核",
+      "date": "2026/11/10 10:15",
+      "updatedAtStr": "2026/11/10 10:15:00.000",
+      "people": 5,
+      "teamAmount": 2500,
+      "groupAmount": 2000,
+      "amount": 4500
+    },
+    {
+      "id": 103,
+      "year": "2026",
+      "name": "南花蓮和氣",
+      "status": "revise",
+      "statusText": "待修正",
+      "date": "2026/11/09 14:20",
+      "updatedAtStr": "2026/11/09 14:20:00.000",
+      "people": 2,
+      "teamAmount": 1200,
+      "groupAmount": 0,
+      "amount": 1200
+    },
+    {
+      "id": 104,
+      "year": "2026",
+      "name": "大里和氣二",
+      "status": "approved",
+      "statusText": "待列帳",
+      "date": "2026/11/08 11:30",
+      "updatedAtStr": "2026/11/08 11:30:00.000",
+      "people": 8,
+      "teamAmount": 4800,
+      "groupAmount": 4000,
+      "amount": 8800
+    },
+    {
+      "id": 105,
+      "year": "2026",
+      "name": "宜蘭",
+      "status": "draft",
+      "statusText": "未編輯",
+      "date": "",
+      "updatedAtStr": "",
+      "people": 0,
+      "teamAmount": 0,
+      "groupAmount": 0,
+      "amount": 0
+    },
+    {
+      "id": 106,
+      "year": "2026",
+      "name": "宜蘭和氣二",
+      "status": "draft",
+      "statusText": "未編輯",
+      "date": "",
+      "updatedAtStr": "",
+      "people": 0,
+      "teamAmount": 0,
+      "groupAmount": 0,
+      "amount": 0
+    },
+    {
+      "id": 1,
+      "year": "2025",
+      "name": "三民和氣二",
+      "status": "pending",
+      "statusText": "待審核",
+      "date": "2025/12/15 14:30",
+      "updatedAtStr": "2025/12/15 14:30:00.000",
+      "people": 1,
+      "teamAmount": 600,
+      "groupAmount": 0,
+      "amount": 600
+    },
+    {
+      "id": 2,
+      "year": "2025",
+      "name": "大里和氣一",
+      "status": "draft",
+      "statusText": "未編輯",
+      "date": "",
+      "updatedAtStr": "",
+      "people": 0,
+      "teamAmount": 0,
+      "groupAmount": 0,
+      "amount": 0
+    },
+    {
+      "id": 3,
+      "year": "2025",
+      "name": "南花蓮和氣",
+      "status": "draft",
+      "statusText": "未編輯",
+      "date": "",
+      "updatedAtStr": "",
+      "people": 0,
+      "teamAmount": 0,
+      "groupAmount": 0,
+      "amount": 0
+    },
+    {
+      "id": 4,
+      "year": "2025",
+      "name": "大里和氣二",
+      "status": "draft",
+      "statusText": "未編輯",
+      "date": "",
+      "updatedAtStr": "",
+      "people": 0,
+      "teamAmount": 0,
+      "groupAmount": 0,
+      "amount": 0
+    },
+    {
+      "id": 5,
+      "year": "2025",
+      "name": "宜蘭",
+      "status": "draft",
+      "statusText": "未編輯",
+      "date": "",
+      "updatedAtStr": "",
+      "people": 0,
+      "teamAmount": 0,
+      "groupAmount": 0,
+      "amount": 0
+    },
+    {
+      "id": 6,
+      "year": "2025",
+      "name": "宜蘭和氣二",
+      "status": "draft",
+      "statusText": "未編輯",
+      "date": "",
+      "updatedAtStr": "",
+      "people": 0,
+      "teamAmount": 0,
+      "groupAmount": 0,
+      "amount": 0
+    },
+    {
+      "id": 201,
+      "year": "2024",
+      "name": "三民和氣二",
+      "status": "draft",
+      "statusText": "未編輯",
+      "date": "",
+      "updatedAtStr": "",
+      "people": 0,
+      "teamAmount": 0,
+      "groupAmount": 0,
+      "amount": 0
+    },
+    {
+      "id": 202,
+      "year": "2024",
+      "name": "大里和氣一",
+      "status": "draft",
+      "statusText": "未編輯",
+      "date": "",
+      "updatedAtStr": "",
+      "people": 0,
+      "teamAmount": 0,
+      "groupAmount": 0,
+      "amount": 0
+    },
+    {
+      "id": 203,
+      "year": "2024",
+      "name": "南花蓮和氣",
+      "status": "draft",
+      "statusText": "未編輯",
+      "date": "",
+      "updatedAtStr": "",
+      "people": 0,
+      "teamAmount": 0,
+      "groupAmount": 0,
+      "amount": 0
+    },
+    {
+      "id": 204,
+      "year": "2024",
+      "name": "大里和氣二",
+      "status": "draft",
+      "statusText": "未編輯",
+      "date": "",
+      "updatedAtStr": "",
+      "people": 0,
+      "teamAmount": 0,
+      "groupAmount": 0,
+      "amount": 0
+    },
+    {
+      "id": 205,
+      "year": "2024",
+      "name": "宜蘭",
+      "status": "draft",
+      "statusText": "未編輯",
+      "date": "",
+      "updatedAtStr": "",
+      "people": 0,
+      "teamAmount": 0,
+      "groupAmount": 0,
+      "amount": 0
+    },
+    {
+      "id": 206,
+      "year": "2024",
+      "name": "宜蘭和氣二",
+      "status": "draft",
+      "statusText": "未編輯",
+      "date": "",
+      "updatedAtStr": "",
+      "people": 0,
+      "teamAmount": 0,
+      "groupAmount": 0,
+      "amount": 0
+    }
+  ],
+  "unitOverrides": {
+    "2026|大里和氣一": {
+      "team": [
+        {
+          "rowIndex": 0,
+          "people": 2,
+          "amount": 1000,
+          "members": [
+            {
+              "name": "慈濟人",
+              "member": "11204",
+              "charity": "04120",
+              "times": 3,
+              "amount": 600,
+              "date": "2026/11/10"
+            },
+            {
+              "name": "慈濟人",
+              "member": "11589",
+              "charity": "04318",
+              "times": 2,
+              "amount": 400,
+              "date": "2026/11/10"
+            }
+          ]
+        },
+        {
+          "rowIndex": 1,
+          "people": 1,
+          "amount": 1500,
+          "members": [
+            {
+              "name": "慈濟人",
+              "member": "12031",
+              "charity": "05112",
+              "times": 5,
+              "amount": 1500,
+              "date": "2026/11/10"
+            }
+          ]
+        }
+      ],
+      "group": [
+        {
+          "rowIndex": 0,
+          "people": 2,
+          "amount": 2000,
+          "members": [
+            {
+              "name": "慈濟人",
+              "member": "03115",
+              "charity": "",
+              "times": 5,
+              "amount": 1000,
+              "date": "2026/11/10"
+            },
+            {
+              "name": "慈濟人",
+              "member": "03482",
+              "charity": "",
+              "times": 5,
+              "amount": 1000,
+              "date": "2026/11/10"
+            }
+          ]
+        }
+      ]
+    },
+    "2026|大里和氣二": {
+      "team": [
+        {
+          "rowIndex": 0,
+          "people": 3,
+          "amount": 2800,
+          "members": [
+            {
+              "name": "慈濟人",
+              "member": "14102",
+              "charity": "06110",
+              "times": 5,
+              "amount": 1000,
+              "date": "2026/11/08"
+            },
+            {
+              "name": "慈濟人",
+              "member": "14290",
+              "charity": "06245",
+              "times": 5,
+              "amount": 1000,
+              "date": "2026/11/08"
+            },
+            {
+              "name": "慈濟人",
+              "member": "14511",
+              "charity": "06389",
+              "times": 4,
+              "amount": 800,
+              "date": "2026/11/08"
+            }
+          ]
+        },
+        {
+          "rowIndex": 1,
+          "people": 2,
+          "amount": 2000,
+          "members": [
+            {
+              "name": "慈濟人",
+              "member": "15023",
+              "charity": "07014",
+              "times": 5,
+              "amount": 1000,
+              "date": "2026/11/08"
+            },
+            {
+              "name": "慈濟人",
+              "member": "15388",
+              "charity": "07192",
+              "times": 5,
+              "amount": 1000,
+              "date": "2026/11/08"
+            }
+          ]
+        }
+      ],
+      "group": [
+        {
+          "rowIndex": 0,
+          "people": 3,
+          "amount": 4000,
+          "members": [
+            {
+              "name": "慈濟人",
+              "member": "04120",
+              "charity": "",
+              "times": 5,
+              "amount": 1500,
+              "date": "2026/11/08"
+            },
+            {
+              "name": "慈濟人",
+              "member": "04519",
+              "charity": "",
+              "times": 5,
+              "amount": 1500,
+              "date": "2026/11/08"
+            },
+            {
+              "name": "慈濟人",
+              "member": "04877",
+              "charity": "",
+              "times": 5,
+              "amount": 1000,
+              "date": "2026/11/08"
+            }
+          ]
+        }
+      ]
+    },
+    "2026|南花蓮和氣": {
+      "team": [
+        {
+          "rowIndex": 0,
+          "people": 2,
+          "amount": 1200,
+          "members": [
+            {
+              "name": "慈濟人",
+              "member": "17205",
+              "charity": "08114",
+              "times": 3,
+              "amount": 600,
+              "date": "2026/11/09"
+            },
+            {
+              "name": "慈濟人",
+              "member": "17490",
+              "charity": "08302",
+              "times": 3,
+              "amount": 600,
+              "date": "2026/11/09"
+            }
+          ]
+        }
+      ],
+      "group": []
+    },
+    "2026|三民和氣二": {
+      "team": [
+        {
+          "rowIndex": 0,
+          "people": 1,
+          "amount": 1000,
+          "members": [
+            {
+              "name": "慈濟人",
+              "member": "",
+              "charity": "02410",
+              "times": 5,
+              "amount": 1000,
+              "date": "2026/11/04"
+            }
+          ]
+        }
+      ],
+      "group": [
+        {
+          "rowIndex": 0,
+          "people": 1,
+          "amount": 300,
+          "members": [
+            {
+              "name": "慈濟人",
+              "member": "02271",
+              "charity": "",
+              "times": 1,
+              "amount": 300,
+              "date": "2026/11/09"
+            }
+          ]
+        },
+        {
+          "rowIndex": 1,
+          "people": 1,
+          "amount": 200,
+          "members": [
+            {
+              "name": "慈濟人",
+              "member": "03824",
+              "charity": "",
+              "times": 1,
+              "amount": 200,
+              "date": "2026/07/06"
+            }
+          ]
+        }
+      ]
+    },
+    "2025|三民和氣二": {
+      "team": [
+        {
+          "rowIndex": 0,
+          "people": 1,
+          "amount": 600,
+          "members": [
+            {
+              "name": "慈濟人",
+              "member": "08544",
+              "charity": "10343",
+              "times": 3,
+              "amount": 600,
+              "date": "2025/12/15"
+            }
+          ]
+        }
+      ],
+      "group": []
+    }
+  }
+}

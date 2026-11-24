@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>收入管理｜審核收入明細</title>
+<link rel="stylesheet" href="css/style.css?v=346">
+<link rel="icon" href="https://tcit-qa.tzuchi.net/CTA/favicon.ico">
+</head>
+<body>
+
+<main class="page">
+  <nav class="crumb">
+    <span class="home-icon"><svg class="ico " aria-hidden="true"><use href="#ico-clipboard-check"></use></svg></span>
+    <span class="sep">│</span>
+    <span>收入管理</span>
+    <span class="sep">/</span>
+    <strong>審核收入明細</strong>
+  </nav>
+
+  <!-- 頂部搜尋分類 -->
+  <section class="panel filters" aria-label="查詢條件">
+    <div class="field">
+      <label for="filter-year">年份 <b>*</b></label>
+      <select id="filter-year">
+        <option value="2026">2026</option>
+        <option value="2025">2025</option>
+        <option value="2024">2024</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="filter-status">狀態 <b>*</b></label>
+      <select id="filter-status">
+        <option value="" selected disabled>請選擇</option>
+        <option value="all">全部</option>
+        <option value="pending">待審核</option>
+        <option value="approved">待列帳</option>
+        <option value="revise">待修正</option>
+      </select>
+    </div>
+    <div class="search-actions" style="margin-left: 10px;">
+      <button type="button" class="btn primary" id="btn-search"><svg class="ico " aria-hidden="true"><use href="#ico-search"></use></svg>搜尋</button>
+      <button type="button" class="btn" id="btn-reset"><svg class="ico " aria-hidden="true"><use href="#ico-refresh-cw"></use></svg>清除</button>
+    </div>
+  </section>
+
+  <!-- 下方和氣清單 -->
+  <section class="panel table-panel">
+    <div class="table-scroll">
+      <table class="detail-table" id="master-table">
+        <thead>
+          <tr>
+            <th>和氣單位</th>
+            <th class="center">狀態</th>
+            <th class="center">更新時間 ▾</th>
+            <th class="num-col">繳交人數</th>
+            <th class="num-col">(隊) 金額</th>
+            <th class="num-col">(組) 金額</th>
+            <th class="num-col">總金額</th>
+            <th class="center" style="width: 100px;">詳細</th>
+          </tr>
+        </thead>
+        <tbody id="master-tbody">
+          <!-- JS 動態產生 -->
+        </tbody>
+      </table>
+    </div>
+    <!-- 分頁元件 -->
+    <div class="pagination hidden" id="pagination">
+      <select id="per-page-select" class="page-select" aria-label="每頁顯示筆數">
+        <option value="10" selected>10 筆 / 頁</option>
+        <option value="20">20 筆 / 頁</option>
+        <option value="50">50 筆 / 頁</option>
+        <option value="100">100 筆 / 頁</option>
+      </select>
+      <button type="button" class="page-btn disabled" id="page-prev" aria-label="上一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-left"></use></svg></button>
+      <div id="page-numbers" style="display:flex; gap:6px; align-items:center;"></div>
+      <button type="button" class="page-btn" id="page-next" aria-label="下一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-right"></use></svg></button>
+      <span class="page-info">共 <span id="total-pages">1</span> 頁 / <span id="total-items">0</span> 筆</span>
+    </div>
+    <div id="table-loading" class="block-loading hidden"><div class="spinner"></div></div>
+  </section>
+</main>
+
+<!-- 審核彈窗 (Pop up) -->
+<div class="overlay hidden" id="review-modal" style="z-index: 1000;">
+  <div class="modal" style="width: min(1200px, 100%); display: flex; flex-direction: column; max-height: 95vh; padding: 0;">
+    
+    <div class="modal-head" style="padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e1e7f0; background: #fff; position: sticky; top: 0; z-index: 10;">
+      <div style="display:flex; align-items:center; gap:16px;">
+        <h2 style="margin:0; font-size:18px; color:#14264b; display:flex; align-items:center; gap:12px;">
+          <span id="modal-title">2026 年度｜三民和氣二 - 收入明細審核</span>
+          <span class="status-badge pending" id="modal-status-badge" style="font-size: 14px;">待審核</span>
+        </h2>
+      </div>
+      <div class="actions" style="display:flex; align-items:center; gap:12px;">
+        <button type="button" class="x" id="close-review" style="margin-left: 12px;">&times;</button>
+      </div>
+    </div>
+
+    <div class="modal-body" style="padding: 0; background: #f8fafc; overflow-y: auto; flex: 1;">
+      <div style="display:flex; flex-direction:column; background: #fff;">
+      <div style="padding:16px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e1e7f0;">
+        <div class="tabs">
+          <div class="tab active" data-target="team">隊 (<span id="count-team">7</span>)</div>
+          <div class="tab" data-target="group">組 (<span id="count-group">4</span>)</div>
+        </div>
+        <div class="choice" style="margin:0;">
+          <label style="font-size:14px; color:#3d5176; cursor:pointer;">
+            <input type="checkbox" id="filter-paid" checked>顯示本次繳款金額
+          </label>
+        </div>
+      </div>
+      
+      <div class="kpi-row">
+        <div class="kpi-item total">和氣總計：<strong id="kpi-total">NT$ 600</strong></div>
+        <span style="color:#d9e3f1;">│</span>
+        <div class="kpi-item">(隊) 總金額：<strong id="kpi-team-amount">NT$ 600</strong></div>
+        <span style="color:#d9e3f1;">│</span>
+        <div class="kpi-item">(組) 總金額：<strong id="kpi-group-amount">NT$ 0</strong></div>
+      </div>
+
+      <div class="table-scroll" style="border:none; border-radius:0;">
+        <table class="detail-table">
+          <thead>
+            <tr>
+              <th>互愛協力名稱</th>
+              <th class="num-col">繳交人數</th>
+              <th class="num-col">總人數</th>
+              <th class="num-col">本次金額</th>
+              <th style="width: 80px; text-align:center;">詳細</th>
+            </tr>
+          </thead>
+          <!-- 假資料表格：組 -->
+          <tbody id="tbody-group" class="hidden">
+            <tr class="has-payment hidden">
+              <td>互愛一 協力一 (組)</td>
+              <td class="num-col">0</td>
+              <td class="num-col">29</td>
+              <td class="num-col" style="color:var(--blue);">NT$ 0</td>
+              <td class="center"><button type="button" class="btn primary small">詳細</button></td>
+            </tr>
+            <tr class="no-payment hidden">
+              <td>互愛一 協力二 (組)</td><td class="num-col">0</td><td class="num-col">29</td><td class="num-col" style="color:#6a7994;">NT$ 0</td><td class="center"><button type="button" class="btn primary small">詳細</button></td>
+            </tr>
+            <tr class="no-payment hidden">
+              <td>互愛一 協力四 (組)</td><td class="num-col">0</td><td class="num-col">23</td><td class="num-col" style="color:#6a7994;">NT$ 0</td><td class="center"><button type="button" class="btn primary small">詳細</button></td>
+            </tr>
+            <tr class="no-payment hidden">
+              <td>互愛二 協力一 (組)</td><td class="num-col">0</td><td class="num-col">23</td><td class="num-col" style="color:#6a7994;">NT$ 0</td><td class="center"><button type="button" class="btn primary small">詳細</button></td>
+            </tr>
+            <tr class="empty-row hidden">
+              <td colspan="5" class="empty">查無符合條件的資料</td>
+            </tr>
+          </tbody>
+          <!-- 假資料表格：隊 -->
+          <tbody id="tbody-team">
+            <tr class="has-payment">
+              <td>互愛一 協力一 (隊)</td>
+              <td class="num-col">1</td>
+              <td class="num-col">29</td>
+              <td class="num-col" style="color:var(--blue);">NT$ 600</td>
+              <td class="center"><button type="button" class="btn primary small">詳細</button></td>
+            </tr>
+            <tr class="no-payment hidden">
+              <td>互愛一 協力二 (隊)</td>
+              <td class="num-col">0</td>
+              <td class="num-col">17</td>
+              <td class="num-col" style="color:#6a7994;">NT$ 0</td>
+              <td class="center"><button type="button" class="btn primary small">詳細</button></td>
+            </tr>
+            <tr class="no-payment hidden">
+              <td>互愛一 協力三 (隊)</td><td class="num-col">0</td><td class="num-col">21</td><td class="num-col" style="color:#6a7994;">NT$ 0</td><td class="center"><button type="button" class="btn primary small">詳細</button></td>
+            </tr>
+            <tr class="no-payment hidden">
+              <td>互愛一 協力四 (隊)</td><td class="num-col">0</td><td class="num-col">18</td><td class="num-col" style="color:#6a7994;">NT$ 0</td><td class="center"><button type="button" class="btn primary small">詳細</button></td>
+            </tr>
+            <tr class="no-payment hidden">
+              <td>互愛二 協力一 (隊)</td><td class="num-col">0</td><td class="num-col">24</td><td class="num-col" style="color:#6a7994;">NT$ 0</td><td class="center"><button type="button" class="btn primary small">詳細</button></td>
+            </tr>
+            <tr class="no-payment hidden">
+              <td>互愛三 協力一 (隊)</td><td class="num-col">0</td><td class="num-col">19</td><td class="num-col" style="color:#6a7994;">NT$ 0</td><td class="center"><button type="button" class="btn primary small">詳細</button></td>
+            </tr>
+            <tr class="no-payment hidden">
+              <td>互愛三 協力二 (隊)</td><td class="num-col">0</td><td class="num-col">18</td><td class="num-col" style="color:#6a7994;">NT$ 0</td><td class="center"><button type="button" class="btn primary small">詳細</button></td>
+            </tr>
+            <tr class="empty-row hidden">
+              <td colspan="5" class="empty">查無符合條件的資料</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="action-row" style="background:#f8fafc; padding:18px 24px; border-top:1px solid #e1e7f0; display:flex; align-items:flex-end; gap:20px;">
+        <div class="form-field" style="width: 220px;">
+          <span style="font-weight:600; color:#3d5176;">匯款作業日</span>
+          <input type="date" id="transfer-date" disabled class="elegant-input" style="background:#f1f5f9; border:1px solid #c7d3e3; border-radius:4px; height:38px; padding:0 12px; border-bottom:1px solid #c7d3e3; color:#72809c; cursor:not-allowed;">
+        </div>
+        <div class="form-field" style="flex:1;">
+          <span style="font-weight:600; color:#3d5176;">審核備註 / 不核可原因</span>
+          <input type="text" id="remark" placeholder="可選填備註..." style="width:100%; height:38px; border:1px solid #c7d3e3; border-radius:4px; padding:0 12px; outline:none; background:#fff; font-size:14px;">
+        </div>
+        <div class="modal-footer-actions" style="display:flex; gap:12px; margin-left: auto;">
+          <button class="btn" id="btn-modal-close">關閉</button>
+          <button class="btn btn-reject" id="btn-modal-reject">✕ 不核可</button>
+          <button class="btn btn-approve" id="btn-modal-approve">✓ 核可</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- 組隊所有會員列表彈窗 (Level 2) -->
+<div class="overlay hidden" id="unit-detail-modal" style="z-index: 1100;">
+  <div class="modal" style="width: min(1040px, 100%); display: flex; flex-direction: column; max-height: 90vh; padding: 0;">
+    <div class="modal-head" style="padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e1e7f0; background: #fff;">
+      <h2 style="margin:0; font-size:17px; color:#14264b;" id="unit-detail-title">2026 年度｜三民和氣二 - 互愛一 協力一 (組)</h2>
+      <button type="button" class="x" id="close-unit-detail">&times;</button>
+    </div>
+    <div class="kpi-row" style="justify-content: space-between;">
+      <div style="display:flex; align-items:center; gap:18px; flex-wrap:wrap;">
+        <div class="kpi-item">繳交 / 總人數：<strong id="unit-detail-people">1 / 29</strong></div>
+        <span style="color:#d9e3f1;">│</span>
+        <div class="kpi-item total">本次金額：<strong id="unit-detail-amount">NT$ 300</strong></div>
+      </div>
+      <div class="choice" style="margin:0;">
+        <label style="font-size:14px; color:#3d5176; cursor:pointer;">
+          <input type="checkbox" id="unit-filter-paid">顯示本次繳款
+        </label>
+      </div>
+    </div>
+    <div class="modal-body" style="padding: 0; overflow-y: auto; flex: 1; background: #fff;">
+      <div class="table-scroll" style="border:none; border-radius:0;">
+        <table class="detail-table">
+          <thead>
+            <tr>
+              <th class="center" style="width:68px;">序號</th>
+              <th>名字</th>
+              <th>委員號</th>
+              <th>慈誠號</th>
+              <th class="center">已繳次數</th>
+              <th class="center">本次繳交次數</th>
+              <th class="num-col">本次會費</th>
+              <th class="center" style="width:84px;">詳細</th>
+            </tr>
+          </thead>
+          <tbody id="unit-detail-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div style="padding: 14px 24px; border-top: 1px solid #e1e7f0; background: #f8fafc; display: flex; justify-content: flex-end;">
+      <button type="button" class="btn" id="btn-unit-detail-ok">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- 個人詳細繳款明細彈窗 (Level 3 - 新畫面) -->
+<div class="overlay hidden" id="member-detail-modal" style="z-index: 1200;">
+  <div class="modal" style="width: min(880px, 100%); display: flex; flex-direction: column; max-height: 90vh; padding: 0;">
+    <div class="modal-head" style="padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e1e7f0; background: #fff;">
+      <h2 style="margin:0; font-size:17px; color:#14264b;" id="member-detail-title">2026 年度｜三民和氣二 - 互愛一 協力一 (組)｜慈濟人</h2>
+      <button type="button" class="x" id="close-member-detail">&times;</button>
+    </div>
+    <div class="modal-body" style="padding: 20px 24px; overflow-y: auto; flex: 1; background: #fff;" id="member-detail-body"></div>
+    <div style="padding: 14px 24px; border-top: 1px solid #e1e7f0; background: #f8fafc; display: flex; justify-content: flex-end;">
+      <button type="button" class="btn" id="btn-member-detail-ok">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- 操作確認彈窗 (Level 4) -->
+<div class="overlay hidden" id="confirm-modal" style="z-index: 1300;">
+  <div class="modal" style="width: min(420px, 100%);">
+    <div class="modal-head" style="padding: 18px 24px; border-bottom: 1px solid #e1e7f0; display: flex; align-items: center; justify-content: space-between;">
+      <h2 style="margin: 0; font-size: 17px; color: #14264b;" id="confirm-modal-title">操作確認</h2>
+      <button type="button" class="x" id="close-confirm">&times;</button>
+    </div>
+    <div class="modal-body" style="padding: 24px; font-size: 15px; color: #3d5176; line-height: 1.6; text-align: left;" id="confirm-modal-body"></div>
+    <div class="modal-foot" style="padding: 16px 24px; border-top: 1px solid #e1e7f0; background: #f8fafc; display: flex; justify-content: flex-end; gap: 12px;">
+      <button type="button" class="btn primary" id="btn-confirm-ok">確定</button>
+      <button type="button" class="btn" id="btn-confirm-cancel">取消</button>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast hidden"></div>
+<script src="js/navbar.js?v=350"></script>
+<script src="js/common.js?v=346"></script>
+<script src="js/reviewincome.js?v=346"></script>
+</body>
+</html>

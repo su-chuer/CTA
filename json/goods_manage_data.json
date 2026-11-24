@@ -1,0 +1,66 @@
+{
+  "warehouses": [
+    "花蓮本會",
+    "內湖倉儲",
+    "三重國際倉儲",
+    "台中清水"
+  ],
+  "goodsItems": [
+    "飛天",
+    "生育禮盒",
+    "賀匾",
+    "法船"
+  ],
+  "inventoryDatasets": {},
+  "vendorInRecords": [],
+  "regionalWarehouses": [
+    "北",
+    "中",
+    "南",
+    "東"
+  ],
+  "areaWarehouses": [
+    "職志",
+    "玉里",
+    "花蓮",
+    "宜蘭",
+    "台東",
+    "澎湖",
+    "台北",
+    "大安",
+    "蘆洲",
+    "台中",
+    "(大林)嘉義",
+    "台南",
+    "高雄"
+  ],
+  "areaWarehouseRegions": {
+    "職志": "東",
+    "玉里": "東",
+    "花蓮": "東",
+    "宜蘭": "東",
+    "台東": "東",
+    "澎湖": "東",
+    "台北": "北",
+    "大安": "北",
+    "蘆洲": "北",
+    "台中": "中",
+    "(大林)嘉義": "南",
+    "台南": "南",
+    "高雄": "南"
+  },
+  "diffReasons": [
+    "到貨點收誤差",
+    "包裝不完整有瑕疵",
+    "意外摔壞毀損",
+    "遺漏登帳",
+    "收領用單忘給東西",
+    "途中遺失",
+    "其它"
+  ],
+  "signInRecords": [],
+  "transferOutRecords": [],
+  "diffRecords": [],
+  "regionalInventoryDatasets": {},
+  "areaInventoryDatasets": {}
+}

@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>支出管理｜活動、聯誼金審核作業</title>
+<link rel="stylesheet" href="css/style.css?v=346">
+<link rel="icon" href="https://tcit-qa.tzuchi.net/CTA/favicon.ico">
+</head>
+<body>
+
+<main class="page">
+  <nav class="crumb" id="page-crumb">
+    <span class="home-icon">
+      <svg class="ico " aria-hidden="true"><use href="#ico-clipboard-check"></use></svg>
+    </span>
+    <span class="sep">│</span>
+    <span>支出管理</span>
+    <span class="sep">/</span>
+    <strong id="crumb-current">活動、聯誼金審核作業</strong>
+  </nav>
+
+  <!-- 查詢條件 -->
+  <section class="panel filters" aria-label="查詢條件">
+    <div class="field">
+      <label for="filter-heqi">和氣組別 <b>*</b></label>
+      <div class="combo-select-wrap wide" id="heqi-combo-wrap">
+        <input type="text" id="filter-heqi" class="filter-input" autocomplete="off" placeholder="請選擇或輸入文字" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="heqi-combo-menu">
+        <button type="button" class="combo-clear-btn hidden" id="btn-clear-heqi" title="清除和氣組別" aria-label="清除和氣組別">&times;</button>
+        <button type="button" class="combo-arrow-btn" id="btn-toggle-heqi" title="展開和氣組別選單" aria-label="展開和氣組別選單">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <div class="combo-dropdown-menu hidden" id="heqi-combo-menu" role="listbox"></div>
+      </div>
+    </div>
+    <div class="field">
+      <label for="filter-category">類別</label>
+      <select id="filter-category" style="min-width: 130px;">
+        <option value="全部" selected>全部</option>
+        <option value="活動金">活動金</option>
+        <option value="聯誼金">聯誼金</option>
+      </select>
+    </div>
+    <div class="search-actions" style="margin-left: 10px;">
+      <button type="button" class="btn primary" id="btn-search"><svg class="ico " aria-hidden="true"><use href="#ico-search"></use></svg>搜尋</button>
+      <button type="button" class="btn" id="btn-reset"><svg class="ico " aria-hidden="true"><use href="#ico-refresh-cw"></use></svg>清除</button>
+    </div>
+  </section>
+
+  <!-- 審核列表 -->
+  <section class="panel table-panel" style="margin-top: 15px;">
+    <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 12px;">
+      <div style="font-size: 16px; color: #3d5176; font-weight: 600;">總金額：<span id="total-amount-display" style="color: #14264b; margin-left: 4px;">0</span></div>
+    </div>
+
+    <div class="table-scroll">
+      <table class="detail-table" id="review-expense-table">
+        <thead>
+          <tr>
+            <th class="center" style="width: 60px;">序號</th>
+            <th>姓名 / 活動別</th>
+            <th>類別</th>
+            <th>申請日</th>
+            <th>作業日</th>
+            <th>委員號</th>
+            <th>慈誠號</th>
+            <th>關係</th>
+            <th class="center">單據</th>
+            <th class="center">備註</th>
+            <th class="num-col">金額</th>
+            <th class="center" style="width: 80px;">詳細</th>
+            <th class="center" style="width: 96px;"><label class="submit-check-all-label"><input type="checkbox" id="check-all-review" title="全選 / 取消全選" disabled><span>全選</span></label></th>
+          </tr>
+        </thead>
+        <tbody id="review-expense-tbody">
+          <tr><td colspan="13" class="empty">請選擇條件搜尋</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 分頁元件 -->
+    <div class="pagination hidden" id="pagination">
+      <select id="per-page-select" class="page-select" aria-label="每頁顯示筆數">
+        <option value="10" selected>10 筆 / 頁</option>
+        <option value="20">20 筆 / 頁</option>
+        <option value="50">50 筆 / 頁</option>
+        <option value="100">100 筆 / 頁</option>
+      </select>
+      <button type="button" class="page-btn disabled" id="page-prev" aria-label="上一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-left"></use></svg></button>
+      <div id="page-numbers" style="display:flex; gap:6px; align-items:center;"></div>
+      <button type="button" class="page-btn" id="page-next" aria-label="下一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-right"></use></svg></button>
+      <span class="page-info">共 <span id="total-pages">1</span> 頁 / <span id="total-items">0</span> 筆</span>
+    </div>
+
+    <div id="table-loading" class="block-loading hidden"><div class="spinner"></div></div>
+
+    <div class="footer hidden" id="list-footer" style="margin-top: 20px;">
+      <button type="button" class="btn btn-reject" id="btn-reject-forms">✕ 不核可</button>
+      <button type="button" class="btn primary" id="btn-approve-forms">✓ 核可</button>
+    </div>
+  </section>
+</main>
+
+<!-- 備註檢視彈窗 -->
+<div class="overlay hidden" id="remark-modal" style="z-index: 1320;">
+  <div class="modal dialog-modal">
+    <div class="modal-head dialog-head">
+      <h2>檢視備註</h2>
+      <button type="button" class="x" id="close-remark" aria-label="關閉">&times;</button>
+    </div>
+    <div class="modal-body dialog-body" id="remark-modal-body"></div>
+    <div class="modal-foot dialog-foot">
+      <button type="button" class="btn primary" id="btn-remark-ok">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- 請領單詳細資料彈窗 -->
+<div class="overlay hidden" id="detail-modal" style="z-index: 1280;">
+  <div class="modal" style="width: min(980px, 100%);">
+    <div class="modal-head">
+      <h2 id="detail-modal-title">支出管理 / 活動、聯誼金審核作業 / 詳細</h2>
+      <button type="button" class="x" id="close-detail">&times;</button>
+    </div>
+    <div class="modal-body" id="detail-modal-body"></div>
+    <div class="modal-foot">
+      <button type="button" class="btn" id="btn-detail-close">關閉</button>
+      <button type="button" class="btn btn-reject" id="btn-detail-reject">✕ 不核可</button>
+      <button type="button" class="btn primary" id="btn-detail-approve">✓ 核可</button>
+    </div>
+  </div>
+</div>
+
+<!-- 操作確認彈窗 -->
+<div class="overlay hidden" id="confirm-modal" style="z-index: 1350;">
+  <div class="modal dialog-modal">
+    <div class="modal-head dialog-head">
+      <h2 id="confirm-modal-title">操作確認</h2>
+      <button type="button" class="x" id="close-confirm" aria-label="關閉">&times;</button>
+    </div>
+    <div class="modal-body dialog-body" id="confirm-modal-body"></div>
+    <div class="modal-foot dialog-foot">
+      <button type="button" class="btn primary" id="btn-confirm-ok">確定</button>
+      <button type="button" class="btn" id="btn-confirm-cancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 提示彈窗 -->
+<div class="overlay hidden" id="alert-modal" style="z-index: 1380;">
+  <div class="modal dialog-modal">
+    <div class="modal-head dialog-head">
+      <h2>提示訊息</h2>
+      <button type="button" class="x" id="close-alert" aria-label="關閉">&times;</button>
+    </div>
+    <div class="modal-body dialog-body" id="alert-modal-body">請先勾選要審核的請領單！</div>
+    <div class="modal-foot dialog-foot">
+      <button type="button" class="btn primary" id="btn-alert-ok">確定</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="js/navbar.js?v=350"></script>
+<script src="js/common.js?v=346"></script>
+<script src="js/reviewexpenses.js?v=346"></script>
+
+</body>
+</html>

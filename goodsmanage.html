@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>庫存管理｜物資庫存管理</title>
+<link rel="stylesheet" href="css/style.css?v=349">
+<link rel="icon" href="https://tcit-qa.tzuchi.net/CTA/favicon.ico">
+</head>
+<body>
+
+<main class="page">
+  <nav class="crumb" id="page-crumb">
+    <span class="home-icon">
+      <svg class="ico " aria-hidden="true"><use href="#ico-warehouse"></use></svg>
+    </span>
+    <span class="sep">│</span>
+    <span>庫存管理</span>
+    <span class="sep">/</span>
+    <strong id="crumb-current">物資庫存管理</strong>
+  </nav>
+
+  <div class="role-simulator" aria-label="作業倉庫切換區" style="background: #ffffff; border-color: #e1e7f0; color: #14264b;">
+    <label for="simulated-role" style="color: #3d5176;">作業倉庫：</label>
+    <select id="simulated-role" style="border-color: #c7d3e3; color: #101c38; min-width: 140px;">
+      <option value="" selected disabled>請選擇</option>
+      <option value="hq">本會倉庫</option>
+      <option value="region">中繼倉庫 (北、中、南、東)</option>
+      <option value="area">作業區倉庫</option>
+    </select>
+    <span class="role-simulator-hint hidden" id="role-simulator-hint"></span>
+    <button type="button" class="btn danger small" id="btn-clear-all-inventory" style="margin-left: auto;">清空庫存</button>
+  </div>
+
+  <!-- 次功能頁籤列 -->
+  <div class="sub-tabs-bar hidden" id="manage-sub-tabs" role="tablist" aria-label="物資庫存管理功能頁籤">
+    <button type="button" class="sub-tab-btn active" role="tab" aria-selected="true" data-tab="query">庫存查詢</button>
+    <button type="button" class="sub-tab-btn" id="tab-btn-vendor-in" role="tab" aria-selected="false" data-tab="vendor-in">廠商入庫</button>
+    <button type="button" class="sub-tab-btn" id="tab-btn-transfer-out" role="tab" aria-selected="false" data-tab="transfer-out">出庫 / 調貨</button>
+    <button type="button" class="sub-tab-btn" role="tab" aria-selected="false" data-tab="sign-in">簽收入庫</button>
+    <button type="button" class="sub-tab-btn" id="tab-btn-diff" role="tab" aria-selected="false" data-tab="diff">盤差作業</button>
+  </div>
+
+  <!-- ==================== 空白預設提示 ==================== -->
+  <div id="tab-empty-view" style="padding: 60px 20px; text-align: center; color: #6a7994; background: #ffffff; border: 1px solid #e1e7f0; border-radius: 8px;">請由上方選擇「作業倉庫」以載入對應的庫存管理功能。</div>
+
+  <!-- ==================== 分頁一：庫存查詢 ==================== -->
+  <div id="tab-query-view" class="hidden">
+    <!-- 查詢條件 -->
+    <section class="panel filters" aria-label="查詢條件">
+      <div class="field">
+        <label for="filter-warehouse">倉庫 <b>*</b></label>
+        <div class="combo-select-wrap" id="warehouse-combo-wrap">
+          <input type="text" id="filter-warehouse" class="filter-input" autocomplete="off" placeholder="請選擇或輸入文字" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="warehouse-combo-menu">
+          <button type="button" class="combo-clear-btn hidden" id="btn-clear-warehouse" title="清除倉庫" aria-label="清除倉庫">&times;</button>
+          <button type="button" class="combo-arrow-btn" id="btn-toggle-warehouse" title="展開倉庫選單" aria-label="展開倉庫選單">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="combo-dropdown-menu hidden" id="warehouse-combo-menu" role="listbox"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="filter-item">物品 <b>*</b></label>
+        <select id="filter-item" style="min-width: 150px;">
+          <option value="" selected disabled>請選擇</option>
+          <option value="飛天">飛天</option>
+          <option value="生育禮盒">生育禮盒</option>
+          <option value="賀匾">賀匾</option>
+          <option value="法船">法船</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="filter-start-date">起始日 <b>*</b></label>
+        <input type="date" id="filter-start-date" class="filter-input" style="width: 170px;">
+      </div>
+
+      <div class="field">
+        <label for="filter-end-date">結束日 <b>*</b></label>
+        <input type="date" id="filter-end-date" class="filter-input" style="width: 170px;">
+      </div>
+
+      <div class="search-actions" style="margin-left: 6px;">
+        <button type="button" class="btn primary" id="btn-search"><svg class="ico " aria-hidden="true"><use href="#ico-search"></use></svg>搜尋</button>
+        <button type="button" class="btn" id="btn-reset"><svg class="ico " aria-hidden="true"><use href="#ico-refresh-cw"></use></svg>清除</button>
+      </div>
+    </section>
+
+    <!-- 庫存量摘要指標列（搜尋後顯示） -->
+    <section class="panel kpi-strip" id="inventory-kpi-bar" aria-label="庫存數量摘要">
+      <div class="kpi-strip-item">安全庫存量：<span class="kpi-strip-val" id="kpi-safety-stock">0</span></div>
+      <div class="kpi-strip-item center-col">前期庫存量：<span class="kpi-strip-val" id="kpi-opening-stock">0</span></div>
+      <div class="kpi-strip-item right-col">總庫存量：<span class="kpi-strip-val" id="kpi-total-stock">0</span></div>
+    </section>
+
+    <!-- 區塊一：庫存明細（預設展開） -->
+    <section class="panel accordion-panel" id="panel-stock-detail">
+      <button type="button" class="accordion-head" id="toggle-stock-detail" aria-expanded="true" aria-controls="body-stock-detail">
+        <span>庫存明細</span>
+        <span class="accordion-chevron" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+        </span>
+      </button>
+      <div class="accordion-body" id="body-stock-detail">
+        <div class="table-scroll">
+          <table class="detail-table" id="stock-detail-table">
+            <thead id="stock-detail-thead">
+              <tr>
+                <th class="center" style="width: 68px;">序號</th>
+                <th class="sortable is-sorted" data-sort="date" aria-sort="descending" title="點擊排序">日期<span class="sort-icon" aria-hidden="true">▼</span></th>
+                <th class="sortable" data-sort="warehouse" aria-sort="none" title="點擊排序">倉庫<span class="sort-icon" aria-hidden="true">⇅</span></th>
+                <th class="num-col sortable" data-sort="inQty" aria-sort="none" title="點擊排序">入庫數量<span class="sort-icon" aria-hidden="true">⇅</span></th>
+                <th class="num-col sortable" data-sort="outQty" aria-sort="none" title="點擊排序">出庫數量<span class="sort-icon" aria-hidden="true">⇅</span></th>
+                <th class="num-col sortable" data-sort="diffQty" aria-sort="none" title="點擊排序">盤差<span class="sort-icon" aria-hidden="true">⇅</span></th>
+                <th class="sortable" data-sort="diffReason" aria-sort="none" title="點擊排序">盤差原因<span class="sort-icon" aria-hidden="true">⇅</span></th>
+              </tr>
+            </thead>
+            <tbody id="stock-detail-tbody">
+              <tr><td colspan="7" class="empty">請選擇條件搜尋</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 分頁元件 -->
+        <div class="pagination hidden" id="pagination">
+          <select id="per-page-select" class="page-select" aria-label="每頁顯示筆數">
+            <option value="10" selected>10 筆 / 頁</option>
+            <option value="20">20 筆 / 頁</option>
+            <option value="50">50 筆 / 頁</option>
+            <option value="100">100 筆 / 頁</option>
+          </select>
+          <button type="button" class="page-btn disabled" id="page-prev" aria-label="上一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-left"></use></svg></button>
+          <div id="page-numbers" style="display:flex; gap:6px; align-items:center;"></div>
+          <button type="button" class="page-btn" id="page-next" aria-label="下一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-right"></use></svg></button>
+          <span class="page-info">共 <span id="total-pages">1</span> 頁 / <span id="total-items">0</span> 筆</span>
+        </div>
+
+        <div class="stock-foot-note hidden" id="current-warehouse-stock-row">
+          <span>當前倉庫存量：<span id="current-warehouse-stock-val">0</span></span>
+        </div>
+
+        <div id="table-loading" class="block-loading hidden"><div class="spinner"></div></div>
+      </div>
+    </section>
+
+    <!-- 區塊二：下轄倉庫庫存明細（依權限動態顯示中繼倉庫或作業區倉庫明細） -->
+    <section class="panel accordion-panel is-collapsed" id="panel-regional-detail">
+      <button type="button" class="accordion-head" id="toggle-regional-detail" aria-expanded="false" aria-controls="body-regional-detail">
+        <span id="accordion-region-title">中繼倉庫庫存明細</span>
+        <span class="accordion-chevron" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+        </span>
+      </button>
+      <div class="accordion-body" id="body-regional-detail">
+        <div class="table-scroll">
+          <table class="detail-table" id="regional-detail-table">
+            <thead id="regional-detail-thead">
+              <tr>
+                <th class="center" style="width: 68px;">序號</th>
+                <th class="sortable" data-sort="warehouse" aria-sort="none" title="點擊排序">倉庫<span class="sort-icon" aria-hidden="true">⇅</span></th>
+                <th class="num-col sortable" data-sort="inQty" aria-sort="none" title="點擊排序">入庫數量<span class="sort-icon" aria-hidden="true">⇅</span></th>
+                <th class="num-col sortable" data-sort="receiveQty" aria-sort="none" title="點擊排序">領用量<span class="sort-icon" aria-hidden="true">⇅</span></th>
+                <th class="num-col sortable" data-sort="transferQty" aria-sort="none" title="點擊排序">調貨<span class="sort-icon" aria-hidden="true">⇅</span></th>
+                <th class="num-col sortable" data-sort="diffQty" aria-sort="none" title="點擊排序">盤差<span class="sort-icon" aria-hidden="true">⇅</span></th>
+                <th class="num-col sortable" data-sort="stockQty" aria-sort="none" title="點擊排序">庫存量<span class="sort-icon" aria-hidden="true">⇅</span></th>
+              </tr>
+            </thead>
+            <tbody id="regional-detail-tbody">
+              <tr><td colspan="7" class="empty">請選擇條件搜尋</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="stock-foot-note hidden" id="regional-stock-total-row">
+          <span>合計：<span id="regional-stock-total-val">0</span></span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ==================== 分頁二：廠商入庫 ==================== -->
+  <div id="tab-vendor-in-view" class="hidden">
+    <!-- 廠商入庫查詢條件 -->
+    <section class="panel filters" aria-label="廠商入庫查詢條件">
+      <div class="field">
+        <label for="vendor-query-warehouse">倉庫入庫 <b>*</b></label>
+        <div class="combo-select-wrap" id="vendor-wh-combo-wrap">
+          <input type="text" id="vendor-query-warehouse" class="filter-input" autocomplete="off" placeholder="請選擇或輸入文字" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="vendor-wh-combo-menu">
+          <button type="button" class="combo-clear-btn hidden" id="btn-clear-vendor-wh" title="清除倉庫入庫" aria-label="清除倉庫入庫">&times;</button>
+          <button type="button" class="combo-arrow-btn" id="btn-toggle-vendor-wh" title="展開倉庫入庫選單" aria-label="展開倉庫入庫選單">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="combo-dropdown-menu hidden" id="vendor-wh-combo-menu" role="listbox"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="vendor-query-item">物品 <b>*</b></label>
+        <select id="vendor-query-item" style="min-width: 150px;">
+          <option value="" selected disabled>請選擇</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="vendor-query-start-date">起始日 <b>*</b></label>
+        <input type="date" id="vendor-query-start-date" class="filter-input" style="width: 170px;">
+      </div>
+
+      <div class="field">
+        <label for="vendor-query-end-date">結束日 <b>*</b></label>
+        <input type="date" id="vendor-query-end-date" class="filter-input" style="width: 170px;">
+      </div>
+
+      <div class="search-actions" style="margin-left: 6px;">
+        <button type="button" class="btn primary" id="btn-vendor-search"><svg class="ico " aria-hidden="true"><use href="#ico-search"></use></svg>搜尋</button>
+        <button type="button" class="btn" id="btn-vendor-query-reset"><svg class="ico " aria-hidden="true"><use href="#ico-refresh-cw"></use></svg>清除</button>
+      </div>
+    </section>
+
+    <section class="panel claim-form-panel" style="margin-top: 15px;" aria-label="廠商入庫作業">
+      <div class="claim-items-split standalone-split">
+        <!-- 左側：廠商入庫紀錄列表 -->
+        <div style="position: relative;">
+          <div id="vendor-loading" class="block-loading hidden"><div class="spinner"></div></div>
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px;">
+            <div style="font-size: 15px; color: #556477; font-weight: 600;">入庫紀錄：<span id="vendor-count-display" style="color: #14264b; font-weight: 700;">0</span> 筆</div>
+          </div>
+
+          <div class="table-scroll">
+            <table class="detail-table" id="vendor-in-table">
+              <thead id="vendor-in-thead">
+                <tr>
+                  <th class="center" style="width: 68px;">序號</th>
+                  <th class="sortable is-sorted" data-sort="date" aria-sort="descending" title="點擊排序">入庫日期<span class="sort-icon" aria-hidden="true">▼</span></th>
+                  <th class="sortable" data-sort="warehouse" aria-sort="none" title="點擊排序">入庫倉庫<span class="sort-icon" aria-hidden="true">⇅</span></th>
+                  <th class="sortable" data-sort="goodsItem" aria-sort="none" title="點擊排序">物品<span class="sort-icon" aria-hidden="true">⇅</span></th>
+                  <th class="num-col sortable" data-sort="inQty" aria-sort="none" title="點擊排序">入庫數量<span class="sort-icon" aria-hidden="true">⇅</span></th>
+                  <th class="sortable" data-sort="operator" aria-sort="none" title="點擊排序">入庫人員<span class="sort-icon" aria-hidden="true">⇅</span></th>
+                  <th class="center" style="width: 80px;">編輯</th>
+                </tr>
+              </thead>
+              <tbody id="vendor-in-tbody">
+                <tr><td colspan="7" class="empty">尚無廠商入庫紀錄</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 廠商入庫分頁元件 -->
+          <div class="pagination hidden" id="vendor-pagination">
+            <select id="vendor-per-page-select" class="page-select" aria-label="每頁顯示筆數">
+              <option value="10" selected>10 筆 / 頁</option>
+              <option value="20">20 筆 / 頁</option>
+              <option value="50">50 筆 / 頁</option>
+              <option value="100">100 筆 / 頁</option>
+            </select>
+            <button type="button" class="page-btn disabled" id="vendor-page-prev" aria-label="上一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-left"></use></svg></button>
+            <div id="vendor-page-numbers" style="display:flex; gap:6px; align-items:center;"></div>
+            <button type="button" class="page-btn" id="vendor-page-next" aria-label="下一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-right"></use></svg></button>
+            <span class="page-info">共 <span id="vendor-total-pages">1</span> 頁 / <span id="vendor-total-items">0</span> 筆</span>
+          </div>
+        </div>
+
+        <!-- 右側：新增入庫物品表單卡片 -->
+        <div class="claim-add-box" aria-label="新增入庫物品">
+          <div class="claim-field">
+            <label for="vendor-warehouse">入庫倉庫 <b>*</b></label>
+            <select id="vendor-warehouse" class="claim-control">
+              <option value="" selected disabled>請選擇</option>
+              <option value="花蓮本會">花蓮本會</option>
+              <option value="內湖倉儲">內湖倉儲</option>
+              <option value="三重國際倉儲">三重國際倉儲</option>
+              <option value="台中清水">台中清水</option>
+            </select>
+          </div>
+
+          <div class="claim-field">
+            <label for="vendor-item">物品 <b>*</b></label>
+            <select id="vendor-item" class="claim-control">
+              <option value="" selected disabled>請選擇</option>
+              <option value="飛天">飛天</option>
+              <option value="生育禮盒">生育禮盒</option>
+              <option value="賀匾">賀匾</option>
+              <option value="法船">法船</option>
+            </select>
+          </div>
+
+          <div class="claim-field">
+            <label for="vendor-qty">入庫數量 <b>*</b></label>
+            <input type="number" id="vendor-qty" class="claim-control" min="1" step="1" placeholder="請輸入數量">
+          </div>
+
+          <button type="button" class="btn primary" id="btn-vendor-add" style="width: 100%; height: 42px; font-size: 15px; font-weight: 600;">新增入庫物品</button>
+          <button type="button" class="btn" id="btn-vendor-reset" style="width: 100%; height: 42px; font-size: 15px; font-weight: 600;">清除</button>
+          <div class="vendor-edit-actions hidden" id="vendor-edit-actions">
+            <button type="button" class="btn primary" id="btn-vendor-save">儲存</button>
+            <button type="button" class="btn" id="btn-vendor-leave">離開</button>
+            <button type="button" class="btn btn-danger-solid" id="btn-vendor-delete">刪除</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ==================== 分頁三：出庫 / 調貨 ==================== -->
+  <div id="tab-transfer-out-view" class="hidden">
+    <!-- 出庫 / 調貨查詢條件 -->
+    <section class="panel filters" aria-label="出庫與調貨查詢條件">
+      <div class="field">
+        <label for="transfer-query-warehouse">倉庫 <b>*</b></label>
+        <div class="combo-select-wrap" id="transfer-wh-combo-wrap">
+          <input type="text" id="transfer-query-warehouse" class="filter-input" autocomplete="off" placeholder="請選擇或輸入文字" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="transfer-wh-combo-menu">
+          <button type="button" class="combo-clear-btn hidden" id="btn-clear-transfer-wh" title="清除倉庫" aria-label="清除倉庫">&times;</button>
+          <button type="button" class="combo-arrow-btn" id="btn-toggle-transfer-wh" title="展開倉庫選單" aria-label="展開倉庫選單">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="combo-dropdown-menu hidden" id="transfer-wh-combo-menu" role="listbox"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="transfer-query-item">物品 <b>*</b></label>
+        <select id="transfer-query-item" style="min-width: 150px;">
+          <option value="" selected disabled>請選擇</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="transfer-query-start-date">起始日 <b>*</b></label>
+        <input type="date" id="transfer-query-start-date" class="filter-input" style="width: 170px;">
+      </div>
+
+      <div class="field">
+        <label for="transfer-query-end-date">結束日 <b>*</b></label>
+        <input type="date" id="transfer-query-end-date" class="filter-input" style="width: 170px;">
+      </div>
+
+      <div class="search-actions" style="margin-left: 6px;">
+        <button type="button" class="btn primary" id="btn-transfer-search"><svg class="ico " aria-hidden="true"><use href="#ico-search"></use></svg>搜尋</button>
+        <button type="button" class="btn" id="btn-transfer-query-reset"><svg class="ico " aria-hidden="true"><use href="#ico-refresh-cw"></use></svg>清除</button>
+      </div>
+    </section>
+
+    <section class="panel claim-form-panel" style="margin-top: 15px;" aria-label="出庫與調貨作業">
+      <div class="claim-items-split standalone-split">
+        <!-- 左側：出庫 / 調貨紀錄列表 -->
+        <div style="position: relative;">
+          <div id="transfer-loading" class="block-loading hidden"><div class="spinner"></div></div>
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px;">
+            <div style="font-size: 15px; color: #556477; font-weight: 600;">出庫 / 調貨紀錄：<span id="transfer-count-display" style="color: #14264b; font-weight: 700;">0</span> 筆</div>
+          </div>
+
+          <div class="table-scroll">
+            <table class="detail-table" id="transfer-out-table">
+              <thead id="transfer-out-thead">
+                <tr>
+                  <th class="center" style="width: 68px;">序號</th>
+                  <th class="sortable is-sorted" data-sort="date" aria-sort="descending" title="點擊排序">出庫日期<span class="sort-icon" aria-hidden="true">▼</span></th>
+                  <th class="sortable" data-sort="outWarehouse" aria-sort="none" title="點擊排序">出庫倉庫<span class="sort-icon" aria-hidden="true">⇅</span></th>
+                  <th class="sortable" data-sort="inWarehouse" aria-sort="none" title="點擊排序">入庫倉庫<span class="sort-icon" aria-hidden="true">⇅</span></th>
+                  <th class="sortable" data-sort="goodsItem" aria-sort="none" title="點擊排序">物品<span class="sort-icon" aria-hidden="true">⇅</span></th>
+                  <th class="num-col sortable" data-sort="outQty" aria-sort="none" title="點擊排序">出庫數量<span class="sort-icon" aria-hidden="true">⇅</span></th>
+                  <th class="sortable" data-sort="operator" aria-sort="none" title="點擊排序">出庫人員<span class="sort-icon" aria-hidden="true">⇅</span></th>
+                  <th class="center" style="width: 80px;">編輯</th>
+                  <th class="center sortable" data-sort="status" aria-sort="none" style="width: 96px;" title="點擊排序">狀態<span class="sort-icon" aria-hidden="true">⇅</span></th>
+                </tr>
+              </thead>
+              <tbody id="transfer-out-tbody">
+                <tr><td colspan="9" class="empty">尚無出庫 / 調貨紀錄</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 出庫 / 調貨分頁元件 -->
+          <div class="pagination hidden" id="transfer-pagination">
+            <select id="transfer-per-page-select" class="page-select" aria-label="每頁顯示筆數">
+              <option value="10" selected>10 筆 / 頁</option>
+              <option value="20">20 筆 / 頁</option>
+              <option value="50">50 筆 / 頁</option>
+              <option value="100">100 筆 / 頁</option>
+            </select>
+            <button type="button" class="page-btn disabled" id="transfer-page-prev" aria-label="上一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-left"></use></svg></button>
+            <div id="transfer-page-numbers" style="display:flex; gap:6px; align-items:center;"></div>
+            <button type="button" class="page-btn" id="transfer-page-next" aria-label="下一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-right"></use></svg></button>
+            <span class="page-info">共 <span id="transfer-total-pages">1</span> 頁 / <span id="transfer-total-items">0</span> 筆</span>
+          </div>
+        </div>
+
+        <!-- 右側：新增出庫 / 調貨表單卡片 -->
+        <div class="claim-add-box" aria-label="新增出庫或調貨物品">
+          <div class="choice" style="margin: 0; height: 32px;">
+            <label><input type="radio" name="transfer-mode" value="出庫" checked>出庫</label>
+            <label><input type="radio" name="transfer-mode" value="調貨">調貨</label>
+          </div>
+
+          <div class="claim-field">
+            <label for="transfer-out-warehouse">出庫倉庫 <b>*</b></label>
+            <select id="transfer-out-warehouse" class="claim-control">
+              <option value="" selected disabled>請選擇</option>
+            </select>
+          </div>
+
+          <div class="claim-field">
+            <label for="transfer-item">物品 <b>*</b></label>
+            <select id="transfer-item" class="claim-control">
+              <option value="" selected disabled>請選擇</option>
+            </select>
+          </div>
+          <div class="stock-inline-hint"><span>目前存量：<strong id="transfer-current-stock">0</strong></span><span>待簽收：<strong id="transfer-pending-stock" class="pending-val">0</strong></span></div>
+
+          <div class="claim-field">
+            <label for="transfer-in-warehouse">入庫倉庫 <b>*</b></label>
+            <select id="transfer-in-warehouse" class="claim-control">
+              <option value="" selected disabled>請選擇</option>
+            </select>
+          </div>
+
+          <div class="claim-field">
+            <label for="transfer-qty">出庫數量 <b>*</b></label>
+            <input type="number" id="transfer-qty" class="claim-control" min="1" step="1" placeholder="請輸入數量">
+          </div>
+
+          <button type="button" class="btn primary" id="btn-transfer-add" style="width: 100%; height: 42px; font-size: 15px; font-weight: 600;">新增出庫物品</button>
+          <button type="button" class="btn" id="btn-transfer-reset" style="width: 100%; height: 42px; font-size: 15px; font-weight: 600;">清除</button>
+          <div class="vendor-edit-actions hidden" id="transfer-edit-actions">
+            <button type="button" class="btn primary" id="btn-transfer-save">儲存</button>
+            <button type="button" class="btn" id="btn-transfer-leave">離開</button>
+            <button type="button" class="btn btn-danger-solid" id="btn-transfer-delete">刪除</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ==================== 分頁四：簽收入庫 ==================== -->
+  <div id="tab-sign-in-view" class="hidden">
+    <!-- 簽收入庫查詢條件 -->
+    <section class="panel filters" aria-label="簽收入庫查詢條件">
+      <div class="field">
+        <label for="signin-query-out-warehouse">出庫倉庫</label>
+        <div class="combo-select-wrap" id="signin-out-wh-combo-wrap">
+          <input type="text" id="signin-query-out-warehouse" class="filter-input" autocomplete="off" placeholder="請選擇或輸入文字" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="signin-out-wh-combo-menu">
+          <button type="button" class="combo-clear-btn hidden" id="btn-clear-signin-out-wh" title="清除出庫倉庫" aria-label="清除出庫倉庫">&times;</button>
+          <button type="button" class="combo-arrow-btn" id="btn-toggle-signin-out-wh" title="展開出庫倉庫選單" aria-label="展開出庫倉庫選單">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="combo-dropdown-menu hidden" id="signin-out-wh-combo-menu" role="listbox"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="signin-query-in-warehouse">入庫倉庫</label>
+        <div class="combo-select-wrap" id="signin-in-wh-combo-wrap">
+          <input type="text" id="signin-query-in-warehouse" class="filter-input" autocomplete="off" placeholder="請選擇或輸入文字" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="signin-in-wh-combo-menu">
+          <button type="button" class="combo-clear-btn hidden" id="btn-clear-signin-in-wh" title="清除入庫倉庫" aria-label="清除入庫倉庫">&times;</button>
+          <button type="button" class="combo-arrow-btn" id="btn-toggle-signin-in-wh" title="展開入庫倉庫選單" aria-label="展開入庫倉庫選單">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="combo-dropdown-menu hidden" id="signin-in-wh-combo-menu" role="listbox"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="signin-query-item">物品 <b>*</b></label>
+        <select id="signin-query-item" style="min-width: 150px;">
+          <option value="" selected disabled>請選擇</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="signin-query-start-date">起始日 <b>*</b></label>
+        <input type="date" id="signin-query-start-date" class="filter-input" style="width: 170px;">
+      </div>
+
+      <div class="field">
+        <label for="signin-query-end-date">結束日 <b>*</b></label>
+        <input type="date" id="signin-query-end-date" class="filter-input" style="width: 170px;">
+      </div>
+
+      <div class="search-actions" style="margin-left: 6px;">
+        <button type="button" class="btn primary" id="btn-signin-search"><svg class="ico " aria-hidden="true"><use href="#ico-search"></use></svg>搜尋</button>
+        <button type="button" class="btn" id="btn-signin-query-reset"><svg class="ico " aria-hidden="true"><use href="#ico-refresh-cw"></use></svg>清除</button>
+      </div>
+    </section>
+
+    <section class="panel table-panel" style="margin-top: 15px;" aria-label="簽收入庫作業">
+      <div id="signin-loading" class="block-loading hidden"><div class="spinner"></div></div>
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px;">
+        <div style="font-size: 15px; color: #556477; font-weight: 600;">簽收紀錄：<span id="signin-count-display" style="color: #14264b; font-weight: 700;">0</span> 筆</div>
+        <span class="pill warning" id="signin-pending-pill">待簽收：0 筆</span>
+      </div>
+
+      <div class="table-scroll">
+        <table class="detail-table" id="sign-in-table">
+          <thead id="sign-in-thead">
+            <tr>
+              <th class="center" style="width: 68px;">序號</th>
+              <th class="sortable is-sorted" data-sort="date" aria-sort="descending" title="點擊排序">出庫日期<span class="sort-icon" aria-hidden="true">▼</span></th>
+              <th class="sortable" data-sort="outWarehouse" aria-sort="none" title="點擊排序">出庫倉庫<span class="sort-icon" aria-hidden="true">⇅</span></th>
+              <th class="sortable" data-sort="goodsItem" aria-sort="none" title="點擊排序">物品<span class="sort-icon" aria-hidden="true">⇅</span></th>
+              <th class="num-col sortable" data-sort="outQty" aria-sort="none" title="點擊排序">出庫數量<span class="sort-icon" aria-hidden="true">⇅</span></th>
+              <th class="sortable" data-sort="inWarehouse" aria-sort="none" title="點擊排序">入庫倉庫<span class="sort-icon" aria-hidden="true">⇅</span></th>
+              <th class="sortable" data-sort="operator" aria-sort="none" title="點擊排序">出庫人員<span class="sort-icon" aria-hidden="true">⇅</span></th>
+              <th class="center" style="width: 152px;">簽收</th>
+            </tr>
+          </thead>
+          <tbody id="sign-in-tbody">
+            <tr><td colspan="8" class="empty">尚無簽收入庫紀錄</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 簽收入庫分頁元件 -->
+      <div class="pagination hidden" id="signin-pagination">
+        <select id="signin-per-page-select" class="page-select" aria-label="每頁顯示筆數">
+          <option value="10" selected>10 筆 / 頁</option>
+          <option value="20">20 筆 / 頁</option>
+          <option value="50">50 筆 / 頁</option>
+          <option value="100">100 筆 / 頁</option>
+        </select>
+        <button type="button" class="page-btn disabled" id="signin-page-prev" aria-label="上一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-left"></use></svg></button>
+        <div id="signin-page-numbers" style="display:flex; gap:6px; align-items:center;"></div>
+        <button type="button" class="page-btn" id="signin-page-next" aria-label="下一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-right"></use></svg></button>
+        <span class="page-info">共 <span id="signin-total-pages">1</span> 頁 / <span id="signin-total-items">0</span> 筆</span>
+      </div>
+    </section>
+  </div>
+
+  <!-- ==================== 分頁五：盤差作業（查詢 ＋ 依權限顯示右側編輯） ==================== -->
+  <div id="tab-diff-view" class="hidden">
+    <!-- 上方查詢條件 -->
+    <section class="panel filters" aria-label="盤差作業查詢條件">
+      <div class="field">
+        <label for="diff-query-warehouse">倉庫 <b>*</b></label>
+        <div class="combo-select-wrap" id="diff-wh-combo-wrap">
+          <input type="text" id="diff-query-warehouse" class="filter-input" autocomplete="off" placeholder="請選擇或輸入文字" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="diff-wh-combo-menu">
+          <button type="button" class="combo-clear-btn hidden" id="btn-clear-diff-wh" title="清除倉庫" aria-label="清除倉庫">&times;</button>
+          <button type="button" class="combo-arrow-btn" id="btn-toggle-diff-wh" title="展開倉庫選單" aria-label="展開倉庫選單">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="combo-dropdown-menu hidden" id="diff-wh-combo-menu" role="listbox"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="diff-query-item">物品 <b>*</b></label>
+        <select id="diff-query-item" style="min-width: 150px;">
+          <option value="" selected disabled>請選擇</option>
+          <option value="全部">全部</option>
+          <option value="飛天">飛天</option>
+          <option value="生育禮盒">生育禮盒</option>
+          <option value="賀匾">賀匾</option>
+          <option value="法船">法船</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="diff-query-start-date">起始日 <b>*</b></label>
+        <input type="date" id="diff-query-start-date" class="filter-input" style="width: 170px;">
+      </div>
+
+      <div class="field">
+        <label for="diff-query-end-date">結束日 <b>*</b></label>
+        <input type="date" id="diff-query-end-date" class="filter-input" style="width: 170px;">
+      </div>
+
+      <div class="search-actions" style="margin-left: 6px;">
+        <button type="button" class="btn primary" id="btn-diff-search"><svg class="ico " aria-hidden="true"><use href="#ico-search"></use></svg>搜尋</button>
+        <button type="button" class="btn" id="btn-diff-query-reset"><svg class="ico " aria-hidden="true"><use href="#ico-refresh-cw"></use></svg>清除</button>
+      </div>
+    </section>
+
+    <!-- 下方盤差作業面板：左側盤差列表、右側新增盤差原因（僅本會倉庫權限顯示） -->
+    <section class="panel claim-form-panel" style="margin-top: 15px;" aria-label="盤差作業">
+      <div class="claim-items-split standalone-split" id="diff-split-wrap">
+        <!-- 左側：盤差紀錄列表 -->
+        <div style="position: relative;">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px;">
+            <div style="font-size: 15px; color: #556477; font-weight: 600;">盤差紀錄：<span id="diff-count-display" style="color: #14264b; font-weight: 700;">0</span> 筆</div>
+          </div>
+
+          <div class="table-scroll">
+            <table class="detail-table" id="diff-table">
+              <thead id="diff-thead">
+                <tr>
+                  <th class="center" style="width: 68px;">序號</th>
+                  <th class="sortable is-sorted" data-sort="date" aria-sort="descending" title="點擊排序">盤差日期<span class="sort-icon" aria-hidden="true">▼</span></th>
+                  <th class="sortable" data-sort="warehouse" aria-sort="none" title="點擊排序">倉庫<span class="sort-icon" aria-hidden="true">⇅</span></th>
+                  <th class="sortable" data-sort="goodsItem" aria-sort="none" title="點擊排序">物品<span class="sort-icon" aria-hidden="true">⇅</span></th>
+                  <th class="num-col sortable" data-sort="diffQty" aria-sort="none" title="點擊排序">盤差數量<span class="sort-icon" aria-hidden="true">⇅</span></th>
+                  <th class="sortable" data-sort="diffReason" aria-sort="none" title="點擊排序">盤差原因<span class="sort-icon" aria-hidden="true">⇅</span></th>
+                  <th class="sortable" data-sort="operator" aria-sort="none" title="點擊排序">作業人員<span class="sort-icon" aria-hidden="true">⇅</span></th>
+                  <th class="center" style="width: 80px;">編輯</th>
+                </tr>
+              </thead>
+              <tbody id="diff-tbody">
+                <tr><td colspan="8" class="empty">請選擇條件搜尋</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 盤差作業分頁元件 -->
+          <div class="pagination hidden" id="diff-pagination">
+            <select id="diff-per-page-select" class="page-select" aria-label="每頁顯示筆數">
+              <option value="10" selected>10 筆 / 頁</option>
+              <option value="20">20 筆 / 頁</option>
+              <option value="50">50 筆 / 頁</option>
+              <option value="100">100 筆 / 頁</option>
+            </select>
+            <button type="button" class="page-btn disabled" id="diff-page-prev" aria-label="上一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-left"></use></svg></button>
+            <div id="diff-page-numbers" style="display:flex; gap:6px; align-items:center;"></div>
+            <button type="button" class="page-btn" id="diff-page-next" aria-label="下一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-right"></use></svg></button>
+            <span class="page-info">共 <span id="diff-total-pages">1</span> 頁 / <span id="diff-total-items">0</span> 筆</span>
+          </div>
+
+          <div id="diff-loading" class="block-loading hidden"><div class="spinner"></div></div>
+        </div>
+
+        <!-- 右側：新增盤差原因表單卡片（依權限顯示／隱藏） -->
+        <div class="claim-add-box" id="diff-edit-box" aria-label="新增盤差原因">
+          <div class="claim-field">
+            <label>盤差倉庫 <b>*</b></label>
+            <div class="choice diff-tier-choice" role="radiogroup" aria-label="盤差倉庫層級">
+              <label><input type="radio" name="diff-wh-tier" value="hq" checked>本會倉庫</label>
+              <label><input type="radio" name="diff-wh-tier" value="region">中繼倉庫</label>
+              <label><input type="radio" name="diff-wh-tier" value="area">作業區倉庫</label>
+            </div>
+            <div class="diff-wh-stack">
+              <select id="diff-wh-hq" class="claim-control" aria-label="本會倉庫">
+                <option value="" selected disabled>請選擇</option>
+              </select>
+              <select id="diff-wh-region" class="claim-control hidden" aria-label="中繼倉庫">
+                <option value="" selected disabled>請選擇</option>
+              </select>
+              <select id="diff-wh-area" class="claim-control hidden" aria-label="作業區倉庫" disabled>
+                <option value="" selected disabled>請選擇</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="claim-field">
+            <label for="diff-item">物品 <b>*</b></label>
+            <select id="diff-item" class="claim-control">
+              <option value="" selected disabled>請選擇</option>
+            </select>
+          </div>
+
+          <div class="claim-field">
+            <label for="diff-qty">盤差數量 <b>*</b></label>
+            <input type="number" id="diff-qty" class="claim-control" step="1" placeholder="請輸入數量（可為負數）">
+          </div>
+
+          <div class="claim-field">
+            <label for="diff-reason">盤差原因 <b>*</b></label>
+            <select id="diff-reason" class="claim-control">
+              <option value="" selected disabled>請選擇</option>
+              <option value="到貨點收誤差">到貨點收誤差</option>
+              <option value="包裝不完整有瑕疵">包裝不完整有瑕疵</option>
+              <option value="意外摔壞毀損">意外摔壞毀損</option>
+              <option value="遺漏登帳">遺漏登帳</option>
+              <option value="收領用單忘給東西">收領用單忘給東西</option>
+              <option value="途中遺失">途中遺失</option>
+              <option value="其它">其它</option>
+            </select>
+          </div>
+
+          <button type="button" class="btn primary" id="btn-diff-add" style="width: 100%; height: 42px; font-size: 15px; font-weight: 600;">新增盤差原因</button>
+          <button type="button" class="btn" id="btn-diff-reset" style="width: 100%; height: 42px; font-size: 15px; font-weight: 600;">清除</button>
+          <div class="diff-edit-actions hidden" id="diff-edit-actions">
+            <button type="button" class="btn primary" id="btn-diff-save">儲存</button>
+            <button type="button" class="btn" id="btn-diff-leave">離開</button>
+            <button type="button" class="btn btn-danger-solid" id="btn-diff-delete">刪除</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- 操作確認彈窗 -->
+<div class="overlay hidden" id="confirm-modal" style="z-index: 1300;">
+  <div class="modal dialog-modal">
+    <div class="modal-head dialog-head">
+      <h2 id="confirm-modal-title">操作確認</h2>
+      <button type="button" class="x" id="close-confirm" aria-label="關閉">&times;</button>
+    </div>
+    <div class="modal-body dialog-body" id="confirm-modal-body"></div>
+    <div class="modal-foot dialog-foot">
+      <button type="button" class="btn primary" id="btn-confirm-ok">確定</button>
+      <button type="button" class="btn" id="btn-confirm-cancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 單一按鈕提示彈窗 -->
+<div class="overlay hidden" id="alert-modal" style="z-index: 1350;">
+  <div class="modal dialog-modal">
+    <div class="modal-head dialog-head">
+      <h2>提示訊息</h2>
+      <button type="button" class="x" id="close-alert" aria-label="關閉">&times;</button>
+    </div>
+    <div class="modal-body dialog-body" id="alert-modal-body">欄位填寫不完整！</div>
+    <div class="modal-foot dialog-foot">
+      <button type="button" class="btn primary" id="btn-alert-ok">確定</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="js/navbar.js?v=350"></script>
+<script src="js/common.js?v=349"></script>
+<script src="js/goodsmanage.js?v=349"></script>
+
+</body>
+</html>
