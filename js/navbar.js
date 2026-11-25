@@ -96,7 +96,7 @@ document.addEventListener("DOMContentLoaded", function() {
         <li class="menu-node">
           <a class="menu-link has-dropdown" href="#"><span>系統設定</span><span class="mobile-arrow">▾</span></a>
           <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="#">維護匯款銀行</a></li>
+            <li><a class="dropdown-item" href="remitbank.html">維護匯款銀行</a></li>
             <li><a class="dropdown-item" href="#">維護作業區</a></li>
             <li><a class="dropdown-item" href="#">維護人員</a></li>
             <li><a class="dropdown-item" href="#">維護作業區倉庫</a></li>
