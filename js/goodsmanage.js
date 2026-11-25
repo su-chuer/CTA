@@ -3235,6 +3235,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     $('tab-btn-vendor-in').classList.toggle('hidden', currentRole !== 'hq');
     $('tab-btn-transfer-out').classList.toggle('hidden', currentRole === 'area');
+    const diffTabBtn = $('tab-btn-diff');
+    if (diffTabBtn) {
+      diffTabBtn.textContent = currentRole === 'hq' ? '盤差作業' : '盤差查詢';
+    }
     $('diff-edit-box').classList.toggle('hidden', currentRole !== 'hq');
     $('diff-split-wrap').classList.toggle('no-editor', currentRole !== 'hq');
 
