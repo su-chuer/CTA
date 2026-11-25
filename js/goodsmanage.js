@@ -1024,8 +1024,6 @@ document.addEventListener("DOMContentLoaded", () => {
                   regRow.stockQty = Math.max(0, Number(regRow.stockQty || 0) - qty);
                   if (isTransferBetweenRegions) {
                     regRow.transferQty = Number(regRow.transferQty || 0) - qty;
-                  } else {
-                    regRow.receiveQty = Number(regRow.receiveQty || 0) + qty;
                   }
                 }
               });
@@ -1612,6 +1610,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const clearGoodsStateLocalStorage = () => {
     try {
       localStorage.removeItem(GOODS_MANAGE_STORAGE_KEY);
+      localStorage.removeItem('cta_goodsreceive_state_v1');
     } catch (_) {}
   };
 
@@ -3298,19 +3297,34 @@ document.addEventListener("DOMContentLoaded", () => {
             stockQty: 0
           };
           const regBook = regionalInventoryDatasets[rgName] && regionalInventoryDatasets[rgName][itemVal];
+          const childAreas = areaWarehouses.filter(a => areaWarehouseRegions[a] === rgName);
+          // 領用量（receiveQty）：統計該中繼區下轄所有作業區在【聯誼物資領取作業】實際領取的數量
+          const areaReceivedTotal = childAreas.reduce((sum, areaName) => {
+            const aBook = areaInventoryDatasets[areaName] && areaInventoryDatasets[areaName][itemVal];
+            if (aBook && Array.isArray(aBook.movements)) {
+              const movRecv = aBook.movements.reduce((s, m) => s + Number(m.outQty || 0), 0);
+              return sum + movRecv;
+            }
+            const aRow = regBook && Array.isArray(regBook.areaStocks)
+              ? regBook.areaStocks.find(a => a.warehouse === areaName)
+              : null;
+            return sum + Number(aRow ? aRow.receiveQty : 0);
+          }, 0);
+
           if (regBook) {
             const movs = Array.isArray(regBook.movements) ? regBook.movements : [];
+            let directOutToArea = 0;
             const sums = movs.reduce((acc, m) => {
               if (areaWarehouses.includes(m.warehouse)) {
-                acc.receiveQty += Number(m.outQty || 0);
+                directOutToArea += Number(m.outQty || 0);
                 return acc;
               }
               acc.inQty += Number(m.inQty || 0);
-              acc.receiveQty += Number(m.outQty || 0);
+              directOutToArea += Number(m.outQty || 0);
               acc.transferQty += Number(m.transferQty || 0);
               acc.diffQty += Number(m.diffQty || 0);
               return acc;
-            }, { inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0 });
+            }, { inQty: 0, transferQty: 0, diffQty: 0 });
             const areaOutFromTransfers = transferOutRecords.reduce((sum, t) => {
               if ((t.signed || t.status === '已簽收') && t.outWarehouse === rgName && t.goodsItem === itemVal && areaWarehouses.includes(t.inWarehouse)) {
                 return sum + Number(t.outQty || 0);
@@ -3318,11 +3332,14 @@ document.addEventListener("DOMContentLoaded", () => {
               return sum;
             }, 0);
             const openQty = Number(regBook.openingStock || 0);
+            const totalTransferredToArea = directOutToArea + areaOutFromTransfers;
             baseRow.inQty = sums.inQty;
-            baseRow.receiveQty = sums.receiveQty + areaOutFromTransfers;
+            baseRow.receiveQty = areaReceivedTotal;
             baseRow.transferQty = sums.transferQty;
             baseRow.diffQty = sums.diffQty;
-            baseRow.stockQty = Math.max(0, openQty + sums.inQty - baseRow.receiveQty + sums.transferQty + sums.diffQty);
+            baseRow.stockQty = Math.max(0, openQty + sums.inQty - totalTransferredToArea + sums.transferQty + sums.diffQty);
+          } else {
+            baseRow.receiveQty = areaReceivedTotal;
           }
           return baseRow;
         });

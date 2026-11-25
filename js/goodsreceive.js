@@ -1,6 +1,16 @@
 document.addEventListener("DOMContentLoaded", () => {
   const { $, cleanTrim, toHyphenDate, toSlashDate, toast, alert: openAlertModal } = window.CTA;
 
+  const GOODS_MANAGE_STORAGE_KEY = 'cta_goodsmanage_state_v1';
+  const GOODS_RECEIVE_STORAGE_KEY = 'cta_goodsreceive_state_v1';
+
+  const DEFAULT_AREA_REGION_MAP = {
+    '金門': '北', '中和': '北', '中山': '北', '大同': '北', '萬華': '北', '信義': '北', '台北': '北',
+    '台中': '中', '彰化': '中', '南投': '中', '苗栗': '中', '雲林': '中',
+    '台南': '南', '高雄': '南', '屏東': '南', '嘉義': '南',
+    '花蓮': '東', '台東': '東', '宜蘭': '東'
+  };
+
   const formatUnitLabel = (raw) => {
     const text = cleanTrim(raw);
     if (!text) return '';
@@ -17,20 +27,188 @@ document.addEventListener("DOMContentLoaded", () => {
   let activeReceiveRecord = null;
   let currentReceiveRecords = [];
 
-  const dataReady = fetch('json/goods_receive_data.json?v=346', { cache: 'no-store' })
-    .then(res => res.ok ? res.json() : null)
-    .catch(() => null)
-    .then(rData => {
-      if (rData && typeof rData === 'object') {
-        receiveDatasets = rData.receiveDatasets && typeof rData.receiveDatasets === 'object'
-          ? rData.receiveDatasets
-          : {};
-        areaOptions = Object.keys(receiveDatasets);
-        if (typeof window.CTA.syncRecordedFloorMs === 'function') {
-          window.CTA.syncRecordedFloorMs(Object.values(receiveDatasets).flat());
+  const loadReceiveFromStorage = () => {
+    try {
+      const raw = localStorage.getItem(GOODS_RECEIVE_STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return (parsed && typeof parsed === 'object') ? parsed : null;
+    } catch (_) {
+      return null;
+    }
+  };
+
+  const saveReceiveToStorage = () => {
+    try {
+      localStorage.setItem(GOODS_RECEIVE_STORAGE_KEY, JSON.stringify({ receiveDatasets }));
+    } catch (_) {}
+  };
+
+  const loadOrInitGoodsManageState = async () => {
+    try {
+      const raw = localStorage.getItem(GOODS_MANAGE_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') return parsed;
+      }
+    } catch (_) {}
+
+    try {
+      const res = await fetch('json/goods_manage_data.json?v=349', { cache: 'no-store' });
+      if (res && res.ok) {
+        const json = await res.json();
+        if (json && typeof json === 'object') {
+          localStorage.setItem(GOODS_MANAGE_STORAGE_KEY, JSON.stringify(json));
+          return json;
         }
       }
+    } catch (_) {}
+    return null;
+  };
+
+  const computeAreaBookStock = (areaRec) => {
+    if (!areaRec || typeof areaRec !== 'object') return 0;
+    const opening = Number(areaRec.openingStock || 0);
+    const netMov = (Array.isArray(areaRec.movements) ? areaRec.movements : []).reduce((sum, m) => {
+      return sum + Number(m.inQty || 0) - Number(m.outQty || 0) + Number(m.transferQty || 0) + Number(m.diffQty || 0);
+    }, 0);
+    return Math.max(0, opening + netMov);
+  };
+
+  const syncReceiveDeductionToInventory = async (areaName, itemName, qty = 1, nowRec) => {
+    const state = await loadOrInitGoodsManageState();
+    if (!state || !areaName || !itemName) return { ok: true };
+
+    if (!state.areaInventoryDatasets || typeof state.areaInventoryDatasets !== 'object') {
+      state.areaInventoryDatasets = {};
+    }
+    if (!state.areaInventoryDatasets[areaName]) {
+      state.areaInventoryDatasets[areaName] = {};
+    }
+    if (!state.areaInventoryDatasets[areaName][itemName]) {
+      state.areaInventoryDatasets[areaName][itemName] = {
+        safetyStock: 2,
+        openingStock: 0,
+        movements: []
+      };
+    }
+
+    const areaItemBook = state.areaInventoryDatasets[areaName][itemName];
+    const currentAreaStock = computeAreaBookStock(areaItemBook);
+    if (currentAreaStock < qty) {
+      return {
+        ok: false,
+        message: `「${areaName} - ${itemName}」目前庫存量為 ${currentAreaStock} 件，庫存不足無法領取！`
+      };
+    }
+
+    if (!state.counters || typeof state.counters !== 'object') {
+      state.counters = { nextMovementId: 500 };
+    }
+    const movId = Number(state.counters.nextMovementId || 500);
+    state.counters.nextMovementId = movId + 1;
+
+    if (!Array.isArray(areaItemBook.movements)) areaItemBook.movements = [];
+    areaItemBook.movements.push({
+      id: movId,
+      date: nowRec.hyphen,
+      warehouse: '聯誼領取',
+      inQty: 0,
+      outQty: qty,
+      transferQty: 0,
+      diffQty: 0,
+      diffReason: '',
+      createdAtStr: nowRec.isoMs,
+      createdAtMs: nowRec.ms,
+      updatedAtStr: nowRec.isoMs,
+      updatedAtMs: nowRec.ms
     });
+
+    const areaRegionMap = (state.areaWarehouseRegions && typeof state.areaWarehouseRegions === 'object')
+      ? { ...DEFAULT_AREA_REGION_MAP, ...state.areaWarehouseRegions }
+      : DEFAULT_AREA_REGION_MAP;
+    const parentRegion = areaRegionMap[areaName] || '';
+
+    if (parentRegion) {
+      if (!state.regionalInventoryDatasets || typeof state.regionalInventoryDatasets !== 'object') {
+        state.regionalInventoryDatasets = {};
+      }
+      if (!state.regionalInventoryDatasets[parentRegion]) {
+        state.regionalInventoryDatasets[parentRegion] = {};
+      }
+      if (!state.regionalInventoryDatasets[parentRegion][itemName]) {
+        state.regionalInventoryDatasets[parentRegion][itemName] = {
+          safetyStock: 2,
+          openingStock: 0,
+          movements: [],
+          areaStocks: []
+        };
+      }
+      const regItemBook = state.regionalInventoryDatasets[parentRegion][itemName];
+      if (!Array.isArray(regItemBook.areaStocks)) regItemBook.areaStocks = [];
+      let areaRow = regItemBook.areaStocks.find(a => a.warehouse === areaName);
+      if (!areaRow) {
+        areaRow = {
+          warehouse: areaName,
+          inQty: 0,
+          receiveQty: 0,
+          transferQty: 0,
+          diffQty: 0,
+          stockQty: 0
+        };
+        regItemBook.areaStocks.push(areaRow);
+      }
+      areaRow.receiveQty = Number(areaRow.receiveQty || 0) + qty;
+      areaRow.stockQty = Math.max(0, Number(areaRow.stockQty || 0) - qty);
+
+      if (state.inventoryDatasets && typeof state.inventoryDatasets === 'object') {
+        Object.values(state.inventoryDatasets).forEach(whBook => {
+          const hqItemRec = whBook && whBook[itemName];
+          if (!hqItemRec || !Array.isArray(hqItemRec.regionalStocks)) return;
+          const regRow = hqItemRec.regionalStocks.find(r => r.warehouse === parentRegion);
+          if (regRow) {
+            regRow.receiveQty = Number(regRow.receiveQty || 0) + qty;
+            regRow.stockQty = Math.max(0, Number(regRow.stockQty || 0) - qty);
+          }
+        });
+      }
+    }
+
+    try {
+      localStorage.setItem(GOODS_MANAGE_STORAGE_KEY, JSON.stringify(state));
+    } catch (err) {
+      console.error('同步庫存至 localStorage 失敗：', err);
+    }
+
+    return { ok: true };
+  };
+
+  const dataReady = (async () => {
+    const saved = loadReceiveFromStorage();
+    if (saved && saved.receiveDatasets && typeof saved.receiveDatasets === 'object') {
+      receiveDatasets = saved.receiveDatasets;
+      areaOptions = Object.keys(receiveDatasets);
+      if (typeof window.CTA.syncRecordedFloorMs === 'function') {
+        window.CTA.syncRecordedFloorMs(Object.values(receiveDatasets).flat());
+      }
+      return;
+    }
+
+    const rData = await fetch('json/goods_receive_data.json?v=346', { cache: 'no-store' })
+      .then(res => res.ok ? res.json() : null)
+      .catch(() => null);
+
+    if (rData && typeof rData === 'object') {
+      receiveDatasets = rData.receiveDatasets && typeof rData.receiveDatasets === 'object'
+        ? rData.receiveDatasets
+        : {};
+      areaOptions = Object.keys(receiveDatasets);
+      saveReceiveToStorage();
+      if (typeof window.CTA.syncRecordedFloorMs === 'function') {
+        window.CTA.syncRecordedFloorMs(Object.values(receiveDatasets).flat());
+      }
+    }
+  })();
 
   // ==================== 領取作業彈窗 ====================
   const closeReceiveModal = () => {
@@ -86,7 +264,7 @@ document.addEventListener("DOMContentLoaded", () => {
     $(fid).addEventListener('input', (e) => e.target.classList.remove('highlight-error'));
   });
 
-  $('btn-receive-confirm').addEventListener('click', () => {
+  $('btn-receive-confirm').addEventListener('click', async () => {
     if (!activeReceiveRecord) return;
 
     if (activeReceiveRecord.goodsItem === '賀匾') {
@@ -117,6 +295,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const nowRec = window.CTA.getNowMsRecord();
     const personName = activeReceiveRecord.name;
     const itemName = activeReceiveRecord.goodsItem;
+    const targetArea = activeAreaKey;
+
+    const syncRes = await syncReceiveDeductionToInventory(targetArea, itemName, 1, nowRec);
+    if (!syncRes.ok) {
+      closeReceiveModal();
+      openAlertModal(syncRes.message || '目前作業區庫存不足，無法領取！');
+      return;
+    }
+
     activeReceiveRecord.received = true;
     activeReceiveRecord.receiveDate = nowRec.slash;
     activeReceiveRecord.receivedAtStr = nowRec.fullMs;
@@ -124,9 +311,10 @@ document.addEventListener("DOMContentLoaded", () => {
     activeReceiveRecord.updatedAtStr = nowRec.fullMs;
     activeReceiveRecord.updatedAtMs = nowRec.ms;
 
+    saveReceiveToStorage();
     closeReceiveModal();
     renderTable(getPendingReceiveList(activeAreaKey));
-    toast(`已完成「${personName}」的「${itemName}」領取作業。`);
+    toast(`已完成「${personName}」的「${itemName}」領取作業，已同步扣減「${targetArea}」庫存。`);
   });
 
   // ==================== 作業區 Combo-box 與分頁 ====================
