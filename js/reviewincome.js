@@ -587,14 +587,20 @@ document.addEventListener("DOMContentLoaded", () => {
     } else if (dataset.status === 'approved') {
       btnApprove.style.display = 'none';
       btnReject.style.display = 'none';
-      const approvedDate = item && item.date ? item.date.split(' ')[0] : '2026/11/08';
-      remark.value = (item && item.remark) ? item.remark : `已於 ${approvedDate} 由王4核可。`;
+      const rawDate = item ? (item.date || item.updatedAtStr || '') : '';
+      const approvedDate = rawDate ? rawDate.split(' ')[0] : '';
+      remark.value = (item && item.remark)
+        ? item.remark
+        : (approvedDate ? `已於 ${approvedDate} 由王4核可。` : '已由王4核可。');
       remark.disabled = true;
     } else if (dataset.status === 'revise') {
       btnApprove.style.display = 'none';
       btnReject.style.display = 'none';
-      const reviseDate = item && item.date ? item.date.split(' ')[0] : '2026/11/09';
-      remark.value = (item && item.remark) ? item.remark : `${reviseDate} 已由王4退回修正。`;
+      const rawDate = item ? (item.date || item.updatedAtStr || '') : '';
+      const reviseDate = rawDate ? rawDate.split(' ')[0] : '';
+      remark.value = (item && item.remark)
+        ? item.remark
+        : (reviseDate ? `${reviseDate} 已由王4退回修正。` : '已由王4退回修正。');
       remark.disabled = true;
     } else {
       btnApprove.style.display = 'none';
