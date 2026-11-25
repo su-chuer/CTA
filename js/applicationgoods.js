@@ -363,7 +363,7 @@ document.addEventListener("DOMContentLoaded", () => {
       $('form-process-date').value = todayHyphen;
       $('form-creator').value = '蘇2';
       $('form-status').value = '待領取';
-      $('form-apply-date').value = '';
+      $('form-apply-date').value = todayHyphen;
       $('form-receipt-count').value = '';
       $('form-remark').value = '';
 

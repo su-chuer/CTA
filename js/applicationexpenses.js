@@ -1,11 +1,10 @@
 document.addEventListener("DOMContentLoaded", () => {
   const {
-    $, cleanTrim, money, toHyphenDate, toSlashDate,
+    $, cleanTrim, money, toHyphenDate, toSlashDate, getTodayDates,
     toast, alert: openAlertModal, confirm: openConfirmModal
   } = window.CTA;
 
-  const todayHyphen = '2026-11-18';
-  const todaySlash = '2026/11/18';
+  const { slash: todaySlash, hyphen: todayHyphen } = getTodayDates();
 
   // ==================== 會員名冊（供「聯誼金」依委員號 / 慈誠號查詢，含夫妻同修選擇） ====================
   const extractTeamName = (xieliStr) => {
@@ -460,7 +459,7 @@ document.addEventListener("DOMContentLoaded", () => {
       $('form-process-date').value = todayHyphen;
       $('form-creator').value = '蘇2';
       $('form-status').value = '新申請';
-      $('form-apply-date').value = '';
+      $('form-apply-date').value = todayHyphen;
       $('form-receipt-count').value = '';
       $('form-remark').value = '';
 
