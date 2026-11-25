@@ -201,20 +201,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const executeSearch = async () => {
     await dataReady;
     const rawBank = cleanTrim($('filter-bank-code').value);
-    const rawName = cleanTrim($('filter-account-name').value);
-    const rawNum = cleanTrim($('filter-account-number').value);
+    const rawKeyword = cleanTrim($('filter-account-keyword').value);
 
     $('filter-bank-code').value = rawBank;
-    $('filter-account-name').value = rawName;
-    $('filter-account-number').value = rawNum;
+    $('filter-account-keyword').value = rawKeyword;
     filterBankCombo.close();
 
     $('table-loading').classList.remove('hidden');
     setTimeout(() => {
       const parsedBank = parseBankSelection(rawBank);
       const bankKw = rawBank.toLowerCase();
-      const nameKw = rawName.toLowerCase();
-      const numKw = rawNum.toLowerCase();
+      const kw = rawKeyword.toLowerCase();
 
       filteredAccounts = bankAccounts.filter(row => {
         if (rawBank) {
@@ -225,8 +222,11 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!fullBank.includes(bankKw)) return false;
           }
         }
-        if (nameKw && !String(row.accountName || '').toLowerCase().includes(nameKw)) return false;
-        if (numKw && !String(row.accountNumber || '').toLowerCase().includes(numKw)) return false;
+        if (kw) {
+          const matchName = String(row.accountName || '').toLowerCase().includes(kw);
+          const matchNum = String(row.accountNumber || '').toLowerCase().includes(kw);
+          if (!matchName && !matchNum) return false;
+        }
         return true;
       });
 
@@ -237,20 +237,17 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   $('btn-search').addEventListener('click', executeSearch);
-  ['filter-account-name', 'filter-account-number'].forEach(fid => {
-    $(fid).addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        executeSearch();
-      }
-    });
+  $('filter-account-keyword').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      executeSearch();
+    }
   });
 
   $('btn-reset').addEventListener('click', () => {
     filterBankCombo.setValue('');
     filterBankCombo.close();
-    $('filter-account-name').value = '';
-    $('filter-account-number').value = '';
+    $('filter-account-keyword').value = '';
     filteredAccounts = [...bankAccounts];
     pager.setPage(1);
     renderAccountTable();
