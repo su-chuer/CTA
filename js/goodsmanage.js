@@ -4089,6 +4089,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.CTA.registerModalEsc('sample-inventory-modal', closeSampleInventoryModal);
 
   $('btn-load-sample-data').addEventListener('click', () => {
+    clearGoodsStateLocalStorage();
     const sample = buildDefaultSampleDataset();
     inventoryDatasets = sample.inventoryDatasets;
     regionalInventoryDatasets = sample.regionalInventoryDatasets;
@@ -4119,7 +4120,7 @@ document.addEventListener("DOMContentLoaded", () => {
       renderDiffTable();
       updateTransferCurrentStockDisplay();
     }
-    toast('已套用預設範例庫存資料，可直接進行查詢與單據操作。');
+    toast('已清除舊快取並套用預設範例庫存資料，可直接進行查詢與單據操作。');
   });
 
   $('simulated-role').addEventListener('change', (e) => {
