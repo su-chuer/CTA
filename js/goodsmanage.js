@@ -296,7 +296,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // 2. 廠商入庫、簽收入庫、出庫 / 調貨、盤差作業：查詢條件物品選項（含「全部」）
-    const defaultAllItemIds = new Set(['vendor-query-item', 'transfer-query-item', 'diff-query-item']);
+    const defaultAllItemIds = new Set(['vendor-query-item', 'signin-query-item', 'transfer-query-item', 'diff-query-item']);
     ['vendor-query-item', 'signin-query-item', 'transfer-query-item', 'diff-query-item'].forEach(selId => {
       const sel = $(selId);
       if (!sel) return;
@@ -525,7 +525,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const reset = () => {
       combo.setValue('');
       combo.close();
-      const defaultAllItemIds = new Set(['vendor-query-item', 'transfer-query-item', 'diff-query-item']);
+      const defaultAllItemIds = new Set(['vendor-query-item', 'signin-query-item', 'transfer-query-item', 'diff-query-item']);
       $(itemId).value = defaultAllItemIds.has(itemId) ? '全部' : '';
       applyDefaultTodayDates();
       [inputId, itemId, startId, endId].forEach(fid => $(fid).classList.remove('highlight-error'));
@@ -834,14 +834,20 @@ document.addEventListener("DOMContentLoaded", () => {
       }, 220);
     };
 
+    const applySigninDefaults = () => {
+      const todayHyphen = getTodayDates().hyphen;
+      if ($('signin-query-item')) $('signin-query-item').value = '全部';
+      if ($('signin-query-start-date')) $('signin-query-start-date').value = todayHyphen;
+      if ($('signin-query-end-date')) $('signin-query-end-date').value = todayHyphen;
+    };
+    applySigninDefaults();
+
     const reset = () => {
       outCombo.setValue('');
       outCombo.close();
       inCombo.setValue('');
       inCombo.close();
-      $('signin-query-item').value = '';
-      $('signin-query-start-date').value = '';
-      $('signin-query-end-date').value = '';
+      applySigninDefaults();
       ['signin-query-out-warehouse', 'signin-query-in-warehouse', 'signin-query-item', 'signin-query-start-date', 'signin-query-end-date'].forEach(fid => {
         $(fid).classList.remove('highlight-error');
       });
