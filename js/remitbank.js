@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let bankAccounts = [];      // 全部匯款銀行帳戶
   let filteredAccounts = [];  // 目前查詢結果
 
-  let selectedAccountId = null; // null 代表「新增銀行相關資料」模式；number 代表「修改」模式
+  let selectedAccountId = null; // null 代表「新增匯款帳戶資料」模式；number 代表「修改」模式
   let draftStaff = [];          // [{ ldap, name }]
   let draftTeams = [];          // [{ code, name }]
   let activeSubTab = 'staff';   // 'staff' | 'team'
@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
       };
       localStorage.setItem(REMIT_BANK_STORAGE_KEY, JSON.stringify(payload));
     } catch (err) {
-      console.error('儲存匯款銀行資料失敗：', err);
+      console.error('儲存匯款帳戶資料失敗：', err);
     }
   };
 
@@ -157,7 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
     $('account-count-display').textContent = String(list.length);
 
     if (list.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="empty">查無符合條件的匯款銀行資料</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="empty">查無符合條件的匯款帳戶資料</td></tr>';
       pager.render(0, 1, 1);
       return;
     }
@@ -451,7 +451,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderHeqiModalTable(e.target.value);
   });
 
-  // ==================== 右側表單模式切換：修改模式 vs 新增銀行相關資料模式 ====================
+  // ==================== 右側表單模式切換：修改模式 vs 新增匯款帳戶資料模式 ====================
   const clearFormValidationErrors = () => {
     ['form-bank-code', 'form-account-name', 'form-account-number', 'form-ldap-input'].forEach(fid => {
       const el = $(fid);
@@ -464,7 +464,7 @@ document.addEventListener("DOMContentLoaded", () => {
     selectedAccountId = account.id;
     clearFormValidationErrors();
 
-    $('editor-mode-title').textContent = '修改匯款銀行資料';
+    $('editor-mode-title').textContent = '修改匯款帳戶資料';
     const badge = $('editor-mode-badge');
     badge.textContent = `序號 #${filteredAccounts.findIndex(r => r.id === account.id) + 1 || account.id}`;
     badge.className = 'status-badge pending';
@@ -492,7 +492,7 @@ document.addEventListener("DOMContentLoaded", () => {
     selectedAccountId = null;
     clearFormValidationErrors();
 
-    $('editor-mode-title').textContent = '新增銀行相關資料';
+    $('editor-mode-title').textContent = '新增匯款帳戶資料';
     const badge = $('editor-mode-badge');
     badge.textContent = '新增模式';
     badge.className = 'status-badge new-apply';
@@ -515,7 +515,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderAccountTable();
 
     if (showToastMsg) {
-      toast('已切換為「新增銀行相關資料」模式，請填寫欄位後按儲存。');
+      toast('已切換為「新增匯款帳戶資料」模式，請填寫欄位後按儲存。');
     }
     $('form-bank-code').focus();
   };
@@ -523,7 +523,7 @@ document.addEventListener("DOMContentLoaded", () => {
   $('btn-new-bank-mode').addEventListener('click', () => enterCreateMode(true));
   $('btn-switch-create-top').addEventListener('click', () => enterCreateMode(true));
 
-  // ==================== 儲存匯款銀行資料（新增 / 修改共用驗證與儲存） ====================
+  // ==================== 儲存匯款帳戶資料（新增 / 修改共用驗證與儲存） ====================
   $('btn-save-bank').addEventListener('click', async () => {
     await dataReady;
     const rawBank = cleanTrim($('form-bank-code').value);
@@ -575,7 +575,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const isCreate = selectedAccountId == null;
     const confirmText = isCreate
-      ? `確定要新增匯款銀行「<strong>${escapeAttr(formatBankLabel(parsedBank.code, parsedBank.name))} - ${escapeAttr(accName)}（${escapeAttr(accNum)}）</strong>」嗎？`
+      ? `確定要新增匯款帳戶「<strong>${escapeAttr(formatBankLabel(parsedBank.code, parsedBank.name))} - ${escapeAttr(accName)}（${escapeAttr(accNum)}）</strong>」嗎？`
       : `確定要儲存「<strong>${escapeAttr(formatBankLabel(parsedBank.code, parsedBank.name))} - ${escapeAttr(accName)}（${escapeAttr(accNum)}）</strong>」的修改嗎？`;
 
     openConfirmModal(confirmText, '確定', () => {
@@ -595,7 +595,7 @@ document.addEventListener("DOMContentLoaded", () => {
         saveStateToLocalStorage();
         pager.setPage(1);
         loadAccountIntoEditor(newRecord);
-        toast(`已新增匯款銀行「${accName} (${accNum})」`);
+        toast(`已新增匯款帳戶「${accName} (${accNum})」`);
       } else {
         const target = bankAccounts.find(r => r.id === selectedAccountId);
         if (!target) {
@@ -612,7 +612,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         saveStateToLocalStorage();
         loadAccountIntoEditor(target);
-        toast(`已儲存「${accName} (${accNum})」的匯款銀行資料`);
+        toast(`已儲存「${accName} (${accNum})」的匯款帳戶資料`);
       }
     });
   });
