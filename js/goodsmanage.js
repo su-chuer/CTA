@@ -1706,6 +1706,34 @@ document.addEventListener("DOMContentLoaded", () => {
     renderDiffTable();
   };
 
+  const reloadGoodsStateFromLocalStorage = () => {
+    const latest = loadGoodsStateFromLocalStorage();
+    if (latest && typeof latest === 'object') {
+      applyGoodsStateFromPayload(latest);
+      if (typeof window.CTA.syncRecordedFloorMs === 'function') {
+        window.CTA.syncRecordedFloorMs([
+          ...vendorInRecords,
+          ...signInRecords,
+          ...transferOutRecords,
+          ...diffRecords
+        ]);
+      }
+      return true;
+    }
+    return false;
+  };
+
+  window.addEventListener('storage', (e) => {
+    if (e.key === GOODS_MANAGE_STORAGE_KEY && reloadGoodsStateFromLocalStorage()) {
+      populateSelectOptions();
+      renderVendorInTable();
+      renderSignInTable();
+      renderTransferOutTable();
+      renderDiffTable();
+      updateTransferCurrentStockDisplay();
+    }
+  });
+
   const dataReady = loadInitialGoodsState();
 
 
@@ -3175,6 +3203,7 @@ document.addEventListener("DOMContentLoaded", () => {
     await dataReady;
 
     setTimeout(() => {
+      reloadGoodsStateFromLocalStorage();
       pager.setPage(1);
       const matchedWarehouse = rawWarehouse
         ? window.CTA.resolveOptionKey(rawWarehouse, myPermittedWarehouses)
