@@ -959,6 +959,7 @@ document.addEventListener("DOMContentLoaded", () => {
               });
             } else if (regionalWarehouses.includes(rec.outWarehouse)) {
               const isTransferBetweenRegions = regionalWarehouses.includes(rec.inWarehouse);
+              const isToAreaWarehouse = areaWarehouses.includes(rec.inWarehouse);
               if (!regionalInventoryDatasets[rec.outWarehouse]) regionalInventoryDatasets[rec.outWarehouse] = {};
               if (!regionalInventoryDatasets[rec.outWarehouse][rec.goodsItem]) {
                 regionalInventoryDatasets[rec.outWarehouse][rec.goodsItem] = {
@@ -968,21 +969,41 @@ document.addEventListener("DOMContentLoaded", () => {
                   areaStocks: []
                 };
               }
-              const outRegMovNow = getNowMsRecord();
-              regionalInventoryDatasets[rec.outWarehouse][rec.goodsItem].movements.push({
-                id: nextMovementId++,
-                date: outRegMovNow.hyphen,
-                warehouse: rec.inWarehouse,
-                inQty: 0,
-                outQty: isTransferBetweenRegions ? 0 : qty,
-                transferQty: isTransferBetweenRegions ? -qty : 0,
-                diffQty: 0,
-                diffReason: '',
-                createdAtStr: outRegMovNow.isoMs,
-                createdAtMs: outRegMovNow.ms,
-                updatedAtStr: outRegMovNow.isoMs,
-                updatedAtMs: outRegMovNow.ms
-              });
+              const regItemBook = regionalInventoryDatasets[rec.outWarehouse][rec.goodsItem];
+              if (!isToAreaWarehouse) {
+                const outRegMovNow = getNowMsRecord();
+                regItemBook.movements.push({
+                  id: nextMovementId++,
+                  date: outRegMovNow.hyphen,
+                  warehouse: rec.inWarehouse,
+                  inQty: 0,
+                  outQty: isTransferBetweenRegions ? 0 : qty,
+                  transferQty: isTransferBetweenRegions ? -qty : 0,
+                  diffQty: 0,
+                  diffReason: '',
+                  createdAtStr: outRegMovNow.isoMs,
+                  createdAtMs: outRegMovNow.ms,
+                  updatedAtStr: outRegMovNow.isoMs,
+                  updatedAtMs: outRegMovNow.ms
+                });
+              } else {
+                // 出庫至下轄作業區倉庫（如：北 → 台北）：反映在下方「作業區庫存明細」，不混入上方中繼區倉庫明細
+                if (!Array.isArray(regItemBook.areaStocks)) regItemBook.areaStocks = [];
+                let areaRow = regItemBook.areaStocks.find(a => a.warehouse === rec.inWarehouse);
+                if (!areaRow) {
+                  areaRow = {
+                    warehouse: rec.inWarehouse,
+                    inQty: 0,
+                    receiveQty: 0,
+                    transferQty: 0,
+                    diffQty: 0,
+                    stockQty: 0
+                  };
+                  regItemBook.areaStocks.push(areaRow);
+                }
+                areaRow.inQty = Number(areaRow.inQty || 0) + qty;
+                areaRow.stockQty = Math.max(0, Number(areaRow.stockQty || 0) + qty);
+              }
               Object.values(inventoryDatasets).forEach(whBook => {
                 const itemRec = whBook && whBook[rec.goodsItem];
                 if (!itemRec || !Array.isArray(itemRec.regionalStocks)) return;
@@ -1086,13 +1107,25 @@ document.addEventListener("DOMContentLoaded", () => {
                 updatedAtMs: inAreaMovNow.ms
               });
               const parentReg = areaWarehouseRegions[rec.inWarehouse];
-              const regBook = parentReg && regionalInventoryDatasets[parentReg] && regionalInventoryDatasets[parentReg][rec.goodsItem];
-              if (regBook && Array.isArray(regBook.areaStocks)) {
-                const areaRow = regBook.areaStocks.find(a => a.warehouse === rec.inWarehouse);
-                if (areaRow) {
-                  areaRow.inQty = Number(areaRow.inQty || 0) + qty;
-                  areaRow.stockQty = Number(areaRow.stockQty || 0) + qty;
+              if (parentReg && parentReg !== rec.outWarehouse) {
+                if (!regionalInventoryDatasets[parentReg]) regionalInventoryDatasets[parentReg] = {};
+                if (!regionalInventoryDatasets[parentReg][rec.goodsItem]) {
+                  regionalInventoryDatasets[parentReg][rec.goodsItem] = {
+                    safetyStock: 2,
+                    openingStock: 0,
+                    movements: [],
+                    areaStocks: []
+                  };
                 }
+                const regBook = regionalInventoryDatasets[parentReg][rec.goodsItem];
+                if (!Array.isArray(regBook.areaStocks)) regBook.areaStocks = [];
+                let areaRow = regBook.areaStocks.find(a => a.warehouse === rec.inWarehouse);
+                if (!areaRow) {
+                  areaRow = { warehouse: rec.inWarehouse, inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0, stockQty: 0 };
+                  regBook.areaStocks.push(areaRow);
+                }
+                areaRow.inQty = Number(areaRow.inQty || 0) + qty;
+                areaRow.stockQty = Math.max(0, Number(areaRow.stockQty || 0) + qty);
               }
             }
 
@@ -2504,13 +2537,25 @@ document.addEventListener("DOMContentLoaded", () => {
         updatedAtMs: nowRec.ms
       });
       const parentReg = areaWarehouseRegions[targetWh];
-      const regBook = parentReg && regionalInventoryDatasets[parentReg] && regionalInventoryDatasets[parentReg][itemVal];
-      if (regBook && Array.isArray(regBook.areaStocks)) {
-        const areaRow = regBook.areaStocks.find(a => a.warehouse === targetWh);
-        if (areaRow) {
-          areaRow.diffQty = Number(areaRow.diffQty || 0) + intQty;
-          areaRow.stockQty = Math.max(0, Number(areaRow.stockQty || 0) + intQty);
+      if (parentReg) {
+        if (!regionalInventoryDatasets[parentReg]) regionalInventoryDatasets[parentReg] = {};
+        if (!regionalInventoryDatasets[parentReg][itemVal]) {
+          regionalInventoryDatasets[parentReg][itemVal] = {
+            safetyStock: 2,
+            openingStock: 0,
+            movements: [],
+            areaStocks: []
+          };
         }
+        const regBook = regionalInventoryDatasets[parentReg][itemVal];
+        if (!Array.isArray(regBook.areaStocks)) regBook.areaStocks = [];
+        let areaRow = regBook.areaStocks.find(a => a.warehouse === targetWh);
+        if (!areaRow) {
+          areaRow = { warehouse: targetWh, inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0, stockQty: 0 };
+          regBook.areaStocks.push(areaRow);
+        }
+        areaRow.diffQty = Number(areaRow.diffQty || 0) + intQty;
+        areaRow.stockQty = Math.max(0, Number(areaRow.stockQty || 0) + intQty);
       }
     }
 
@@ -2671,13 +2716,25 @@ document.addEventListener("DOMContentLoaded", () => {
           createdAtStr: nowRec.isoMs, createdAtMs: nowRec.ms, updatedAtStr: nowRec.isoMs, updatedAtMs: nowRec.ms
         });
         const parentReg = areaWarehouseRegions[newTargetWh];
-        const regBook = parentReg && regionalInventoryDatasets[parentReg] && regionalInventoryDatasets[parentReg][newItemVal];
-        if (regBook && Array.isArray(regBook.areaStocks)) {
-          const areaRow = regBook.areaStocks.find(a => a.warehouse === newTargetWh);
-          if (areaRow) {
-            areaRow.diffQty = Number(areaRow.diffQty || 0) + newIntQty;
-            areaRow.stockQty = Math.max(0, Number(areaRow.stockQty || 0) + newIntQty);
+        if (parentReg) {
+          if (!regionalInventoryDatasets[parentReg]) regionalInventoryDatasets[parentReg] = {};
+          if (!regionalInventoryDatasets[parentReg][newItemVal]) {
+            regionalInventoryDatasets[parentReg][newItemVal] = {
+              safetyStock: 2,
+              openingStock: 0,
+              movements: [],
+              areaStocks: []
+            };
           }
+          const regBook = regionalInventoryDatasets[parentReg][newItemVal];
+          if (!Array.isArray(regBook.areaStocks)) regBook.areaStocks = [];
+          let areaRow = regBook.areaStocks.find(a => a.warehouse === newTargetWh);
+          if (!areaRow) {
+            areaRow = { warehouse: newTargetWh, inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0, stockQty: 0 };
+            regBook.areaStocks.push(areaRow);
+          }
+          areaRow.diffQty = Number(areaRow.diffQty || 0) + newIntQty;
+          areaRow.stockQty = Math.max(0, Number(areaRow.stockQty || 0) + newIntQty);
         }
       }
       return newMovId;
@@ -3138,6 +3195,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const openingStock = Math.max(0, baseOpeningStock + priorDelta);
 
       const filteredMovements = allMovements.filter(m => {
+        if (currentRole === 'region' && areaWarehouses.includes(m.warehouse)) return false;
         const d = String(m.date || '').trim();
         return (!startVal || d >= startVal) && (!endVal || d <= endVal);
       });
@@ -3161,7 +3219,38 @@ document.addEventListener("DOMContentLoaded", () => {
         rawQueriedRegional = sortRegionalStocksFixedOrder(itemRecord.regionalStocks);
         subTableTotal = applyRegionalSortAndRender();
       } else if (currentRole === 'region') {
-        rawQueriedRegional = Array.isArray(itemRecord.areaStocks) ? [...itemRecord.areaStocks] : [];
+        const existingMap = new Map(
+          (Array.isArray(itemRecord.areaStocks) ? itemRecord.areaStocks : []).map(r => [r.warehouse, { ...r }])
+        );
+        const childAreas = areaWarehouses.filter(a => areaWarehouseRegions[a] === matchedWarehouse);
+        const mergedAreas = childAreas.map(areaName => {
+          const baseRow = existingMap.get(areaName) || {
+            warehouse: areaName,
+            inQty: 0,
+            receiveQty: 0,
+            transferQty: 0,
+            diffQty: 0,
+            stockQty: 0
+          };
+          const areaBook = areaInventoryDatasets[areaName] && areaInventoryDatasets[areaName][itemVal];
+          if (areaBook && Array.isArray(areaBook.movements) && areaBook.movements.length > 0) {
+            const sums = areaBook.movements.reduce((acc, m) => {
+              acc.inQty += Number(m.inQty || 0);
+              acc.receiveQty += Number(m.outQty || 0);
+              acc.transferQty += Number(m.transferQty || 0);
+              acc.diffQty += Number(m.diffQty || 0);
+              return acc;
+            }, { inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0 });
+            const openQty = Number(areaBook.openingStock || 0);
+            baseRow.inQty = sums.inQty;
+            baseRow.receiveQty = sums.receiveQty;
+            baseRow.transferQty = sums.transferQty;
+            baseRow.diffQty = sums.diffQty;
+            baseRow.stockQty = Math.max(0, openQty + sums.inQty - sums.receiveQty + sums.transferQty + sums.diffQty);
+          }
+          return baseRow;
+        });
+        rawQueriedRegional = mergedAreas;
         subTableTotal = applyRegionalSortAndRender();
       } else {
         rawQueriedRegional = [];
