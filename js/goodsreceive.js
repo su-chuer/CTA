@@ -66,9 +66,34 @@ document.addEventListener("DOMContentLoaded", () => {
     return null;
   };
 
+  const computeBookStock = (rec) => {
+    if (!rec || typeof rec !== 'object') return 0;
+    const opening = Number(rec.openingStock || 0);
+    const netMov = (Array.isArray(rec.movements) ? rec.movements : []).reduce((sum, m) => {
+      return sum + Number(m.inQty || 0) - Number(m.outQty || 0) + Number(m.transferQty || 0) + Number(m.diffQty || 0);
+    }, 0);
+    return Math.max(0, opening + netMov);
+  };
+
   const syncReceiveDeductionToInventory = async (areaName, itemName, qty = 1, nowRec) => {
     const state = await loadOrInitGoodsManageState();
     if (!state || !areaName || !itemName) return { ok: true };
+
+    const areaRegionMap = (state.areaWarehouseRegions && typeof state.areaWarehouseRegions === 'object')
+      ? { ...DEFAULT_AREA_REGION_MAP, ...state.areaWarehouseRegions }
+      : DEFAULT_AREA_REGION_MAP;
+    const parentRegion = areaRegionMap[areaName] || '';
+
+    const areaRec = state.areaInventoryDatasets?.[areaName]?.[itemName];
+    const regRec = parentRegion ? state.regionalInventoryDatasets?.[parentRegion]?.[itemName] : null;
+    const availableStock = computeBookStock(areaRec) + computeBookStock(regRec);
+
+    if (availableStock < qty) {
+      return {
+        ok: false,
+        message: `「${areaName}（${parentRegion || '所屬'}中繼倉）- ${itemName}」目前庫存量為 ${availableStock} 件，庫存不足無法領取！`
+      };
+    }
 
     if (!state.areaInventoryDatasets || typeof state.areaInventoryDatasets !== 'object') {
       state.areaInventoryDatasets = {};
@@ -107,11 +132,6 @@ document.addEventListener("DOMContentLoaded", () => {
       updatedAtStr: nowRec.isoMs,
       updatedAtMs: nowRec.ms
     });
-
-    const areaRegionMap = (state.areaWarehouseRegions && typeof state.areaWarehouseRegions === 'object')
-      ? { ...DEFAULT_AREA_REGION_MAP, ...state.areaWarehouseRegions }
-      : DEFAULT_AREA_REGION_MAP;
-    const parentRegion = areaRegionMap[areaName] || '';
 
     if (parentRegion) {
       if (!state.regionalInventoryDatasets || typeof state.regionalInventoryDatasets !== 'object') {
@@ -281,7 +301,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const itemName = activeReceiveRecord.goodsItem;
     const targetArea = activeAreaKey;
 
-    await syncReceiveDeductionToInventory(targetArea, itemName, 1, nowRec);
+    const syncRes = await syncReceiveDeductionToInventory(targetArea, itemName, 1, nowRec);
+    if (!syncRes.ok) {
+      closeReceiveModal();
+      openAlertModal(syncRes.message || '目前中繼倉庫庫存不足，無法領取！');
+      return;
+    }
 
     activeReceiveRecord.received = true;
     activeReceiveRecord.receiveDate = nowRec.slash;
@@ -293,7 +318,7 @@ document.addEventListener("DOMContentLoaded", () => {
     saveReceiveToStorage();
     closeReceiveModal();
     renderTable(getPendingReceiveList(activeAreaKey));
-    toast(`已完成「${personName}」的「${itemName}」領取作業，已同步更新「${targetArea}」領用量。`);
+    toast(`已完成「${personName}」的「${itemName}」領取作業，已同步扣減「${targetArea}」所屬中繼倉庫庫存並更新領用量。`);
   });
 
   // ==================== 作業區 Combo-box 與分頁 ====================
