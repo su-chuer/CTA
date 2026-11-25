@@ -44,14 +44,29 @@
 .bank-status-cell {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+.bank-status-cell svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .bank-status-cell.is-active {
   color: #166534;
+  background: #dcfce7;
 }
 .bank-status-cell.is-inactive {
-  color: #64748b;
+  color: #475569;
+  background: #f1f5f9;
 }
 .bank-editor-header {
   display: flex;
@@ -415,7 +430,7 @@
 
 <script src="js/navbar.js?v=352"></script>
 <script src="js/common.js?v=349"></script>
-<script src="js/remitbank.js?v=354"></script>
+<script src="js/remitbank.js?v=355"></script>
 
 </body>
 </html>

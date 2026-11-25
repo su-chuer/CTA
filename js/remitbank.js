@@ -172,9 +172,11 @@ document.addEventListener("DOMContentLoaded", () => {
     tbody.innerHTML = pageData.map((row, idx) => {
       const isSelected = row.id === selectedAccountId;
       const isActive = row.status === '啟用';
+      const unlockSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>';
+      const lockSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>';
       const statusHtml = isActive
-        ? '<span class="bank-status-cell is-active">🔓 啟用</span>'
-        : '<span class="bank-status-cell is-inactive">🔒 停用</span>';
+        ? `<span class="bank-status-cell is-active">${unlockSvg}<span>啟用</span></span>`
+        : `<span class="bank-status-cell is-inactive">${lockSvg}<span>停用</span></span>`;
       return `
         <tr class="${isSelected ? 'is-selected' : ''}" data-id="${row.id}">
           <td class="center">${startIndex + idx + 1}</td>
