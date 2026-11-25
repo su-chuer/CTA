@@ -3297,20 +3297,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       });
 
-      if (!foundAnyRecord && targetWarehouses.length === 1) {
-        rawQueriedMovements = [];
-        rawQueriedRegional = [];
-        activeSummaryTotals = { inQty: 0, outQty: 0, transferQty: 0, diffQty: 0 };
-        $('kpi-safety-stock').textContent = '0';
-        $('kpi-opening-stock').textContent = '0';
-        $('kpi-total-stock').textContent = '0';
-        $('inventory-kpi-bar').classList.remove('hidden');
-        $('current-warehouse-stock-row').classList.add('hidden');
-        applyStockSortAndRender();
-        if (currentRole !== 'area') applyRegionalSortAndRender();
-        $('table-loading').classList.add('hidden');
-        return;
-      }
+
 
       const totals = combinedMovements.reduce((acc, m) => {
         acc.inQty += Number(m.inQty || 0);
