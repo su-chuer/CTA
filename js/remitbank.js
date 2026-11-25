@@ -113,7 +113,7 @@ document.addEventListener("DOMContentLoaded", () => {
     toggleBtnId: 'btn-toggle-filter-bank',
     getOptions: getBankOptions,
     beforeOpen: () => dataReady,
-    emptyText: '無相符銀行代碼',
+    emptyText: '無相符代碼 / 銀行名稱',
     onEnter: () => executeSearch()
   });
 
@@ -125,7 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
     toggleBtnId: 'btn-toggle-form-bank',
     getOptions: getBankOptions,
     beforeOpen: () => dataReady,
-    emptyText: '無相符銀行代碼',
+    emptyText: '無相符代碼 / 銀行名稱',
     onSelect: () => {
       $('form-bank-code').classList.remove('highlight-error');
     }

@@ -11,6 +11,15 @@
 <link rel="icon" href="images/logo.png" type="image/png">
 <style>
 /* === 維護匯款銀行專屬微調（沿用全站設計系統色彩與圓角規範） === */
+#filter-bank-combo-wrap {
+  width: 240px;
+}
+#filter-bank-combo-menu .combo-option-item,
+#form-bank-combo-menu .combo-option-item {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .bank-split-layout {
   display: grid;
   grid-template-columns: 1.45fr 1fr;
@@ -166,11 +175,11 @@
   <!-- ==================== 頂部查詢條件 ==================== -->
   <section class="panel filters" aria-label="匯款銀行查詢條件">
     <div class="field">
-      <label for="filter-bank-code">銀行代碼</label>
+      <label for="filter-bank-code">代碼 / 銀行名稱</label>
       <div class="combo-select-wrap wide" id="filter-bank-combo-wrap">
-        <input type="text" id="filter-bank-code" class="filter-input" autocomplete="off" placeholder="請選擇或輸入代碼/銀行名稱" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="filter-bank-combo-menu">
-        <button type="button" class="combo-clear-btn hidden" id="btn-clear-filter-bank" title="清除銀行代碼" aria-label="清除銀行代碼">&times;</button>
-        <button type="button" class="combo-arrow-btn" id="btn-toggle-filter-bank" title="展開銀行代碼選單" aria-label="展開銀行代碼選單">
+        <input type="text" id="filter-bank-code" class="filter-input" autocomplete="off" placeholder="請選擇或輸入文字" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="filter-bank-combo-menu">
+        <button type="button" class="combo-clear-btn hidden" id="btn-clear-filter-bank" title="清除代碼 / 銀行名稱" aria-label="清除代碼 / 銀行名稱">&times;</button>
+        <button type="button" class="combo-arrow-btn" id="btn-toggle-filter-bank" title="展開代碼 / 銀行名稱選單" aria-label="展開代碼 / 銀行名稱選單">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </button>
         <div class="combo-dropdown-menu hidden" id="filter-bank-combo-menu" role="listbox"></div>
@@ -252,8 +261,8 @@
           <label for="form-bank-code">銀行代碼 <b>*</b></label>
           <div class="combo-select-wrap" id="form-bank-combo-wrap" style="width: 100%;">
             <input type="text" id="form-bank-code" class="claim-control" style="padding-right: 54px;" autocomplete="off" placeholder="請選擇或輸入銀行代碼／名稱" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="form-bank-combo-menu">
-            <button type="button" class="combo-clear-btn hidden" id="btn-clear-form-bank" title="清除銀行代碼" aria-label="清除銀行代碼">&times;</button>
-            <button type="button" class="combo-arrow-btn" id="btn-toggle-form-bank" title="展開銀行代碼選單" aria-label="展開銀行代碼選單">
+            <button type="button" class="combo-clear-btn hidden" id="btn-clear-form-bank" title="清除代碼 / 銀行名稱" aria-label="清除代碼 / 銀行名稱">&times;</button>
+            <button type="button" class="combo-arrow-btn" id="btn-toggle-form-bank" title="展開代碼 / 銀行名稱選單" aria-label="展開代碼 / 銀行名稱選單">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
             <div class="combo-dropdown-menu hidden" id="form-bank-combo-menu" role="listbox"></div>
@@ -411,7 +420,7 @@
 
 <script src="js/navbar.js?v=351"></script>
 <script src="js/common.js?v=349"></script>
-<script src="js/remitbank.js?v=351"></script>
+<script src="js/remitbank.js?v=352"></script>
 
 </body>
 </html>
