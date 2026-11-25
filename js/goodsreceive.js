@@ -26,6 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let activeItemFilter = '全部';
   let activeReceiveRecord = null;
   let currentReceiveRecords = [];
+  let isConfirmingReceive = false;
 
   const loadReceiveFromStorage = () => {
     try {
@@ -66,16 +67,80 @@ document.addEventListener("DOMContentLoaded", () => {
     return null;
   };
 
-  const computeBookStock = (rec) => {
-    if (!rec || typeof rec !== 'object') return 0;
-    const opening = Number(rec.openingStock || 0);
-    const netMov = (Array.isArray(rec.movements) ? rec.movements : []).reduce((sum, m) => {
-      return sum + Number(m.inQty || 0) - Number(m.outQty || 0) + Number(m.transferQty || 0) + Number(m.diffQty || 0);
+  const computeSignedRegionAvailableStock = (state, parentRegion, itemName) => {
+    if (!state || !parentRegion || !itemName) return 0;
+    const regRec = state.regionalInventoryDatasets?.[parentRegion]?.[itemName];
+    if (!regRec) return 0;
+
+    const areaWarehouses = Array.isArray(state.areaWarehouses) ? state.areaWarehouses : Object.keys(DEFAULT_AREA_REGION_MAP);
+    const areaRegionMap = (state.areaWarehouseRegions && typeof state.areaWarehouseRegions === 'object')
+      ? { ...DEFAULT_AREA_REGION_MAP, ...state.areaWarehouseRegions }
+      : DEFAULT_AREA_REGION_MAP;
+
+    const opening = Number(regRec.openingStock || 0);
+    let directOutToArea = 0;
+    const sums = (Array.isArray(regRec.movements) ? regRec.movements : []).reduce((acc, m) => {
+      if (areaWarehouses.includes(m.warehouse)) {
+        directOutToArea += Number(m.outQty || 0);
+        return acc;
+      }
+      acc.inQty += Number(m.inQty || 0);
+      directOutToArea += Number(m.outQty || 0);
+      acc.transferQty += Number(m.transferQty || 0);
+      acc.diffQty += Number(m.diffQty || 0);
+      return acc;
+    }, { inQty: 0, transferQty: 0, diffQty: 0 });
+
+    const areaOutFromTransfers = (Array.isArray(state.transferOutRecords) ? state.transferOutRecords : []).reduce((sum, t) => {
+      if ((t.signed || t.status === '已簽收') && t.outWarehouse === parentRegion && t.goodsItem === itemName && areaWarehouses.includes(t.inWarehouse)) {
+        return sum + Number(t.outQty || 0);
+      }
+      return sum;
     }, 0);
-    return Math.max(0, opening + netMov);
+
+    const childAreas = areaWarehouses.filter(a => areaRegionMap[a] === parentRegion);
+    const areaReceivedTotal = childAreas.reduce((sum, areaName) => {
+      const aBook = state.areaInventoryDatasets?.[areaName]?.[itemName];
+      if (aBook && Array.isArray(aBook.movements)) {
+        return sum + aBook.movements.reduce((s, m) => s + Number(m.outQty || 0), 0);
+      }
+      const aRow = Array.isArray(regRec.areaStocks) ? regRec.areaStocks.find(a => a.warehouse === areaName) : null;
+      return sum + Number(aRow ? aRow.receiveQty : 0);
+    }, 0);
+
+    const areaDirectInTotal = childAreas.reduce((sum, areaName) => {
+      const aBook = state.areaInventoryDatasets?.[areaName]?.[itemName];
+      if (aBook && Array.isArray(aBook.movements)) {
+        return sum + aBook.movements.reduce((s, m) => s + Number(m.inQty || 0), 0);
+      }
+      return sum;
+    }, 0);
+
+    return opening + sums.inQty + sums.transferQty + sums.diffQty - areaReceivedTotal + Math.max(0, areaDirectInTotal - directOutToArea - areaOutFromTransfers);
+  };
+
+  const checkItemAvailableForArea = async (areaName, itemName, qty = 1) => {
+    const state = await loadOrInitGoodsManageState();
+    if (!state || !areaName || !itemName) return { ok: true, available: 999 };
+    const areaRegionMap = (state.areaWarehouseRegions && typeof state.areaWarehouseRegions === 'object')
+      ? { ...DEFAULT_AREA_REGION_MAP, ...state.areaWarehouseRegions }
+      : DEFAULT_AREA_REGION_MAP;
+    const parentRegion = areaRegionMap[areaName] || '';
+    const available = computeSignedRegionAvailableStock(state, parentRegion, itemName);
+    if (available < qty) {
+      return {
+        ok: false,
+        available: Math.max(0, available),
+        message: `「${areaName}（${parentRegion || '所屬'}中繼倉）- ${itemName}」目前剩餘庫存量為 ${Math.max(0, available)} 件，庫存不足無法領取！`
+      };
+    }
+    return { ok: true, available };
   };
 
   const syncReceiveDeductionToInventory = async (areaName, itemName, qty = 1, nowRec) => {
+    const check = await checkItemAvailableForArea(areaName, itemName, qty);
+    if (!check.ok) return check;
+
     const state = await loadOrInitGoodsManageState();
     if (!state || !areaName || !itemName) return { ok: true };
 
@@ -83,17 +148,6 @@ document.addEventListener("DOMContentLoaded", () => {
       ? { ...DEFAULT_AREA_REGION_MAP, ...state.areaWarehouseRegions }
       : DEFAULT_AREA_REGION_MAP;
     const parentRegion = areaRegionMap[areaName] || '';
-
-    const areaRec = state.areaInventoryDatasets?.[areaName]?.[itemName];
-    const regRec = parentRegion ? state.regionalInventoryDatasets?.[parentRegion]?.[itemName] : null;
-    const availableStock = computeBookStock(areaRec) + computeBookStock(regRec);
-
-    if (availableStock < qty) {
-      return {
-        ok: false,
-        message: `「${areaName}（${parentRegion || '所屬'}中繼倉）- ${itemName}」目前庫存量為 ${availableStock} 件，庫存不足無法領取！`
-      };
-    }
 
     if (!state.areaInventoryDatasets || typeof state.areaInventoryDatasets !== 'object') {
       state.areaInventoryDatasets = {};
@@ -163,7 +217,7 @@ document.addEventListener("DOMContentLoaded", () => {
         regItemBook.areaStocks.push(areaRow);
       }
       areaRow.receiveQty = Number(areaRow.receiveQty || 0) + qty;
-      areaRow.stockQty = Math.max(0, Number(areaRow.stockQty || 0) - qty);
+      areaRow.stockQty = Number(areaRow.stockQty || 0) - qty;
 
       if (state.inventoryDatasets && typeof state.inventoryDatasets === 'object') {
         Object.values(state.inventoryDatasets).forEach(whBook => {
@@ -172,7 +226,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const regRow = hqItemRec.regionalStocks.find(r => r.warehouse === parentRegion);
           if (regRow) {
             regRow.receiveQty = Number(regRow.receiveQty || 0) + qty;
-            regRow.stockQty = Math.max(0, Number(regRow.stockQty || 0) - qty);
+            regRow.stockQty = Number(regRow.stockQty || 0) - qty;
           }
         });
       }
@@ -230,8 +284,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  const openReceiveModal = (record) => {
-    if (!record) return;
+  const openReceiveModal = async (record) => {
+    if (!record || record.received) return;
+
+    const check = await checkItemAvailableForArea(activeAreaKey, record.goodsItem, 1);
+    if (!check.ok) {
+      openAlertModal(check.message);
+      return;
+    }
+
     activeReceiveRecord = record;
 
     $('receive-modal-message').innerHTML = `您確定要領取「<strong>${record.name}</strong>」的「<strong>${record.goodsItem}</strong>」嗎？`;
@@ -269,7 +330,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   $('btn-receive-confirm').addEventListener('click', async () => {
-    if (!activeReceiveRecord) return;
+    if (!activeReceiveRecord || isConfirmingReceive || activeReceiveRecord.received) return;
 
     if (activeReceiveRecord.goodsItem === '賀匾') {
       const embedEl = $('receive-embed-date');
@@ -296,29 +357,34 @@ document.addEventListener("DOMContentLoaded", () => {
       activeReceiveRecord.finishDate = toSlashDate(finishVal);
     }
 
-    const nowRec = window.CTA.getNowMsRecord();
-    const personName = activeReceiveRecord.name;
-    const itemName = activeReceiveRecord.goodsItem;
-    const targetArea = activeAreaKey;
+    isConfirmingReceive = true;
+    try {
+      const nowRec = window.CTA.getNowMsRecord();
+      const personName = activeReceiveRecord.name;
+      const itemName = activeReceiveRecord.goodsItem;
+      const targetArea = activeAreaKey;
 
-    const syncRes = await syncReceiveDeductionToInventory(targetArea, itemName, 1, nowRec);
-    if (!syncRes.ok) {
+      const syncRes = await syncReceiveDeductionToInventory(targetArea, itemName, 1, nowRec);
+      if (!syncRes.ok) {
+        closeReceiveModal();
+        openAlertModal(syncRes.message || '目前中繼倉庫庫存不足，無法領取！');
+        return;
+      }
+
+      activeReceiveRecord.received = true;
+      activeReceiveRecord.receiveDate = nowRec.slash;
+      activeReceiveRecord.receivedAtStr = nowRec.fullMs;
+      activeReceiveRecord.receivedAtMs = nowRec.ms;
+      activeReceiveRecord.updatedAtStr = nowRec.fullMs;
+      activeReceiveRecord.updatedAtMs = nowRec.ms;
+
+      saveReceiveToStorage();
       closeReceiveModal();
-      openAlertModal(syncRes.message || '目前中繼倉庫庫存不足，無法領取！');
-      return;
+      renderTable(getPendingReceiveList(activeAreaKey));
+      toast(`已完成「${personName}」的「${itemName}」領取作業，已同步扣減「${targetArea}」所屬中繼倉庫庫存並更新領用量。`);
+    } finally {
+      isConfirmingReceive = false;
     }
-
-    activeReceiveRecord.received = true;
-    activeReceiveRecord.receiveDate = nowRec.slash;
-    activeReceiveRecord.receivedAtStr = nowRec.fullMs;
-    activeReceiveRecord.receivedAtMs = nowRec.ms;
-    activeReceiveRecord.updatedAtStr = nowRec.fullMs;
-    activeReceiveRecord.updatedAtMs = nowRec.ms;
-
-    saveReceiveToStorage();
-    closeReceiveModal();
-    renderTable(getPendingReceiveList(activeAreaKey));
-    toast(`已完成「${personName}」的「${itemName}」領取作業，已同步扣減「${targetArea}」所屬中繼倉庫庫存並更新領用量。`);
   });
 
   // ==================== 作業區 Combo-box 與分頁 ====================
