@@ -108,17 +108,36 @@ document.addEventListener("DOMContentLoaded", () => {
   // ==================== 小放大鏡「請選擇銀行」Popup 彈窗（上方查詢 & 右側表單共用） ====================
   let bankModalTarget = 'filter';
 
+  const measureFilterTextWidth = (text, inputEl) => {
+    if (!text) return 240;
+    const canvas = measureFilterTextWidth._canvas || (measureFilterTextWidth._canvas = document.createElement('canvas'));
+    const ctx = canvas.getContext('2d');
+    const style = window.getComputedStyle(inputEl);
+    ctx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    const textWidth = Math.ceil(ctx.measureText(text).width);
+    // 左側 padding(14px) + 右側預留清除鈕與放大鏡空間(66px)
+    return Math.max(240, textWidth + 80);
+  };
+
   const setFilterBankValue = (val) => {
     const cleaned = cleanTrim(val);
-    $('filter-bank-code').value = cleaned;
+    const inputEl = $('filter-bank-code');
+    const wrapEl = $('filter-bank-picker-wrap');
+    inputEl.value = cleaned;
+    inputEl.title = cleaned;
     $('btn-clear-filter-bank').classList.toggle('hidden', !cleaned);
+    if (wrapEl) {
+      wrapEl.style.width = `${measureFilterTextWidth(cleaned, inputEl)}px`;
+    }
   };
 
   const setFormBankValue = (val) => {
     const cleaned = cleanTrim(val);
-    $('form-bank-code').value = cleaned;
+    const inputEl = $('form-bank-code');
+    inputEl.value = cleaned;
+    inputEl.title = cleaned;
     $('btn-clear-form-bank').classList.toggle('hidden', !cleaned);
-    $('form-bank-code').classList.remove('highlight-error');
+    inputEl.classList.remove('highlight-error');
   };
 
   const renderBankModalTable = (filterText = '') => {
