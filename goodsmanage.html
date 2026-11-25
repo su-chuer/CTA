@@ -33,7 +33,10 @@
     </select>
     <button type="button" class="btn primary small" id="btn-confirm-role">確認</button>
     <span class="role-simulator-hint hidden" id="role-simulator-hint"></span>
-    <button type="button" class="btn danger small" id="btn-clear-all-inventory" style="margin-left: auto;">清空庫存</button>
+    <div style="margin-left: auto; display: inline-flex; align-items: center; gap: 8px;">
+      <button type="button" class="btn danger small" id="btn-clear-all-inventory">清空庫存</button>
+      <button type="button" class="btn primary small" id="btn-view-sample">觀看範例</button>
+    </div>
   </div>
 
   <!-- 次功能頁籤列 -->
@@ -709,11 +712,26 @@
   </div>
 </div>
 
+<!-- 觀看範例：倉庫庫存預設表彈窗 -->
+<div class="overlay hidden" id="sample-inventory-modal" style="z-index: 1320;">
+  <div class="modal" style="width: min(1160px, 100%); display: flex; flex-direction: column; max-height: 92vh; padding: 0;">
+    <div class="modal-head" style="padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e1e7f0; background: #fff;">
+      <h2 style="margin: 0; font-size: 17px; color: #14264b;">倉庫庫存管理｜預設範例總表（本會 → 中繼 → 作業區）</h2>
+      <button type="button" class="x" id="close-sample-modal" aria-label="關閉">&times;</button>
+    </div>
+    <div class="modal-body" style="padding: 20px 24px; overflow-y: auto; flex: 1; background: #f8fafc;" id="sample-inventory-modal-body"></div>
+    <div class="modal-foot" style="padding: 14px 24px; border-top: 1px solid #e1e7f0; background: #fff; display: flex; justify-content: flex-end; gap: 10px;">
+      <button type="button" class="btn primary" id="btn-load-sample-data">套用此範例資料至系統</button>
+      <button type="button" class="btn" id="btn-sample-modal-close">關閉</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast hidden"></div>
 
 <script src="js/navbar.js?v=350"></script>
 <script src="js/common.js?v=349"></script>
-<script src="js/goodsmanage.js?v=373"></script>
+<script src="js/goodsmanage.js?v=374"></script>
 
 </body>
 </html>
