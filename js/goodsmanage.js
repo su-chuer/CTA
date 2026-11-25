@@ -299,8 +299,11 @@ document.addEventListener("DOMContentLoaded", () => {
     ['vendor-query-item', 'signin-query-item', 'transfer-query-item', 'diff-query-item'].forEach(selId => {
       const sel = $(selId);
       if (!sel) return;
-      const prev = sel.value;
-      sel.innerHTML = `<option value="" ${prev ? '' : 'selected'} disabled>請選擇</option>
+      const prev = sel.value || (selId === 'vendor-query-item' ? '全部' : '');
+      const placeholderHtml = selId === 'vendor-query-item'
+        ? ''
+        : `<option value="" ${prev ? '' : 'selected'} disabled>請選擇</option>`;
+      sel.innerHTML = `${placeholderHtml}
         <option value="全部" ${prev === '全部' ? 'selected' : ''}>全部</option>` +
         goodsItems.map(item => `<option value="${item}" ${item === prev ? 'selected' : ''}>${item}</option>`).join('');
     });
@@ -520,7 +523,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const reset = () => {
       combo.setValue('');
       combo.close();
-      $(itemId).value = '';
+      $(itemId).value = (itemId === 'vendor-query-item') ? '全部' : '';
       applyDefaultTodayDates();
       [inputId, itemId, startId, endId].forEach(fid => $(fid).classList.remove('highlight-error'));
       onReset();
