@@ -3337,7 +3337,7 @@ document.addEventListener("DOMContentLoaded", () => {
             baseRow.receiveQty = areaReceivedTotal;
             baseRow.transferQty = sums.transferQty;
             baseRow.diffQty = sums.diffQty;
-            baseRow.stockQty = Math.max(0, openQty + sums.inQty - totalTransferredToArea + sums.transferQty + sums.diffQty);
+            baseRow.stockQty = Math.max(0, openQty + sums.inQty - areaReceivedTotal - totalTransferredToArea + sums.transferQty + sums.diffQty);
           } else {
             baseRow.receiveQty = areaReceivedTotal;
           }
