@@ -586,10 +586,11 @@ document.addEventListener("DOMContentLoaded", () => {
     itemId: 'vendor-query-item', startId: 'vendor-query-start-date', endId: 'vendor-query-end-date',
     searchBtnId: 'btn-vendor-search', resetBtnId: 'btn-vendor-query-reset', loadingId: 'vendor-loading',
     warehouseLabel: '倉庫入庫',
-    onSearch: ({ matchedWarehouse, itemVal, startVal, endVal }) => {
+    requireWarehouse: false,
+    onSearch: ({ rawWarehouse, matchedWarehouse, itemVal, startVal, endVal }) => {
       hasActiveVendorFilter = true;
       filteredVendorRows = vendorInRecords.filter(r => {
-        if (!matchedWarehouse || r.warehouse !== matchedWarehouse) return false;
+        if (rawWarehouse && (!matchedWarehouse || r.warehouse !== matchedWarehouse)) return false;
         if (itemVal !== '全部' && r.goodsItem !== itemVal) return false;
         const d = String(r.date || '').trim();
         if (startVal && d < startVal) return false;
@@ -609,15 +610,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const renderVendorInTable = () => {
     const tbody = $('vendor-in-tbody');
-    let sourceList = hasActiveVendorFilter ? filteredVendorRows : (Array.isArray(vendorInRecords) ? vendorInRecords : []);
-    const list = sortRowsByState(sourceList, vendorSortState, true);
-
     syncVendorTableHeaders();
+
+    if (!hasActiveVendorFilter) {
+      $('vendor-count-display').textContent = '0';
+      tbody.innerHTML = `<tr><td colspan="7" class="empty">請選擇條件搜尋</td></tr>`;
+      vendorPager.render(0, 1, 1);
+      return;
+    }
+
+    const list = sortRowsByState(filteredVendorRows, vendorSortState, true);
     $('vendor-count-display').textContent = String(list.length);
 
     if (list.length === 0) {
-      const emptyMsg = hasActiveVendorFilter ? "查無符合條件的資料" : "尚無廠商入庫紀錄";
-      tbody.innerHTML = `<tr><td colspan="8" class="empty">${emptyMsg}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="empty">查無符合條件的資料</td></tr>`;
       vendorPager.render(0, 1, 1);
       return;
     }
@@ -840,18 +846,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const renderSignInTable = () => {
     const tbody = $('sign-in-tbody');
-    let sourceList = (hasActiveSignInFilter ? filteredSignInRows : getRoleFilteredSignInRecords())
-      .filter(r => !r.returned && r.status !== '退回');
+    syncSignInTableHeaders();
+
+    if (!hasActiveSignInFilter) {
+      $('signin-count-display').textContent = '0';
+      $('signin-pending-pill').textContent = '待簽收：0 筆';
+      tbody.innerHTML = `<tr><td colspan="8" class="empty">請選擇條件搜尋</td></tr>`;
+      signInPager.render(0, 1, 1);
+      return;
+    }
+
+    const sourceList = filteredSignInRows.filter(r => !r.returned && r.status !== '退回');
     const list = sortRowsByState(sourceList, signInSortState, true);
 
-    syncSignInTableHeaders();
     $('signin-count-display').textContent = String(list.length);
     const pendingCount = list.filter(r => !r.signed && !r.returned).length;
     $('signin-pending-pill').textContent = `待簽收：${pendingCount} 筆`;
 
     if (list.length === 0) {
-      const emptyMsg = hasActiveSignInFilter ? "查無符合條件的資料" : "尚無簽收入庫紀錄";
-      tbody.innerHTML = `<tr><td colspan="8" class="empty">${emptyMsg}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" class="empty">查無符合條件的資料</td></tr>`;
       signInPager.render(0, 1, 1);
       return;
     }
@@ -1142,8 +1155,16 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             updateTransferCurrentStockDisplay();
-            transferFilter.reset();
-            signinFilter.reset();
+            if (hasActiveTransferFilter) {
+              $('btn-transfer-search').click();
+            } else {
+              renderTransferOutTable();
+            }
+            if (hasActiveSignInFilter) {
+              $('btn-signin-search').click();
+            } else {
+              renderSignInTable();
+            }
             syncGoodsApi(GOODS_API_CONFIG.endpoints.signInConfirm, 'POST', { action: 'confirm', signInId: rec.id, transferId: rec.transferId });
             toast(`已完成「${rec.inWarehouse} - ${rec.goodsItem}」簽收入庫，庫存數量已更新。`);
           }
@@ -1296,11 +1317,12 @@ document.addEventListener("DOMContentLoaded", () => {
     clearBtnId: 'btn-clear-transfer-wh', toggleBtnId: 'btn-toggle-transfer-wh',
     itemId: 'transfer-query-item', startId: 'transfer-query-start-date', endId: 'transfer-query-end-date',
     searchBtnId: 'btn-transfer-search', resetBtnId: 'btn-transfer-query-reset', loadingId: 'transfer-loading',
-    onSearch: ({ matchedWarehouse, itemVal, startVal, endVal }) => {
+    requireWarehouse: false,
+    onSearch: ({ rawWarehouse, matchedWarehouse, itemVal, startVal, endVal }) => {
       hasActiveTransferFilter = true;
       const baseList = getRoleFilteredTransferRecords();
       filteredTransferRows = baseList.filter(r => {
-        if (!matchedWarehouse || (r.outWarehouse !== matchedWarehouse && r.inWarehouse !== matchedWarehouse)) return false;
+        if (rawWarehouse && (!matchedWarehouse || (r.outWarehouse !== matchedWarehouse && r.inWarehouse !== matchedWarehouse))) return false;
         if (itemVal !== '全部' && r.goodsItem !== itemVal) return false;
         const d = String(r.date || '').trim();
         if (startVal && d < startVal) return false;
@@ -1320,15 +1342,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const renderTransferOutTable = () => {
     const tbody = $('transfer-out-tbody');
-    let sourceList = hasActiveTransferFilter ? filteredTransferRows : getRoleFilteredTransferRecords();
-    const list = sortRowsByState(sourceList, transferSortState, true);
-
     syncTransferTableHeaders();
+
+    if (!hasActiveTransferFilter) {
+      $('transfer-count-display').textContent = '0';
+      tbody.innerHTML = `<tr><td colspan="9" class="empty">請選擇條件搜尋</td></tr>`;
+      transferPager.render(0, 1, 1);
+      return;
+    }
+
+    const list = sortRowsByState(filteredTransferRows, transferSortState, true);
     $('transfer-count-display').textContent = String(list.length);
 
     if (list.length === 0) {
-      const emptyMsg = hasActiveTransferFilter ? "查無符合條件的資料" : "尚無出庫 / 調貨紀錄";
-      tbody.innerHTML = `<tr><td colspan="9" class="empty">${emptyMsg}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" class="empty">查無符合條件的資料</td></tr>`;
       transferPager.render(0, 1, 1);
       return;
     }
@@ -1413,23 +1440,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const colCount = canEditDiff ? 8 : 7;
     syncDiffTableHeaders();
 
-    if (!hasActiveDiffFilter && currentRole !== 'hq') {
+    if (!hasActiveDiffFilter) {
       $('diff-count-display').textContent = '0';
       tbody.innerHTML = `<tr><td colspan="${colCount}" class="empty">請選擇條件搜尋</td></tr>`;
       diffPager.render(0, 1, 1);
       return;
     }
 
-    const sourceRows = hasActiveDiffFilter
-      ? filteredDiffRows
-      : (Array.isArray(diffRecords) ? diffRecords : []);
-    const list = sortRowsByState(sourceRows, diffSortState, true);
+    const list = sortRowsByState(filteredDiffRows, diffSortState, true);
 
     $('diff-count-display').textContent = String(list.length);
 
     if (list.length === 0) {
-      const emptyMsg = hasActiveDiffFilter ? '查無符合條件的資料' : '尚無盤差紀錄';
-      tbody.innerHTML = `<tr><td colspan="${colCount}" class="empty">${emptyMsg}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="${colCount}" class="empty">查無符合條件的資料</td></tr>`;
       diffPager.render(0, 1, 1);
       return;
     }
@@ -1883,8 +1906,11 @@ document.addEventListener("DOMContentLoaded", () => {
     $('vendor-warehouse').value = '';
     $('vendor-item').value = '';
     $('vendor-qty').value = '';
-    vendorPager.setPage(1);
-    vendorFilter.reset();
+    if (hasActiveVendorFilter) {
+      $('btn-vendor-search').click();
+    } else {
+      renderVendorInTable();
+    }
     updateTransferCurrentStockDisplay();
     syncGoodsApi(GOODS_API_CONFIG.endpoints.vendorIn, 'POST', { action: 'create', record: vendorInRecords[0] });
     toast(`已新增「${whVal} - ${itemVal}」入庫 ${money(intQty)} 件，庫存數量已更新。`);
@@ -1954,7 +1980,9 @@ document.addEventListener("DOMContentLoaded", () => {
     rec.updatedAtStr = nowRec.isoMs;
     rec.updatedAtMs = nowRec.ms;
 
-    vendorFilter.reset();
+    if (hasActiveVendorFilter) {
+      $('btn-vendor-search').click();
+    }
     exitVendorEditMode();
     updateTransferCurrentStockDisplay();
     syncGoodsApi(`${GOODS_API_CONFIG.endpoints.vendorIn}/${encodeURIComponent(rec.id)}`, 'PUT', { action: 'update', record: { ...rec } });
@@ -2176,10 +2204,16 @@ document.addEventListener("DOMContentLoaded", () => {
     $('transfer-in-warehouse').value = '';
     $('transfer-qty').value = '';
     syncTransferWarehouseDropdowns(false);
-    transferPager.setPage(1);
-    signInPager.setPage(1);
-    transferFilter.reset();
-    signinFilter.reset();
+    if (hasActiveTransferFilter) {
+      $('btn-transfer-search').click();
+    } else {
+      renderTransferOutTable();
+    }
+    if (hasActiveSignInFilter) {
+      $('btn-signin-search').click();
+    } else {
+      renderSignInTable();
+    }
     syncGoodsApi(GOODS_API_CONFIG.endpoints.transferOut, 'POST', { action: 'create', transferRecord: transferOutRecords[0], signInRecord: signInRecords[0] });
     toast(`已新增「${outWh} → ${inWh}」${mode} ${itemVal} ${money(intQty)} 件（待簽收）。`);
   });
@@ -2259,8 +2293,12 @@ document.addEventListener("DOMContentLoaded", () => {
     rec.updatedAtStr = nowRec.isoMs;
     rec.updatedAtMs = nowRec.ms;
 
-    transferFilter.reset();
-    signinFilter.reset();
+    if (hasActiveTransferFilter) {
+      $('btn-transfer-search').click();
+    }
+    if (hasActiveSignInFilter) {
+      $('btn-signin-search').click();
+    }
     exitTransferEditMode();
     syncGoodsApi(`${GOODS_API_CONFIG.endpoints.transferOut}/${encodeURIComponent(rec.id)}`, 'PUT', { action: 'update', record: { ...rec } });
     toast('已成功儲存出庫 / 調貨紀錄。');
@@ -2565,7 +2603,11 @@ document.addEventListener("DOMContentLoaded", () => {
     qtyInput.value = '';
     reasonSel.value = '';
 
-    diffFilter.reset();
+    if (hasActiveDiffFilter) {
+      $('btn-diff-search').click();
+    } else {
+      renderDiffTable();
+    }
     updateTransferCurrentStockDisplay();
     syncGoodsApi(GOODS_API_CONFIG.endpoints.diff, 'POST', { action: 'create', record: diffRecords[0] });
     toast(`已新增「${targetWh} - ${itemVal}」盤差紀錄（${intQty > 0 ? '+' + money(intQty) : money(intQty)}），庫存數量已更新。`);
@@ -2808,7 +2850,9 @@ document.addEventListener("DOMContentLoaded", () => {
     rec.updatedAtStr = nowRec.isoMs;
     rec.updatedAtMs = nowRec.ms;
 
-    diffFilter.reset();
+    if (hasActiveDiffFilter) {
+      $('btn-diff-search').click();
+    }
     exitDiffEditMode();
     updateTransferCurrentStockDisplay();
     syncGoodsApi(`${GOODS_API_CONFIG.endpoints.diff}/${encodeURIComponent(rec.id)}`, 'PUT', { action: 'update', record: { ...rec } });
@@ -3096,10 +3140,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     let firstInvalid = null;
-    if (!rawWarehouse) {
-      $('filter-warehouse').classList.add('highlight-error');
-      firstInvalid = firstInvalid || $('filter-warehouse');
-    }
     if (!itemVal) {
       $('filter-item').classList.add('highlight-error');
       firstInvalid = firstInvalid || $('filter-item');
@@ -3115,7 +3155,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (firstInvalid) {
       firstInvalid.focus();
-      openAlertModal('請完整填寫必填查詢條件（倉庫、物品、起始日、結束日）！');
+      openAlertModal('請完整填寫必填查詢條件（物品、起始日、結束日）！');
       return;
     }
 
@@ -3133,7 +3173,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     setTimeout(() => {
       pager.setPage(1);
-      const matchedWarehouse = window.CTA.resolveOptionKey(rawWarehouse, myPermittedWarehouses);
+      const matchedWarehouse = rawWarehouse
+        ? window.CTA.resolveOptionKey(rawWarehouse, myPermittedWarehouses)
+        : '';
       if (matchedWarehouse) {
         warehouseCombo.setValue(matchedWarehouse);
       }
@@ -3141,7 +3183,14 @@ document.addEventListener("DOMContentLoaded", () => {
       stockSortState = { key: 'date', dir: 'desc' };
       regionalSortState = { key: '', dir: '' };
 
-      if (!matchedWarehouse) {
+      $('panel-regional-detail').classList.toggle('hidden', currentRole === 'area');
+      if (currentRole === 'hq') {
+        $('accordion-region-title').textContent = '中繼倉庫庫存明細';
+      } else if (currentRole === 'region') {
+        $('accordion-region-title').textContent = '作業區庫存明細';
+      }
+
+      if (rawWarehouse && !matchedWarehouse) {
         rawQueriedMovements = [];
         rawQueriedRegional = [];
         activeSummaryTotals = { inQty: 0, outQty: 0, transferQty: 0, diffQty: 0 };
@@ -3159,17 +3208,46 @@ document.addEventListener("DOMContentLoaded", () => {
       const tierDatasets = currentRole === 'hq'
         ? inventoryDatasets
         : (currentRole === 'region' ? regionalInventoryDatasets : areaInventoryDatasets);
-      const warehouseBook = tierDatasets[matchedWarehouse] || {};
-      const itemRecord = warehouseBook[itemVal] || null;
 
-      $('panel-regional-detail').classList.toggle('hidden', currentRole === 'area');
-      if (currentRole === 'hq') {
-        $('accordion-region-title').textContent = '中繼倉庫庫存明細';
-      } else if (currentRole === 'region') {
-        $('accordion-region-title').textContent = '作業區庫存明細';
-      }
+      const targetWarehouses = matchedWarehouse
+        ? [matchedWarehouse]
+        : [...myPermittedWarehouses];
 
-      if (!itemRecord) {
+      let safetyStock = 0;
+      let openingStock = 0;
+      let combinedMovements = [];
+      let foundAnyRecord = false;
+
+      targetWarehouses.forEach(whName => {
+        const warehouseBook = tierDatasets[whName] || {};
+        const itemRecord = warehouseBook[itemVal] || null;
+        if (!itemRecord) return;
+        foundAnyRecord = true;
+        safetyStock += Number(itemRecord.safetyStock || 0);
+        const baseOpening = Number(itemRecord.openingStock || 0);
+        const allMovs = Array.isArray(itemRecord.movements) ? itemRecord.movements : [];
+        const priorDelta = allMovs.reduce((acc, m) => {
+          const d = String(m.date || '').trim();
+          if (startVal && d < startVal) {
+            return acc + Number(m.inQty || 0) - Number(m.outQty || 0) + Number(m.transferQty || 0) + Number(m.diffQty || 0);
+          }
+          return acc;
+        }, 0);
+        openingStock += Math.max(0, baseOpening + priorDelta);
+
+        allMovs.forEach(m => {
+          if (currentRole === 'region' && areaWarehouses.includes(m.warehouse)) return;
+          const d = String(m.date || '').trim();
+          if ((!startVal || d >= startVal) && (!endVal || d <= endVal)) {
+            combinedMovements.push({
+              ...m,
+              warehouse: matchedWarehouse ? (m.warehouse || whName) : (m.warehouse || whName)
+            });
+          }
+        });
+      });
+
+      if (!foundAnyRecord && targetWarehouses.length === 1) {
         rawQueriedMovements = [];
         rawQueriedRegional = [];
         activeSummaryTotals = { inQty: 0, outQty: 0, transferQty: 0, diffQty: 0 };
@@ -3184,26 +3262,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      const safetyStock = Number(itemRecord.safetyStock || 0);
-      const baseOpeningStock = Number(itemRecord.openingStock || 0);
-      const allMovements = Array.isArray(itemRecord.movements) ? itemRecord.movements : [];
-
-      const priorDelta = allMovements.reduce((acc, m) => {
-        const d = String(m.date || '').trim();
-        if (startVal && d < startVal) {
-          return acc + Number(m.inQty || 0) - Number(m.outQty || 0) + Number(m.transferQty || 0) + Number(m.diffQty || 0);
-        }
-        return acc;
-      }, 0);
-      const openingStock = Math.max(0, baseOpeningStock + priorDelta);
-
-      const filteredMovements = allMovements.filter(m => {
-        if (currentRole === 'region' && areaWarehouses.includes(m.warehouse)) return false;
-        const d = String(m.date || '').trim();
-        return (!startVal || d >= startVal) && (!endVal || d <= endVal);
-      });
-
-      const totals = filteredMovements.reduce((acc, m) => {
+      const totals = combinedMovements.reduce((acc, m) => {
         acc.inQty += Number(m.inQty || 0);
         acc.outQty += Number(m.outQty || 0);
         acc.transferQty += Number(m.transferQty || 0);
@@ -3211,7 +3270,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return acc;
       }, { inQty: 0, outQty: 0, transferQty: 0, diffQty: 0 });
 
-      rawQueriedMovements = filteredMovements;
+      rawQueriedMovements = combinedMovements;
       activeSummaryTotals = totals;
 
       const rawCurrentWarehouseStock = totals.inQty - totals.outQty + totals.transferQty + totals.diffQty;
@@ -3219,39 +3278,66 @@ document.addEventListener("DOMContentLoaded", () => {
       let subTableTotal = 0;
 
       if (currentRole === 'hq') {
-        rawQueriedRegional = sortRegionalStocksFixedOrder(itemRecord.regionalStocks);
+        if (matchedWarehouse) {
+          const itemRecord = (inventoryDatasets[matchedWarehouse] || {})[itemVal];
+          rawQueriedRegional = sortRegionalStocksFixedOrder(itemRecord ? itemRecord.regionalStocks : []);
+        } else {
+          // 未選倉庫時，彙總所有中繼倉庫（北、中、南、東）該物品庫存
+          const regMap = new Map();
+          regionalWarehouses.forEach(rg => {
+            regMap.set(rg, { warehouse: rg, inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0, stockQty: 0 });
+          });
+          const seenRegFromHq = new Set();
+          warehouses.forEach(hqWh => {
+            const rec = (inventoryDatasets[hqWh] || {})[itemVal];
+            if (rec && Array.isArray(rec.regionalStocks)) {
+              rec.regionalStocks.forEach(r => {
+                if (!seenRegFromHq.has(r.warehouse)) {
+                  seenRegFromHq.add(r.warehouse);
+                  regMap.set(r.warehouse, { ...r });
+                }
+              });
+            }
+          });
+          rawQueriedRegional = sortRegionalStocksFixedOrder(Array.from(regMap.values()));
+        }
         subTableTotal = applyRegionalSortAndRender();
       } else if (currentRole === 'region') {
-        const existingMap = new Map(
-          (Array.isArray(itemRecord.areaStocks) ? itemRecord.areaStocks : []).map(r => [r.warehouse, { ...r }])
-        );
-        const childAreas = areaWarehouses.filter(a => areaWarehouseRegions[a] === matchedWarehouse);
-        const mergedAreas = childAreas.map(areaName => {
-          const baseRow = existingMap.get(areaName) || {
-            warehouse: areaName,
-            inQty: 0,
-            receiveQty: 0,
-            transferQty: 0,
-            diffQty: 0,
-            stockQty: 0
-          };
-          const areaBook = areaInventoryDatasets[areaName] && areaInventoryDatasets[areaName][itemVal];
-          if (areaBook && Array.isArray(areaBook.movements) && areaBook.movements.length > 0) {
-            const sums = areaBook.movements.reduce((acc, m) => {
-              acc.inQty += Number(m.inQty || 0);
-              acc.receiveQty += Number(m.outQty || 0);
-              acc.transferQty += Number(m.transferQty || 0);
-              acc.diffQty += Number(m.diffQty || 0);
-              return acc;
-            }, { inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0 });
-            const openQty = Number(areaBook.openingStock || 0);
-            baseRow.inQty = sums.inQty;
-            baseRow.receiveQty = sums.receiveQty;
-            baseRow.transferQty = sums.transferQty;
-            baseRow.diffQty = sums.diffQty;
-            baseRow.stockQty = Math.max(0, openQty + sums.inQty - sums.receiveQty + sums.transferQty + sums.diffQty);
-          }
-          return baseRow;
+        const targetRegions = matchedWarehouse ? [matchedWarehouse] : [...regionalWarehouses];
+        const mergedAreas = [];
+        targetRegions.forEach(rg => {
+          const itemRecord = (regionalInventoryDatasets[rg] || {})[itemVal] || {};
+          const existingMap = new Map(
+            (Array.isArray(itemRecord.areaStocks) ? itemRecord.areaStocks : []).map(r => [r.warehouse, { ...r }])
+          );
+          const childAreas = areaWarehouses.filter(a => areaWarehouseRegions[a] === rg);
+          childAreas.forEach(areaName => {
+            const baseRow = existingMap.get(areaName) || {
+              warehouse: areaName,
+              inQty: 0,
+              receiveQty: 0,
+              transferQty: 0,
+              diffQty: 0,
+              stockQty: 0
+            };
+            const areaBook = areaInventoryDatasets[areaName] && areaInventoryDatasets[areaName][itemVal];
+            if (areaBook && Array.isArray(areaBook.movements) && areaBook.movements.length > 0) {
+              const sums = areaBook.movements.reduce((acc, m) => {
+                acc.inQty += Number(m.inQty || 0);
+                acc.receiveQty += Number(m.outQty || 0);
+                acc.transferQty += Number(m.transferQty || 0);
+                acc.diffQty += Number(m.diffQty || 0);
+                return acc;
+              }, { inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0 });
+              const openQty = Number(areaBook.openingStock || 0);
+              baseRow.inQty = sums.inQty;
+              baseRow.receiveQty = sums.receiveQty;
+              baseRow.transferQty = sums.transferQty;
+              baseRow.diffQty = sums.diffQty;
+              baseRow.stockQty = Math.max(0, openQty + sums.inQty - sums.receiveQty + sums.transferQty + sums.diffQty);
+            }
+            mergedAreas.push(baseRow);
+          });
         });
         rawQueriedRegional = mergedAreas;
         subTableTotal = applyRegionalSortAndRender();
@@ -3267,7 +3353,7 @@ document.addEventListener("DOMContentLoaded", () => {
       $('inventory-kpi-bar').classList.remove('hidden');
 
       $('current-warehouse-stock-val').textContent = money(currentWarehouseStock);
-      $('current-warehouse-stock-row').classList.toggle('hidden', filteredMovements.length === 0);
+      $('current-warehouse-stock-row').classList.toggle('hidden', combinedMovements.length === 0);
 
       applyStockSortAndRender();
       $('table-loading').classList.add('hidden');
