@@ -2403,20 +2403,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const intQty = Math.trunc(qtyNum);
-    if (intQty < 0) {
-      const bookWhStock = getWarehouseItemStock(targetWh, itemVal);
-      const pendingWhQty = getPendingTransferOutQty(targetWh, itemVal);
-      const currentWhStock = Math.max(0, bookWhStock - pendingWhQty);
-      if (Math.abs(intQty) > currentWhStock) {
-        qtyInput.classList.add('highlight-error');
-        const pendingNote = pendingWhQty > 0 ? `（另有待簽收 ${money(pendingWhQty)} 件）` : '';
-        openAlertModal(
-          `「${targetWh} - ${itemVal}」目前存量為 ${money(currentWhStock)}${pendingNote}，盤差扣減數量不可大於目前存量！`,
-          () => qtyInput.focus()
-        );
-        return;
-      }
-    }
     const nowRec = getNowMsRecord();
     const todayHyphen = nowRec.hyphen;
     const operatorName = '蘇2';
@@ -2755,31 +2741,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const intQty = Math.trunc(qtyNum);
-    const oldQty = Number(rec.diffQty || 0);
-    if (targetWh === rec.warehouse && itemVal === rec.goodsItem) {
-      const adjustedStock = getWarehouseItemStock(targetWh, itemVal) - oldQty;
-      if (adjustedStock + intQty < 0) {
-        qtyInput.classList.add('highlight-error');
-        openAlertModal(`「${targetWh} - ${itemVal}」扣除原盤差後存量為 ${money(adjustedStock)}，調整後庫存不可小於 0！`, () => qtyInput.focus());
-        return;
-      }
-    } else {
-      if (oldQty > 0) {
-        const oldWhStock = getWarehouseItemStock(rec.warehouse, rec.goodsItem);
-        if (oldWhStock - oldQty < 0) {
-          openAlertModal(`原倉庫「${rec.warehouse} - ${rec.goodsItem}」目前存量僅剩 ${money(oldWhStock)}，不足以還原原盤差數量（+${money(oldQty)}）！`);
-          return;
-        }
-      }
-      if (intQty < 0) {
-        const newWhStock = getWarehouseItemStock(targetWh, itemVal);
-        if (Math.abs(intQty) > newWhStock) {
-          qtyInput.classList.add('highlight-error');
-          openAlertModal(`「${targetWh} - ${itemVal}」目前存量為 ${money(newWhStock)}，盤差扣減數量不可大於目前存量！`, () => qtyInput.focus());
-          return;
-        }
-      }
-    }
 
     const updatedMovId = syncStockForDiffChange(rec, targetWh, itemVal, intQty, reasonVal);
     const nowRec = getNowMsRecord();
@@ -3192,7 +3153,8 @@ document.addEventListener("DOMContentLoaded", () => {
       rawQueriedMovements = filteredMovements;
       activeSummaryTotals = totals;
 
-      const currentWarehouseStock = totals.inQty - totals.outQty + totals.transferQty + totals.diffQty;
+      const rawCurrentWarehouseStock = totals.inQty - totals.outQty + totals.transferQty + totals.diffQty;
+      const currentWarehouseStock = Math.max(0, rawCurrentWarehouseStock);
       let subTableTotal = 0;
 
       if (currentRole === 'hq') {
@@ -3205,7 +3167,7 @@ document.addEventListener("DOMContentLoaded", () => {
         rawQueriedRegional = [];
       }
 
-      const grandTotalStock = Math.max(0, openingStock + currentWarehouseStock + subTableTotal);
+      const grandTotalStock = Math.max(0, openingStock + rawCurrentWarehouseStock + subTableTotal);
 
       $('kpi-safety-stock').textContent = money(safetyStock);
       $('kpi-opening-stock').textContent = money(openingStock);
