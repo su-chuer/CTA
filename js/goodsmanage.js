@@ -445,6 +445,7 @@ document.addEventListener("DOMContentLoaded", () => {
     inputId, wrapId, menuId, clearBtnId, toggleBtnId,
     itemId, startId, endId, searchBtnId, resetBtnId, loadingId,
     warehouseLabel = '倉庫',
+    requireWarehouse = true,
     onSearch, onReset
   }) => {
     const whInput = $(inputId);
@@ -474,14 +475,17 @@ document.addEventListener("DOMContentLoaded", () => {
       [inputId, itemId, startId, endId].forEach(fid => $(fid).classList.remove('highlight-error'));
 
       let firstInvalid = null;
-      if (!rawWarehouse) { $(inputId).classList.add('highlight-error'); firstInvalid = firstInvalid || $(inputId); }
+      if (requireWarehouse && !rawWarehouse) { $(inputId).classList.add('highlight-error'); firstInvalid = firstInvalid || $(inputId); }
       if (!itemVal) { $(itemId).classList.add('highlight-error'); firstInvalid = firstInvalid || $(itemId); }
       if (!startVal) { $(startId).classList.add('highlight-error'); firstInvalid = firstInvalid || $(startId); }
       if (!endVal) { $(endId).classList.add('highlight-error'); firstInvalid = firstInvalid || $(endId); }
 
       if (firstInvalid) {
         firstInvalid.focus();
-        openAlertModal(`請完整填寫必填查詢條件（${warehouseLabel}、物品、起始日、結束日）！`);
+        const reqFieldsText = requireWarehouse
+          ? `${warehouseLabel}、物品、起始日、結束日`
+          : '物品、起始日、結束日';
+        openAlertModal(`請完整填寫必填查詢條件（${reqFieldsText}）！`);
         return;
       }
       if (startVal > endVal) {
@@ -497,9 +501,11 @@ document.addEventListener("DOMContentLoaded", () => {
       await dataReady;
 
       setTimeout(() => {
-        const matchedWarehouse = window.CTA.resolveOptionKey(rawWarehouse, myPermittedWarehouses);
+        const matchedWarehouse = rawWarehouse
+          ? window.CTA.resolveOptionKey(rawWarehouse, myPermittedWarehouses)
+          : '';
         if (matchedWarehouse) combo.setValue(matchedWarehouse);
-        onSearch({ matchedWarehouse, itemVal, startVal, endVal });
+        onSearch({ rawWarehouse, matchedWarehouse, itemVal, startVal, endVal });
         $(loadingId).classList.add('hidden');
       }, 220);
     };
@@ -752,13 +758,6 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       let firstInvalid = null;
-      // Allow user to fill ONLY ONE of outWarehouse or inWarehouse, or BOTH.
-      // If BOTH are empty, trigger error.
-      if (!rawOutWh && !rawInWh) {
-        $('signin-query-out-warehouse').classList.add('highlight-error');
-        $('signin-query-in-warehouse').classList.add('highlight-error');
-        firstInvalid = firstInvalid || $('signin-query-out-warehouse');
-      }
       if (!itemVal) {
         $('signin-query-item').classList.add('highlight-error');
         firstInvalid = firstInvalid || $('signin-query-item');
@@ -774,7 +773,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (firstInvalid) {
         firstInvalid.focus();
-        openAlertModal('請完整填寫必填查詢條件（出庫倉庫或入庫倉庫、物品、起始日、結束日）！');
+        openAlertModal('請完整填寫必填查詢條件（物品、起始日、結束日）！');
         return;
       }
 
@@ -794,8 +793,8 @@ document.addEventListener("DOMContentLoaded", () => {
       setTimeout(() => {
         const outOptions = getSignInOutWarehouseOptions();
         const inOptions = getSignInInWarehouseOptions();
-        const matchedOutWh = window.CTA.resolveOptionKey(rawOutWh, outOptions);
-        const matchedInWh = window.CTA.resolveOptionKey(rawInWh, inOptions);
+        const matchedOutWh = rawOutWh ? window.CTA.resolveOptionKey(rawOutWh, outOptions) : '';
+        const matchedInWh = rawInWh ? window.CTA.resolveOptionKey(rawInWh, inOptions) : '';
         if (matchedOutWh) outCombo.setValue(matchedOutWh);
         if (matchedInWh) inCombo.setValue(matchedInWh);
 
@@ -803,8 +802,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const baseList = getRoleFilteredSignInRecords().filter(r => !r.returned && r.status !== '退回');
         filteredSignInRows = baseList.filter(r => {
           if (r.returned || r.status === '退回') return false;
-          if (matchedOutWh && r.outWarehouse !== matchedOutWh) return false;
-          if (matchedInWh && r.inWarehouse !== matchedInWh) return false;
+          if (rawOutWh && (!matchedOutWh || r.outWarehouse !== matchedOutWh)) return false;
+          if (rawInWh && (!matchedInWh || r.inWarehouse !== matchedInWh)) return false;
           if (itemVal !== '全部' && r.goodsItem !== itemVal) return false;
           const d = String(r.date || '').trim();
           if (startVal && d < startVal) return false;
@@ -2856,11 +2855,15 @@ document.addEventListener("DOMContentLoaded", () => {
     clearBtnId: 'btn-clear-diff-wh', toggleBtnId: 'btn-toggle-diff-wh',
     itemId: 'diff-query-item', startId: 'diff-query-start-date', endId: 'diff-query-end-date',
     searchBtnId: 'btn-diff-search', resetBtnId: 'btn-diff-query-reset', loadingId: 'diff-loading',
-    onSearch: ({ matchedWarehouse, itemVal, startVal, endVal }) => {
+    requireWarehouse: false,
+    onSearch: ({ rawWarehouse, matchedWarehouse, itemVal, startVal, endVal }) => {
       hasActiveDiffFilter = true;
       filteredDiffRows = diffRecords.filter(r => {
-        const whMatch = matchedWarehouse ? r.warehouse === matchedWarehouse : false;
-        if (!whMatch) return false;
+        if (rawWarehouse) {
+          if (!matchedWarehouse || r.warehouse !== matchedWarehouse) return false;
+        } else if (currentRole !== 'hq' && !myPermittedWarehouses.includes(r.warehouse)) {
+          return false;
+        }
         if (itemVal !== '全部' && r.goodsItem !== itemVal) return false;
         const d = String(r.date || '').trim();
         if (startVal && d < startVal) return false;
