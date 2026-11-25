@@ -3140,6 +3140,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     let firstInvalid = null;
+    if (!rawWarehouse) {
+      $('filter-warehouse').classList.add('highlight-error');
+      firstInvalid = firstInvalid || $('filter-warehouse');
+    }
     if (!itemVal) {
       $('filter-item').classList.add('highlight-error');
       firstInvalid = firstInvalid || $('filter-item');
@@ -3155,7 +3159,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (firstInvalid) {
       firstInvalid.focus();
-      openAlertModal('請完整填寫必填查詢條件（物品、起始日、結束日）！');
+      openAlertModal('請完整填寫必填查詢條件（倉庫、物品、起始日、結束日）！');
       return;
     }
 
@@ -3278,29 +3282,51 @@ document.addEventListener("DOMContentLoaded", () => {
       let subTableTotal = 0;
 
       if (currentRole === 'hq') {
-        if (matchedWarehouse) {
-          const itemRecord = (inventoryDatasets[matchedWarehouse] || {})[itemVal];
-          rawQueriedRegional = sortRegionalStocksFixedOrder(itemRecord ? itemRecord.regionalStocks : []);
-        } else {
-          // 未選倉庫時，彙總所有中繼倉庫（北、中、南、東）該物品庫存
-          const regMap = new Map();
-          regionalWarehouses.forEach(rg => {
-            regMap.set(rg, { warehouse: rg, inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0, stockQty: 0 });
-          });
-          const seenRegFromHq = new Set();
-          warehouses.forEach(hqWh => {
-            const rec = (inventoryDatasets[hqWh] || {})[itemVal];
-            if (rec && Array.isArray(rec.regionalStocks)) {
-              rec.regionalStocks.forEach(r => {
-                if (!seenRegFromHq.has(r.warehouse)) {
-                  seenRegFromHq.add(r.warehouse);
-                  regMap.set(r.warehouse, { ...r });
-                }
-              });
-            }
-          });
-          rawQueriedRegional = sortRegionalStocksFixedOrder(Array.from(regMap.values()));
-        }
+        // 固定顯示「北、中、南、東」四個中繼倉庫明細，並同步彙整各中繼倉庫該物品的入庫、領用、調貨、盤差與庫存量
+        const regList = (regionalWarehouses.length > 0 ? regionalWarehouses : ['北', '中', '南', '東']);
+        const itemRecord = (inventoryDatasets[matchedWarehouse] || {})[itemVal] || {};
+        const hqRegMap = new Map(
+          (Array.isArray(itemRecord.regionalStocks) ? itemRecord.regionalStocks : []).map(r => [r.warehouse, { ...r }])
+        );
+        const mergedRegions = regList.map(rgName => {
+          const baseRow = hqRegMap.get(rgName) || {
+            warehouse: rgName,
+            inQty: 0,
+            receiveQty: 0,
+            transferQty: 0,
+            diffQty: 0,
+            stockQty: 0
+          };
+          const regBook = regionalInventoryDatasets[rgName] && regionalInventoryDatasets[rgName][itemVal];
+          if (regBook) {
+            const movs = Array.isArray(regBook.movements) ? regBook.movements : [];
+            const sums = movs.reduce((acc, m) => {
+              if (areaWarehouses.includes(m.warehouse)) {
+                acc.receiveQty += Number(m.outQty || 0);
+                return acc;
+              }
+              acc.inQty += Number(m.inQty || 0);
+              acc.receiveQty += Number(m.outQty || 0);
+              acc.transferQty += Number(m.transferQty || 0);
+              acc.diffQty += Number(m.diffQty || 0);
+              return acc;
+            }, { inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0 });
+            const areaOutFromTransfers = transferOutRecords.reduce((sum, t) => {
+              if ((t.signed || t.status === '已簽收') && t.outWarehouse === rgName && t.goodsItem === itemVal && areaWarehouses.includes(t.inWarehouse)) {
+                return sum + Number(t.outQty || 0);
+              }
+              return sum;
+            }, 0);
+            const openQty = Number(regBook.openingStock || 0);
+            baseRow.inQty = sums.inQty;
+            baseRow.receiveQty = sums.receiveQty + areaOutFromTransfers;
+            baseRow.transferQty = sums.transferQty;
+            baseRow.diffQty = sums.diffQty;
+            baseRow.stockQty = Math.max(0, openQty + sums.inQty - baseRow.receiveQty + sums.transferQty + sums.diffQty);
+          }
+          return baseRow;
+        });
+        rawQueriedRegional = sortRegionalStocksFixedOrder(mergedRegions);
         subTableTotal = applyRegionalSortAndRender();
       } else if (currentRole === 'region') {
         const targetRegions = matchedWarehouse ? [matchedWarehouse] : [...regionalWarehouses];
