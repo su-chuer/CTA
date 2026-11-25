@@ -66,15 +66,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return null;
   };
 
-  const computeAreaBookStock = (areaRec) => {
-    if (!areaRec || typeof areaRec !== 'object') return 0;
-    const opening = Number(areaRec.openingStock || 0);
-    const netMov = (Array.isArray(areaRec.movements) ? areaRec.movements : []).reduce((sum, m) => {
-      return sum + Number(m.inQty || 0) - Number(m.outQty || 0) + Number(m.transferQty || 0) + Number(m.diffQty || 0);
-    }, 0);
-    return Math.max(0, opening + netMov);
-  };
-
   const syncReceiveDeductionToInventory = async (areaName, itemName, qty = 1, nowRec) => {
     const state = await loadOrInitGoodsManageState();
     if (!state || !areaName || !itemName) return { ok: true };
@@ -94,13 +85,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const areaItemBook = state.areaInventoryDatasets[areaName][itemName];
-    const currentAreaStock = computeAreaBookStock(areaItemBook);
-    if (currentAreaStock < qty) {
-      return {
-        ok: false,
-        message: `「${areaName} - ${itemName}」目前庫存量為 ${currentAreaStock} 件，庫存不足無法領取！`
-      };
-    }
 
     if (!state.counters || typeof state.counters !== 'object') {
       state.counters = { nextMovementId: 500 };
@@ -297,12 +281,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const itemName = activeReceiveRecord.goodsItem;
     const targetArea = activeAreaKey;
 
-    const syncRes = await syncReceiveDeductionToInventory(targetArea, itemName, 1, nowRec);
-    if (!syncRes.ok) {
-      closeReceiveModal();
-      openAlertModal(syncRes.message || '目前作業區庫存不足，無法領取！');
-      return;
-    }
+    await syncReceiveDeductionToInventory(targetArea, itemName, 1, nowRec);
 
     activeReceiveRecord.received = true;
     activeReceiveRecord.receiveDate = nowRec.slash;
@@ -314,7 +293,7 @@ document.addEventListener("DOMContentLoaded", () => {
     saveReceiveToStorage();
     closeReceiveModal();
     renderTable(getPendingReceiveList(activeAreaKey));
-    toast(`已完成「${personName}」的「${itemName}」領取作業，已同步扣減「${targetArea}」庫存。`);
+    toast(`已完成「${personName}」的「${itemName}」領取作業，已同步更新「${targetArea}」領用量。`);
   });
 
   // ==================== 作業區 Combo-box 與分頁 ====================
