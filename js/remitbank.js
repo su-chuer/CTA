@@ -165,7 +165,9 @@ document.addEventListener("DOMContentLoaded", () => {
           <td style="font-weight: 600; color: #14264b;">${escapeAttr(bank.code)}</td>
           <td>${escapeAttr(bank.name)}</td>
           <td class="center">
-            <button type="button" class="btn primary small btn-pick-bank" data-code="${escapeAttr(bank.code)}">選擇</button>
+            <button type="button" class="btn primary small btn-pick-bank" data-code="${escapeAttr(bank.code)}" ${isCurrent ? 'disabled' : ''}>
+              ${isCurrent ? '已選擇' : '選擇'}
+            </button>
           </td>
         </tr>
       `;
@@ -499,7 +501,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <td>${escapeAttr(team.name)}</td>
           <td class="center">
             <button type="button" class="btn primary small btn-pick-heqi" data-code="${escapeAttr(team.code)}" ${alreadyAdded ? 'disabled' : ''}>
-              ${alreadyAdded ? '已選用' : '選擇'}
+              ${alreadyAdded ? '已選擇' : '選擇'}
             </button>
           </td>
         </tr>
