@@ -557,7 +557,7 @@ document.addEventListener("DOMContentLoaded", () => {
     selectedAccountId = account.id;
     clearFormValidationErrors();
 
-    $('editor-mode-title').textContent = '修改匯款帳戶資料';
+    $('editor-mode-title').textContent = '匯款帳戶資料';
     const badge = $('editor-mode-badge');
     badge.textContent = `序號 #${filteredAccounts.findIndex(r => r.id === account.id) + 1 || account.id}`;
     badge.className = 'status-badge pending';
