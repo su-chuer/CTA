@@ -296,11 +296,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // 2. 廠商入庫、簽收入庫、出庫 / 調貨、盤差作業：查詢條件物品選項（含「全部」）
+    const defaultAllItemIds = new Set(['vendor-query-item', 'transfer-query-item', 'diff-query-item']);
     ['vendor-query-item', 'signin-query-item', 'transfer-query-item', 'diff-query-item'].forEach(selId => {
       const sel = $(selId);
       if (!sel) return;
-      const prev = sel.value || (selId === 'vendor-query-item' ? '全部' : '');
-      const placeholderHtml = selId === 'vendor-query-item'
+      const isDefaultAll = defaultAllItemIds.has(selId);
+      const prev = sel.value || (isDefaultAll ? '全部' : '');
+      const placeholderHtml = isDefaultAll
         ? ''
         : `<option value="" ${prev ? '' : 'selected'} disabled>請選擇</option>`;
       sel.innerHTML = `${placeholderHtml}
@@ -523,7 +525,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const reset = () => {
       combo.setValue('');
       combo.close();
-      $(itemId).value = (itemId === 'vendor-query-item') ? '全部' : '';
+      const defaultAllItemIds = new Set(['vendor-query-item', 'transfer-query-item', 'diff-query-item']);
+      $(itemId).value = defaultAllItemIds.has(itemId) ? '全部' : '';
       applyDefaultTodayDates();
       [inputId, itemId, startId, endId].forEach(fid => $(fid).classList.remove('highlight-error'));
       onReset();
