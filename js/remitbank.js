@@ -109,14 +109,14 @@ document.addEventListener("DOMContentLoaded", () => {
   let bankModalTarget = 'filter';
 
   const measureFilterTextWidth = (text, inputEl) => {
-    if (!text) return 280;
+    if (!text) return 185;
     const canvas = measureFilterTextWidth._canvas || (measureFilterTextWidth._canvas = document.createElement('canvas'));
     const ctx = canvas.getContext('2d');
     const style = window.getComputedStyle(inputEl);
     ctx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
     const textWidth = Math.ceil(ctx.measureText(text).width);
-    // 左側 padding(14px) + 右側預留清除鈕與放大鏡空間(66px)，基準寬度 280px
-    return Math.max(280, textWidth + 80);
+    // 左側 padding(14px) + 右側預留清除鈕與放大鏡空間(60px)，基準寬度 185px（約「004 臺灣銀行」寬度）
+    return Math.max(185, textWidth + 74);
   };
 
   const setFilterBankValue = (val) => {
