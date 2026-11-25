@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>系統設定｜維護匯款銀行</title>
+<link rel="stylesheet" href="css/style.css?v=349">
+<link rel="icon" href="images/logo.png" type="image/png">
+<style>
+/* === 維護匯款銀行專屬微調（沿用全站設計系統色彩與圓角規範） === */
+.bank-split-layout {
+  display: grid;
+  grid-template-columns: 1.45fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.bank-split-layout > * {
+  min-width: 0;
+}
+#bank-account-table {
+  min-width: 0;
+  width: 100%;
+}
+#bank-account-table tbody tr {
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+#bank-account-table tbody tr.is-selected td {
+  background: #dceeff;
+  font-weight: 600;
+}
+.bank-status-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+}
+.bank-status-cell.is-active {
+  color: #166534;
+}
+.bank-status-cell.is-inactive {
+  color: #64748b;
+}
+.bank-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e1e7f0;
+}
+.bank-editor-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #14264b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bank-sub-tabs {
+  display: flex;
+  border-bottom: 1px solid #d9e3f1;
+  background: #ffffff;
+  border-radius: 6px 6px 0 0;
+  overflow: hidden;
+}
+.bank-sub-tab {
+  flex: 1;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  padding: 11px 14px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #556477;
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s, border-color 0.15s;
+}
+.bank-sub-tab:hover {
+  color: #0869ed;
+  background: #f4f8ff;
+}
+.bank-sub-tab.active {
+  color: #0869ed;
+  border-bottom-color: #0869ed;
+  background: #f0f6ff;
+}
+.bank-sub-panel {
+  background: #ffffff;
+  border: 1px solid #d9e3f1;
+  border-top: 0;
+  border-radius: 0 0 6px 6px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ldap-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ldap-input-row .claim-control {
+  flex: 1;
+}
+.btn-icon-square {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  flex: 0 0 40px;
+  border-radius: 6px;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+}
+.bank-mini-table {
+  min-width: 0;
+  width: 100%;
+  font-size: 15px;
+}
+.bank-mini-table th {
+  height: 42px;
+  font-size: 14px;
+  padding: 6px 12px;
+}
+.bank-mini-table td {
+  height: 42px;
+  padding: 6px 12px;
+}
+.bank-editor-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+.bank-editor-actions .btn {
+  width: 100%;
+  height: 42px;
+  font-size: 15px;
+  font-weight: 600;
+}
+@media (max-width: 960px) {
+  .bank-split-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+</style>
+</head>
+<body>
+
+<main class="page">
+  <nav class="crumb" id="page-crumb">
+    <span class="home-icon">
+      <svg class="ico" aria-hidden="true"><use href="#ico-banknote"></use></svg>
+    </span>
+    <span class="sep">│</span>
+    <span>系統設定</span>
+    <span class="sep">/</span>
+    <strong id="crumb-current">維護匯款銀行</strong>
+  </nav>
+
+  <!-- ==================== 頂部查詢條件 ==================== -->
+  <section class="panel filters" aria-label="匯款銀行查詢條件">
+    <div class="field">
+      <label for="filter-bank-code">銀行代碼</label>
+      <div class="combo-select-wrap wide" id="filter-bank-combo-wrap">
+        <input type="text" id="filter-bank-code" class="filter-input" autocomplete="off" placeholder="請選擇或輸入代碼/銀行名稱" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="filter-bank-combo-menu">
+        <button type="button" class="combo-clear-btn hidden" id="btn-clear-filter-bank" title="清除銀行代碼" aria-label="清除銀行代碼">&times;</button>
+        <button type="button" class="combo-arrow-btn" id="btn-toggle-filter-bank" title="展開銀行代碼選單" aria-label="展開銀行代碼選單">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <div class="combo-dropdown-menu hidden" id="filter-bank-combo-menu" role="listbox"></div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="filter-account-name">戶名</label>
+      <input type="text" id="filter-account-name" class="filter-input" style="width: 190px;" placeholder="請輸入戶名">
+    </div>
+
+    <div class="field">
+      <label for="filter-account-number">帳號</label>
+      <input type="text" id="filter-account-number" class="filter-input" style="width: 210px;" placeholder="請輸入帳號">
+    </div>
+
+    <div class="search-actions" style="margin-left: 6px;">
+      <button type="button" class="btn primary" id="btn-search"><svg class="ico" aria-hidden="true"><use href="#ico-search"></use></svg>查詢</button>
+      <button type="button" class="btn" id="btn-reset"><svg class="ico" aria-hidden="true"><use href="#ico-refresh-cw"></use></svg>清除</button>
+    </div>
+  </section>
+
+  <!-- ==================== 下方雙欄作業區：左側帳戶列表 / 右側新增與修改表單 ==================== -->
+  <section class="panel table-panel" style="margin-top: 15px;" aria-label="匯款銀行維護作業">
+    <div id="table-loading" class="block-loading hidden"><div class="spinner"></div></div>
+
+    <div class="bank-split-layout">
+      <!-- 左側：匯款銀行帳戶列表（圖 1） -->
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px;">
+          <div style="font-size: 15px; color: #556477; font-weight: 600;">銀行帳戶列表：<span id="account-count-display" style="color: #14264b; font-weight: 700;">0</span> 筆</div>
+          <span style="font-size: 13px; color: #72809c;">點選任一列可檢視與修改資料</span>
+        </div>
+
+        <div class="table-scroll">
+          <table class="detail-table" id="bank-account-table">
+            <thead>
+              <tr>
+                <th class="center" style="width: 68px;">序號</th>
+                <th>銀行代碼</th>
+                <th>戶名</th>
+                <th>帳戶</th>
+                <th class="center" style="width: 104px;">狀態</th>
+              </tr>
+            </thead>
+            <tbody id="bank-account-tbody">
+              <tr><td colspan="5" class="empty">資料載入中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 分頁元件 -->
+        <div class="pagination hidden" id="pagination">
+          <select id="per-page-select" class="page-select" aria-label="每頁顯示筆數">
+            <option value="10" selected>10 筆 / 頁</option>
+            <option value="20">20 筆 / 頁</option>
+            <option value="50">50 筆 / 頁</option>
+            <option value="100">100 筆 / 頁</option>
+          </select>
+          <button type="button" class="page-btn disabled" id="page-prev" aria-label="上一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-left"></use></svg></button>
+          <div id="page-numbers" style="display:flex; gap:6px; align-items:center;"></div>
+          <button type="button" class="page-btn" id="page-next" aria-label="下一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-right"></use></svg></button>
+          <span class="page-info">共 <span id="total-pages">1</span> 頁 / <span id="total-items">0</span> 筆</span>
+        </div>
+      </div>
+
+      <!-- 右側：新增 / 修改銀行相關資料表單卡片（圖 2 ~ 圖 6） -->
+      <div class="claim-add-box" id="bank-editor-box" aria-label="匯款銀行編輯表單">
+        <div class="bank-editor-header">
+          <div class="bank-editor-title">
+            <span id="editor-mode-title">修改匯款銀行資料</span>
+            <span class="status-badge pending" id="editor-mode-badge">編輯中</span>
+          </div>
+          <button type="button" class="btn small hidden" id="btn-switch-create-top">+ 新增模式</button>
+        </div>
+
+        <!-- 銀行代碼 * -->
+        <div class="claim-field">
+          <label for="form-bank-code">銀行代碼 <b>*</b></label>
+          <div class="combo-select-wrap" id="form-bank-combo-wrap" style="width: 100%;">
+            <input type="text" id="form-bank-code" class="claim-control" style="padding-right: 54px;" autocomplete="off" placeholder="請選擇或輸入銀行代碼／名稱" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="form-bank-combo-menu">
+            <button type="button" class="combo-clear-btn hidden" id="btn-clear-form-bank" title="清除銀行代碼" aria-label="清除銀行代碼">&times;</button>
+            <button type="button" class="combo-arrow-btn" id="btn-toggle-form-bank" title="展開銀行代碼選單" aria-label="展開銀行代碼選單">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="combo-dropdown-menu hidden" id="form-bank-combo-menu" role="listbox"></div>
+          </div>
+        </div>
+
+        <!-- 戶名 * -->
+        <div class="claim-field">
+          <label for="form-account-name">戶名 <b>*</b></label>
+          <input type="text" id="form-account-name" class="claim-control" placeholder="請輸入戶名">
+        </div>
+
+        <!-- 帳號 * -->
+        <div class="claim-field">
+          <label for="form-account-number">帳號 <b>*</b></label>
+          <input type="text" id="form-account-number" class="claim-control" inputmode="numeric" placeholder="請輸入帳號">
+        </div>
+
+        <!-- 狀態 -->
+        <div class="claim-field">
+          <label>狀態</label>
+          <div class="choice" style="margin: 2px 0 0; height: 34px;">
+            <label><input type="radio" name="form-bank-status" value="啟用" checked>啟用</label>
+            <label><input type="radio" name="form-bank-status" value="停用">停用</label>
+          </div>
+        </div>
+
+        <!-- 人員 / 組隊 頁籤區塊（圖 2, 3, 5, 6） -->
+        <div>
+          <div class="bank-sub-tabs" role="tablist" aria-label="人員與組隊頁籤">
+            <button type="button" class="bank-sub-tab active" id="subtab-staff" role="tab" aria-selected="true" data-subtab="staff">人員 (<span id="staff-tab-count">0</span>)</button>
+            <button type="button" class="bank-sub-tab" id="subtab-team" role="tab" aria-selected="false" data-subtab="team">組隊 (<span id="team-tab-count">0</span>)</button>
+          </div>
+
+          <!-- 子頁籤一：人員（請填 LDAP + 姓名列表）（圖 2, 5） -->
+          <div class="bank-sub-panel" id="subpanel-staff">
+            <div class="claim-field">
+              <label for="form-ldap-input">請填 LDAP</label>
+              <div class="ldap-input-row">
+                <input type="text" id="form-ldap-input" class="claim-control" placeholder="請輸入 LDAP 帳號或姓名">
+                <button type="button" class="btn primary btn-icon-square" id="btn-add-ldap" title="新增人員" aria-label="新增人員">+</button>
+              </div>
+            </div>
+
+            <div class="table-scroll">
+              <table class="detail-table bank-mini-table" id="staff-list-table">
+                <thead>
+                  <tr>
+                    <th>姓名</th>
+                    <th class="center" style="width: 84px;">刪除</th>
+                  </tr>
+                </thead>
+                <tbody id="staff-list-tbody">
+                  <tr><td colspan="2" class="empty" style="padding: 18px;">尚未新增人員</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 子頁籤二：組隊（新增和氣組隊按鈕 + 組隊列表）（圖 3, 6） -->
+          <div class="bank-sub-panel hidden" id="subpanel-team">
+            <button type="button" class="btn primary" id="btn-open-heqi-modal" style="width: 100%; height: 40px; font-size: 15px; font-weight: 600;">
+              <svg class="ico" style="width: 18px; height: 18px;" aria-hidden="true"><use href="#ico-search"></use></svg>新增和氣組隊
+            </button>
+
+            <div class="table-scroll">
+              <table class="detail-table bank-mini-table" id="team-list-table">
+                <thead>
+                  <tr>
+                    <th>組隊</th>
+                    <th class="center" style="width: 84px;">刪除</th>
+                  </tr>
+                </thead>
+                <tbody id="team-list-tbody">
+                  <tr><td colspan="2" class="empty" style="padding: 18px;">尚未新增和氣組隊</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 底部操作按鈕：儲存 / 新增銀行相關資料 -->
+        <div class="bank-editor-actions">
+          <button type="button" class="btn primary" id="btn-save-bank">儲存</button>
+          <button type="button" class="btn" id="btn-new-bank-mode">新增銀行相關資料</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ==================== 彈窗一：請選擇和氣組隊（圖 4） ==================== -->
+<div class="overlay hidden" id="heqi-select-modal" style="z-index: 1280;">
+  <div class="modal" style="width: min(620px, 100%); display: flex; flex-direction: column; max-height: 88vh; padding: 0;">
+    <div class="modal-head" style="padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e1e7f0; background: #fff;">
+      <h2 style="margin: 0; font-size: 17px; color: #14264b;">請選擇和氣組隊</h2>
+      <button type="button" class="x" id="close-heqi-modal" aria-label="關閉">&times;</button>
+    </div>
+
+    <div style="padding: 14px 24px; background: #f8fafc; border-bottom: 1px solid #e1e7f0;">
+      <input type="text" id="heqi-modal-filter" class="claim-control" autocomplete="off" placeholder="請輸入和氣代碼或和氣名稱篩選（例如：ETE04、永康）">
+    </div>
+
+    <div class="modal-body" style="padding: 0; overflow-y: auto; flex: 1; background: #fff;">
+      <div class="table-scroll" style="border: 0; border-radius: 0;">
+        <table class="detail-table" style="min-width: 0; width: 100%;">
+          <thead style="position: sticky; top: 0; z-index: 5;">
+            <tr>
+              <th style="width: 140px;">和氣代碼</th>
+              <th>和氣名稱</th>
+              <th class="center" style="width: 96px;">選擇</th>
+            </tr>
+          </thead>
+          <tbody id="heqi-modal-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="modal-foot" style="padding: 14px 24px; border-top: 1px solid #e1e7f0; background: #f8fafc; display: flex; justify-content: flex-end;">
+      <button type="button" class="btn" id="btn-heqi-modal-cancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 操作確認彈窗 -->
+<div class="overlay hidden" id="confirm-modal" style="z-index: 1320;">
+  <div class="modal dialog-modal">
+    <div class="modal-head dialog-head">
+      <h2 id="confirm-modal-title">操作確認</h2>
+      <button type="button" class="x" id="close-confirm" aria-label="關閉">&times;</button>
+    </div>
+    <div class="modal-body dialog-body" id="confirm-modal-body"></div>
+    <div class="modal-foot dialog-foot">
+      <button type="button" class="btn primary" id="btn-confirm-ok">確定</button>
+      <button type="button" class="btn" id="btn-confirm-cancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 單一按鈕提示彈窗 -->
+<div class="overlay hidden" id="alert-modal" style="z-index: 1360;">
+  <div class="modal dialog-modal">
+    <div class="modal-head dialog-head">
+      <h2>提示訊息</h2>
+      <button type="button" class="x" id="close-alert" aria-label="關閉">&times;</button>
+    </div>
+    <div class="modal-body dialog-body" id="alert-modal-body">欄位填寫不完整！</div>
+    <div class="modal-foot dialog-foot">
+      <button type="button" class="btn primary" id="btn-alert-ok">確定</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="js/navbar.js?v=351"></script>
+<script src="js/common.js?v=349"></script>
+<script src="js/remitbank.js?v=351"></script>
+
+</body>
+</html>

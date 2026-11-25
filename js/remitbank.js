@@ -1,0 +1,624 @@
+document.addEventListener("DOMContentLoaded", () => {
+  const { $, cleanTrim, escapeAttr, toast, alert: openAlertModal, confirm: openConfirmModal } = window.CTA;
+
+  const REMIT_BANK_STORAGE_KEY = 'cta_remitbank_state_v1';
+
+  let bankCatalog = [];       // [{ code: '008', name: '華南商業銀行' }, ...]
+  let heqiTeamCatalog = [];   // [{ code: 'ETE04', name: '永康和氣' }, ...]
+  let ldapDirectory = {};     // { 'kuo01': '郭1', ... }
+  let bankAccounts = [];      // 全部匯款銀行帳戶
+  let filteredAccounts = [];  // 目前查詢結果
+
+  let selectedAccountId = null; // null 代表「新增銀行相關資料」模式；number 代表「修改」模式
+  let draftStaff = [];          // [{ ldap, name }]
+  let draftTeams = [];          // [{ code, name }]
+  let activeSubTab = 'staff';   // 'staff' | 'team'
+  let nextAccountId = 100;
+
+  const formatBankLabel = (code, name) => {
+    const c = String(code || '').trim();
+    const n = String(name || '').trim();
+    if (!c && !n) return '';
+    return n ? `${c} ${n}` : c;
+  };
+
+  const getBankOptions = () => bankCatalog.map(b => formatBankLabel(b.code, b.name));
+
+  const parseBankSelection = (rawVal) => {
+    const cleaned = cleanTrim(rawVal);
+    if (!cleaned) return null;
+    const exact = bankCatalog.find(b =>
+      formatBankLabel(b.code, b.name) === cleaned ||
+      b.code === cleaned ||
+      b.name === cleaned
+    );
+    if (exact) return { code: exact.code, name: exact.name };
+
+    const codePrefixMatch = cleaned.match(/^(\d{3})\s*(.*)$/);
+    if (codePrefixMatch) {
+      const foundByCode = bankCatalog.find(b => b.code === codePrefixMatch[1]);
+      if (foundByCode) return { code: foundByCode.code, name: foundByCode.name };
+      if (codePrefixMatch[2]) {
+        return { code: codePrefixMatch[1], name: cleanTrim(codePrefixMatch[2]) };
+      }
+    }
+    return null;
+  };
+
+  // ==================== 資料載入與 localStorage 持久化 ====================
+  const saveStateToLocalStorage = () => {
+    try {
+      const payload = {
+        banks: bankCatalog,
+        heqiTeams: heqiTeamCatalog,
+        ldapDirectory,
+        accounts: bankAccounts
+      };
+      localStorage.setItem(REMIT_BANK_STORAGE_KEY, JSON.stringify(payload));
+    } catch (err) {
+      console.error('儲存匯款銀行資料失敗：', err);
+    }
+  };
+
+  const loadInitialData = async () => {
+    let loaded = null;
+    try {
+      const raw = localStorage.getItem(REMIT_BANK_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.accounts)) {
+          loaded = parsed;
+        }
+      }
+    } catch (_) {}
+
+    if (!loaded) {
+      try {
+        const res = await fetch('json/remit_bank_data.json?v=351', { cache: 'no-store' });
+        if (res && res.ok) {
+          loaded = await res.json();
+        }
+      } catch (err) {
+        console.error('讀取 remit_bank_data.json 失敗：', err);
+      }
+    }
+
+    if (loaded && typeof loaded === 'object') {
+      bankCatalog = Array.isArray(loaded.banks) ? loaded.banks : [];
+      heqiTeamCatalog = Array.isArray(loaded.heqiTeams) ? loaded.heqiTeams : [];
+      ldapDirectory = (loaded.ldapDirectory && typeof loaded.ldapDirectory === 'object') ? loaded.ldapDirectory : {};
+      bankAccounts = Array.isArray(loaded.accounts) ? loaded.accounts.map(acc => ({
+        ...acc,
+        staff: Array.isArray(acc.staff) ? acc.staff.map(s => ({ ...s })) : [],
+        teams: Array.isArray(acc.teams) ? acc.teams.map(t => ({ ...t })) : []
+      })) : [];
+      nextAccountId = bankAccounts.reduce((m, r) => Math.max(m, Number(r.id || 0)), 0) + 1;
+    }
+
+    filteredAccounts = [...bankAccounts];
+    renderAccountTable();
+    if (bankAccounts.length > 0) {
+      loadAccountIntoEditor(bankAccounts[0]);
+    } else {
+      enterCreateMode(false);
+    }
+  };
+
+  // ==================== 下拉自動完成元件（上方查詢 & 右側表單） ====================
+  const filterBankCombo = window.CTA.createComboSelect({
+    inputId: 'filter-bank-code',
+    wrapId: 'filter-bank-combo-wrap',
+    menuId: 'filter-bank-combo-menu',
+    clearBtnId: 'btn-clear-filter-bank',
+    toggleBtnId: 'btn-toggle-filter-bank',
+    getOptions: getBankOptions,
+    beforeOpen: () => dataReady,
+    emptyText: '無相符銀行代碼',
+    onEnter: () => executeSearch()
+  });
+
+  const formBankCombo = window.CTA.createComboSelect({
+    inputId: 'form-bank-code',
+    wrapId: 'form-bank-combo-wrap',
+    menuId: 'form-bank-combo-menu',
+    clearBtnId: 'btn-clear-form-bank',
+    toggleBtnId: 'btn-toggle-form-bank',
+    getOptions: getBankOptions,
+    beforeOpen: () => dataReady,
+    emptyText: '無相符銀行代碼',
+    onSelect: () => {
+      $('form-bank-code').classList.remove('highlight-error');
+    }
+  });
+
+  ['form-bank-code', 'form-account-name', 'form-account-number'].forEach(fid => {
+    const el = $(fid);
+    if (el) {
+      el.addEventListener('input', () => el.classList.remove('highlight-error'));
+      el.addEventListener('change', () => el.classList.remove('highlight-error'));
+    }
+  });
+
+  $('form-account-number').addEventListener('input', (e) => {
+    const digitsOnly = e.target.value.replace(/[^0-9-]/g, '');
+    if (e.target.value !== digitsOnly) {
+      e.target.value = digitsOnly;
+    }
+  });
+
+  // ==================== 左側帳戶列表與分頁 ====================
+  const pager = window.CTA.createPagination({
+    onChange: () => renderAccountTable()
+  });
+
+  const renderAccountTable = () => {
+    const tbody = $('bank-account-tbody');
+    const list = Array.isArray(filteredAccounts) ? filteredAccounts : [];
+    $('account-count-display').textContent = String(list.length);
+
+    if (list.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty">查無符合條件的匯款銀行資料</td></tr>';
+      pager.render(0, 1, 1);
+      return;
+    }
+
+    const itemsPerPage = pager.getPerPage();
+    const totalPages = Math.max(1, Math.ceil(list.length / itemsPerPage));
+    const currentPage = Math.min(Math.max(1, pager.getPage()), totalPages);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const pageData = list.slice(startIndex, startIndex + itemsPerPage);
+    pager.render(list.length, totalPages, currentPage);
+
+    tbody.innerHTML = pageData.map((row, idx) => {
+      const isSelected = row.id === selectedAccountId;
+      const isActive = row.status === '啟用';
+      const statusHtml = isActive
+        ? '<span class="bank-status-cell is-active">🔓 啟用</span>'
+        : '<span class="bank-status-cell is-inactive">🔒 停用</span>';
+      return `
+        <tr class="${isSelected ? 'is-selected' : ''}" data-id="${row.id}">
+          <td class="center">${startIndex + idx + 1}</td>
+          <td>${escapeAttr(formatBankLabel(row.bankCode, row.bankName))}</td>
+          <td>${escapeAttr(row.accountName || '')}</td>
+          <td style="font-variant-numeric: tabular-nums;">${escapeAttr(row.accountNumber || '')}</td>
+          <td class="center">${statusHtml}</td>
+        </tr>
+      `;
+    }).join('');
+
+    tbody.querySelectorAll('tr[data-id]').forEach(tr => {
+      tr.addEventListener('click', () => {
+        const id = Number(tr.dataset.id);
+        const target = bankAccounts.find(a => a.id === id);
+        if (target) {
+          loadAccountIntoEditor(target);
+        }
+      });
+    });
+  };
+
+  // ==================== 頂部查詢與清除 ====================
+  const executeSearch = async () => {
+    await dataReady;
+    const rawBank = cleanTrim($('filter-bank-code').value);
+    const rawName = cleanTrim($('filter-account-name').value);
+    const rawNum = cleanTrim($('filter-account-number').value);
+
+    $('filter-bank-code').value = rawBank;
+    $('filter-account-name').value = rawName;
+    $('filter-account-number').value = rawNum;
+    filterBankCombo.close();
+
+    $('table-loading').classList.remove('hidden');
+    setTimeout(() => {
+      const parsedBank = parseBankSelection(rawBank);
+      const bankKw = rawBank.toLowerCase();
+      const nameKw = rawName.toLowerCase();
+      const numKw = rawNum.toLowerCase();
+
+      filteredAccounts = bankAccounts.filter(row => {
+        if (rawBank) {
+          if (parsedBank) {
+            if (row.bankCode !== parsedBank.code) return false;
+          } else {
+            const fullBank = formatBankLabel(row.bankCode, row.bankName).toLowerCase();
+            if (!fullBank.includes(bankKw)) return false;
+          }
+        }
+        if (nameKw && !String(row.accountName || '').toLowerCase().includes(nameKw)) return false;
+        if (numKw && !String(row.accountNumber || '').toLowerCase().includes(numKw)) return false;
+        return true;
+      });
+
+      pager.setPage(1);
+      renderAccountTable();
+      $('table-loading').classList.add('hidden');
+    }, 150);
+  };
+
+  $('btn-search').addEventListener('click', executeSearch);
+  ['filter-account-name', 'filter-account-number'].forEach(fid => {
+    $(fid).addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        executeSearch();
+      }
+    });
+  });
+
+  $('btn-reset').addEventListener('click', () => {
+    filterBankCombo.setValue('');
+    filterBankCombo.close();
+    $('filter-account-name').value = '';
+    $('filter-account-number').value = '';
+    filteredAccounts = [...bankAccounts];
+    pager.setPage(1);
+    renderAccountTable();
+  });
+
+  // ==================== 右側表單：人員 / 組隊子頁籤切換與列表渲染 ====================
+  const switchSubTab = (tabName) => {
+    activeSubTab = tabName === 'team' ? 'team' : 'staff';
+    $('subtab-staff').classList.toggle('active', activeSubTab === 'staff');
+    $('subtab-staff').setAttribute('aria-selected', activeSubTab === 'staff' ? 'true' : 'false');
+    $('subtab-team').classList.toggle('active', activeSubTab === 'team');
+    $('subtab-team').setAttribute('aria-selected', activeSubTab === 'team' ? 'true' : 'false');
+
+    $('subpanel-staff').classList.toggle('hidden', activeSubTab !== 'staff');
+    $('subpanel-team').classList.toggle('hidden', activeSubTab !== 'team');
+  };
+
+  $('subtab-staff').addEventListener('click', () => switchSubTab('staff'));
+  $('subtab-team').addEventListener('click', () => switchSubTab('team'));
+
+  const renderDraftStaffTable = () => {
+    $('staff-tab-count').textContent = String(draftStaff.length);
+    const tbody = $('staff-list-tbody');
+    if (draftStaff.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="2" class="empty" style="padding: 18px;">尚未新增人員</td></tr>';
+      return;
+    }
+    tbody.innerHTML = draftStaff.map((person, idx) => {
+      const displayLabel = person.ldap && person.ldap !== person.name
+        ? `${escapeAttr(person.name)} <span style="color:#6a7994; font-size:13px;">(${escapeAttr(person.ldap)})</span>`
+        : escapeAttr(person.name);
+      return `
+        <tr>
+          <td>${displayLabel}</td>
+          <td class="center"><button type="button" class="btn btn-danger-solid small btn-del-staff" data-idx="${idx}">刪除</button></td>
+        </tr>
+      `;
+    }).join('');
+
+    tbody.querySelectorAll('.btn-del-staff').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const idx = Number(e.currentTarget.dataset.idx);
+        const target = draftStaff[idx];
+        if (!target) return;
+        openConfirmModal(
+          `確定要移除人員「<strong>${escapeAttr(target.name)}</strong>」嗎？`,
+          { title: '刪除人員確認', okClass: 'btn btn-danger-solid', okText: '刪除' },
+          () => {
+            draftStaff.splice(idx, 1);
+            renderDraftStaffTable();
+            toast(`已移除人員「${target.name}」`);
+          }
+        );
+      });
+    });
+  };
+
+  const renderDraftTeamTable = () => {
+    $('team-tab-count').textContent = String(draftTeams.length);
+    const tbody = $('team-list-tbody');
+    if (draftTeams.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="2" class="empty" style="padding: 18px;">尚未新增和氣組隊</td></tr>';
+      return;
+    }
+    tbody.innerHTML = draftTeams.map((team, idx) => `
+      <tr>
+        <td>${escapeAttr(team.name)} <span style="color:#6a7994; font-size:13px;">(${escapeAttr(team.code)})</span></td>
+        <td class="center"><button type="button" class="btn btn-danger-solid small btn-del-team" data-idx="${idx}">刪除</button></td>
+      </tr>
+    `).join('');
+
+    tbody.querySelectorAll('.btn-del-team').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const idx = Number(e.currentTarget.dataset.idx);
+        const target = draftTeams[idx];
+        if (!target) return;
+        openConfirmModal(
+          `確定要移除組隊「<strong>${escapeAttr(target.name)}</strong>」嗎？`,
+          { title: '刪除組隊確認', okClass: 'btn btn-danger-solid', okText: '刪除' },
+          () => {
+            draftTeams.splice(idx, 1);
+            renderDraftTeamTable();
+            toast(`已移除組隊「${target.name}」`);
+          }
+        );
+      });
+    });
+  };
+
+  // ==================== 新增人員（請填 LDAP + 號按鈕）（圖 2, 5） ====================
+  const addLdapStaff = () => {
+    const input = $('form-ldap-input');
+    const raw = cleanTrim(input.value);
+    if (!raw) {
+      input.classList.add('highlight-error');
+      openAlertModal('請先輸入 LDAP 帳號或人員姓名！', () => input.focus());
+      return;
+    }
+    input.classList.remove('highlight-error');
+
+    const lower = raw.toLowerCase();
+    let matchedLdap = '';
+    let matchedName = '';
+
+    if (ldapDirectory[lower]) {
+      matchedLdap = lower;
+      matchedName = ldapDirectory[lower];
+    } else {
+      const byNameEntry = Object.entries(ldapDirectory).find(([, nm]) => nm === raw);
+      if (byNameEntry) {
+        matchedLdap = byNameEntry[0];
+        matchedName = byNameEntry[1];
+      } else {
+        matchedLdap = raw;
+        matchedName = raw;
+      }
+    }
+
+    const exists = draftStaff.some(s => s.ldap.toLowerCase() === matchedLdap.toLowerCase() || s.name === matchedName);
+    if (exists) {
+      openAlertModal(`人員「${matchedName}」已在清單中，請勿重複新增！`, () => input.focus());
+      return;
+    }
+
+    draftStaff.push({ ldap: matchedLdap, name: matchedName });
+    input.value = '';
+    renderDraftStaffTable();
+    toast(`已新增人員「${matchedName}」`);
+  };
+
+  $('btn-add-ldap').addEventListener('click', addLdapStaff);
+  $('form-ldap-input').addEventListener('input', (e) => e.target.classList.remove('highlight-error'));
+  $('form-ldap-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addLdapStaff();
+    }
+  });
+
+  // ==================== 新增和氣組隊彈窗（圖 3, 4, 6） ====================
+  const renderHeqiModalTable = (filterText = '') => {
+    const tbody = $('heqi-modal-tbody');
+    const kw = cleanTrim(filterText).toLowerCase();
+    const list = heqiTeamCatalog.filter(t => {
+      if (!kw) return true;
+      return t.code.toLowerCase().includes(kw) || t.name.toLowerCase().includes(kw);
+    });
+
+    if (list.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="3" class="empty">查無相符的和氣組隊</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = list.map(team => {
+      const alreadyAdded = draftTeams.some(dt => dt.code === team.code);
+      return `
+        <tr>
+          <td style="font-weight: 600; color: #14264b;">${escapeAttr(team.code)}</td>
+          <td>${escapeAttr(team.name)}</td>
+          <td class="center">
+            <button type="button" class="btn primary small btn-pick-heqi" data-code="${escapeAttr(team.code)}" ${alreadyAdded ? 'disabled' : ''}>
+              ${alreadyAdded ? '已選用' : '選擇'}
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    tbody.querySelectorAll('.btn-pick-heqi:not(:disabled)').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const code = e.currentTarget.dataset.code;
+        const found = heqiTeamCatalog.find(t => t.code === code);
+        if (!found) return;
+        if (!draftTeams.some(dt => dt.code === found.code)) {
+          draftTeams.push({ code: found.code, name: found.name });
+          renderDraftTeamTable();
+          toast(`已加入「${found.name} (${found.code})」`);
+        }
+        closeHeqiSelectModal();
+      });
+    });
+  };
+
+  const openHeqiSelectModal = () => {
+    $('heqi-modal-filter').value = '';
+    renderHeqiModalTable('');
+    $('heqi-select-modal').classList.remove('hidden');
+    setTimeout(() => $('heqi-modal-filter').focus(), 30);
+  };
+
+  const closeHeqiSelectModal = () => {
+    $('heqi-select-modal').classList.add('hidden');
+  };
+
+  $('btn-open-heqi-modal').addEventListener('click', openHeqiSelectModal);
+  $('close-heqi-modal').addEventListener('click', closeHeqiSelectModal);
+  $('btn-heqi-modal-cancel').addEventListener('click', closeHeqiSelectModal);
+  window.CTA.registerModalEsc('heqi-select-modal', closeHeqiSelectModal);
+
+  $('heqi-modal-filter').addEventListener('input', (e) => {
+    renderHeqiModalTable(e.target.value);
+  });
+
+  // ==================== 右側表單模式切換：修改模式 vs 新增銀行相關資料模式 ====================
+  const clearFormValidationErrors = () => {
+    ['form-bank-code', 'form-account-name', 'form-account-number', 'form-ldap-input'].forEach(fid => {
+      const el = $(fid);
+      if (el) el.classList.remove('highlight-error');
+    });
+  };
+
+  const loadAccountIntoEditor = (account) => {
+    if (!account) return;
+    selectedAccountId = account.id;
+    clearFormValidationErrors();
+
+    $('editor-mode-title').textContent = '修改匯款銀行資料';
+    const badge = $('editor-mode-badge');
+    badge.textContent = `序號 #${filteredAccounts.findIndex(r => r.id === account.id) + 1 || account.id}`;
+    badge.className = 'status-badge pending';
+    $('btn-switch-create-top').classList.remove('hidden');
+    $('btn-new-bank-mode').classList.remove('hidden');
+
+    formBankCombo.setValue(formatBankLabel(account.bankCode, account.bankName));
+    formBankCombo.close();
+    $('form-account-name').value = account.accountName || '';
+    $('form-account-number').value = account.accountNumber || '';
+
+    const targetStatus = account.status === '停用' ? '停用' : '啟用';
+    const statusRadio = document.querySelector(`input[name="form-bank-status"][value="${targetStatus}"]`);
+    if (statusRadio) statusRadio.checked = true;
+
+    $('form-ldap-input').value = '';
+    draftStaff = Array.isArray(account.staff) ? account.staff.map(s => ({ ...s })) : [];
+    draftTeams = Array.isArray(account.teams) ? account.teams.map(t => ({ ...t })) : [];
+    renderDraftStaffTable();
+    renderDraftTeamTable();
+    renderAccountTable();
+  };
+
+  const enterCreateMode = (showToastMsg = true) => {
+    selectedAccountId = null;
+    clearFormValidationErrors();
+
+    $('editor-mode-title').textContent = '新增銀行相關資料';
+    const badge = $('editor-mode-badge');
+    badge.textContent = '新增模式';
+    badge.className = 'status-badge new-apply';
+    $('btn-switch-create-top').classList.add('hidden');
+    $('btn-new-bank-mode').classList.add('hidden');
+
+    formBankCombo.setValue('');
+    formBankCombo.close();
+    $('form-account-name').value = '';
+    $('form-account-number').value = '';
+
+    const activeRadio = document.querySelector('input[name="form-bank-status"][value="啟用"]');
+    if (activeRadio) activeRadio.checked = true;
+
+    $('form-ldap-input').value = '';
+    draftStaff = [];
+    draftTeams = [];
+    renderDraftStaffTable();
+    renderDraftTeamTable();
+    renderAccountTable();
+
+    if (showToastMsg) {
+      toast('已切換為「新增銀行相關資料」模式，請填寫欄位後按儲存。');
+    }
+    $('form-bank-code').focus();
+  };
+
+  $('btn-new-bank-mode').addEventListener('click', () => enterCreateMode(true));
+  $('btn-switch-create-top').addEventListener('click', () => enterCreateMode(true));
+
+  // ==================== 儲存匯款銀行資料（新增 / 修改共用驗證與儲存） ====================
+  $('btn-save-bank').addEventListener('click', async () => {
+    await dataReady;
+    const rawBank = cleanTrim($('form-bank-code').value);
+    const accName = cleanTrim($('form-account-name').value);
+    const accNum = cleanTrim($('form-account-number').value);
+    const statusChecked = document.querySelector('input[name="form-bank-status"]:checked');
+    const statusVal = statusChecked ? statusChecked.value : '啟用';
+
+    $('form-bank-code').value = rawBank;
+    $('form-account-name').value = accName;
+    $('form-account-number').value = accNum;
+    clearFormValidationErrors();
+
+    const parsedBank = parseBankSelection(rawBank);
+    let firstInvalid = null;
+    if (!parsedBank) {
+      $('form-bank-code').classList.add('highlight-error');
+      firstInvalid = firstInvalid || $('form-bank-code');
+    }
+    if (!accName) {
+      $('form-account-name').classList.add('highlight-error');
+      firstInvalid = firstInvalid || $('form-account-name');
+    }
+    if (!accNum) {
+      $('form-account-number').classList.add('highlight-error');
+      firstInvalid = firstInvalid || $('form-account-number');
+    }
+
+    if (firstInvalid) {
+      const msg = !parsedBank && rawBank
+        ? '請從選單選擇有效的「銀行代碼」（例如：008 華南商業銀行）！'
+        : '請完整填寫必填欄位（銀行代碼、戶名、帳號）！';
+      openAlertModal(msg, () => firstInvalid.focus());
+      return;
+    }
+
+    const duplicateAcc = bankAccounts.find(r =>
+      r.id !== selectedAccountId &&
+      r.bankCode === parsedBank.code &&
+      r.accountNumber === accNum
+    );
+    if (duplicateAcc) {
+      $('form-account-number').classList.add('highlight-error');
+      openAlertModal(`「${formatBankLabel(parsedBank.code, parsedBank.name)}」已存在相同帳號（${accNum}），請確認後再儲存！`, () => {
+        $('form-account-number').focus();
+      });
+      return;
+    }
+
+    const isCreate = selectedAccountId == null;
+    const confirmText = isCreate
+      ? `確定要新增匯款銀行「<strong>${escapeAttr(formatBankLabel(parsedBank.code, parsedBank.name))} - ${escapeAttr(accName)}（${escapeAttr(accNum)}）</strong>」嗎？`
+      : `確定要儲存「<strong>${escapeAttr(formatBankLabel(parsedBank.code, parsedBank.name))} - ${escapeAttr(accName)}（${escapeAttr(accNum)}）</strong>」的修改嗎？`;
+
+    openConfirmModal(confirmText, '確定', () => {
+      if (isCreate) {
+        const newRecord = {
+          id: nextAccountId++,
+          bankCode: parsedBank.code,
+          bankName: parsedBank.name,
+          accountName: accName,
+          accountNumber: accNum,
+          status: statusVal,
+          staff: draftStaff.map(s => ({ ...s })),
+          teams: draftTeams.map(t => ({ ...t }))
+        };
+        bankAccounts.unshift(newRecord);
+        filteredAccounts = [...bankAccounts];
+        saveStateToLocalStorage();
+        pager.setPage(1);
+        loadAccountIntoEditor(newRecord);
+        toast(`已新增匯款銀行「${accName} (${accNum})」`);
+      } else {
+        const target = bankAccounts.find(r => r.id === selectedAccountId);
+        if (!target) {
+          enterCreateMode(false);
+          return;
+        }
+        target.bankCode = parsedBank.code;
+        target.bankName = parsedBank.name;
+        target.accountName = accName;
+        target.accountNumber = accNum;
+        target.status = statusVal;
+        target.staff = draftStaff.map(s => ({ ...s }));
+        target.teams = draftTeams.map(t => ({ ...t }));
+
+        saveStateToLocalStorage();
+        loadAccountIntoEditor(target);
+        toast(`已儲存「${accName} (${accNum})」的匯款銀行資料`);
+      }
+    });
+  });
+
+  const dataReady = loadInitialData();
+});
