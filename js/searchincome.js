@@ -510,11 +510,37 @@ function payment(id, detailYear) {
     <button class="btn primary" id="modal-save" style="background:#25aae1; border-color:#25aae1;">儲存</button>
   `);
 
+  const initialRemark = (r.remark || '').trim();
+  const isDetailModalDirty = () => {
+    const ov = $('overlay');
+    const saveBtn = $('modal-save');
+    if (!ov || ov.classList.contains('hidden') || !saveBtn || saveBtn.disabled) return false;
+    const curRemark = $('remark-input') ? $('remark-input').value.trim() : initialRemark;
+    const curStartMonth = $('payment-start-month') ? $('payment-start-month').value.trim() : '';
+    const curCount = $('payment-count') ? $('payment-count').value.trim() : '';
+    const curAmount = $('payment-amount') ? $('payment-amount').value.trim() : '';
+    return curRemark !== initialRemark || Boolean(curStartMonth) || Boolean(curCount) || Boolean(curAmount);
+  };
+
+  const requestCloseDetailModal = () => {
+    if (isDetailModalDirty()) {
+      window.CTA.confirm('你的資料尚未儲存，確定要離開嗎？', '確定', () => {
+        hideModal();
+      });
+    } else {
+      hideModal();
+    }
+  };
+
+  window.__searchIncomeRequestClose = requestCloseDetailModal;
+  window.__searchIncomeIsModalDirty = isDetailModalDirty;
+
   $('detail-year-select').onchange = e => payment(id, e.target.value);
-  $('modal-leave').onclick = hideModal;
+  $('modal-leave').onclick = requestCloseDetailModal;
   $('modal-save').onclick = () => {
     if ($('remark-input')) r.remark = $('remark-input').value.trim();
     toast('已儲存更新');
+    hideModal();
     render();
   };
   $('savepay').onclick = () => { if (!isClosed) toast('批次新增功能目前為靜態展示'); };
@@ -670,15 +696,19 @@ $('total').onclick = () => {
   });
 };
 
-window.CTA.registerModalEsc('overlay', hideModal);
+window.CTA.registerModalEsc('overlay', () => {
+  if (typeof window.__searchIncomeRequestClose === 'function') {
+    window.__searchIncomeRequestClose();
+  } else {
+    hideModal();
+  }
+});
 
 window.CTA.bindFormLeaveGuard({
   isActive: () => {
-    const ov = $('overlay');
-    const saveBtn = $('modal-save');
-    const isEditingModal = Boolean(ov && !ov.classList.contains('hidden') && saveBtn && !saveBtn.disabled);
-    const hasUnsubmitted = Boolean(activeKey && getTableState() === '待修正');
-    return isEditingModal || hasUnsubmitted;
+    return typeof window.__searchIncomeIsModalDirty === 'function'
+      ? Boolean(window.__searchIncomeIsModalDirty())
+      : false;
   }
 });
 
@@ -751,7 +781,13 @@ $('per-page-select').onchange = () => {
 
 // 彈窗與下拉選單全域關閉事件
 $('leave').onclick = () => {};
-$('close').onclick = hideModal;
+$('close').onclick = () => {
+  if (typeof window.__searchIncomeRequestClose === 'function') {
+    window.__searchIncomeRequestClose();
+  } else {
+    hideModal();
+  }
+};
 // 取消點擊灰色背景關閉彈窗： $('overlay').addEventListener('click', e => { if (e.target === $('overlay')) hideModal(); });
 
 document.addEventListener('click', () => {
