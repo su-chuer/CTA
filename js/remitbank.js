@@ -104,31 +104,102 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // ==================== 下拉自動完成元件（上方查詢 & 右側表單） ====================
-  const filterBankCombo = window.CTA.createComboSelect({
-    inputId: 'filter-bank-code',
-    wrapId: 'filter-bank-combo-wrap',
-    menuId: 'filter-bank-combo-menu',
-    clearBtnId: 'btn-clear-filter-bank',
-    toggleBtnId: 'btn-toggle-filter-bank',
-    getOptions: getBankOptions,
-    beforeOpen: () => dataReady,
-    emptyText: '無相符代碼 / 銀行名稱',
-    onEnter: () => executeSearch()
+
+  // ==================== 小放大鏡「請選擇銀行」Popup 彈窗（上方查詢 & 右側表單共用） ====================
+  let bankModalTarget = 'filter';
+
+  const setFilterBankValue = (val) => {
+    const cleaned = cleanTrim(val);
+    $('filter-bank-code').value = cleaned;
+    $('btn-clear-filter-bank').classList.toggle('hidden', !cleaned);
+  };
+
+  const setFormBankValue = (val) => {
+    const cleaned = cleanTrim(val);
+    $('form-bank-code').value = cleaned;
+    $('btn-clear-form-bank').classList.toggle('hidden', !cleaned);
+    $('form-bank-code').classList.remove('highlight-error');
+  };
+
+  const renderBankModalTable = (filterText = '') => {
+    const tbody = $('bank-modal-tbody');
+    const kw = cleanTrim(filterText).toLowerCase();
+    const list = bankCatalog.filter(b => {
+      if (!kw) return true;
+      return b.code.toLowerCase().includes(kw) || b.name.toLowerCase().includes(kw);
+    });
+
+    if (list.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="3" class="empty">查無相符的銀行代碼或銀行名稱</td></tr>';
+      return;
+    }
+
+    const currentVal = bankModalTarget === 'form'
+      ? cleanTrim($('form-bank-code').value)
+      : cleanTrim($('filter-bank-code').value);
+
+    tbody.innerHTML = list.map(bank => {
+      const fullLabel = formatBankLabel(bank.code, bank.name);
+      const isCurrent = currentVal === fullLabel;
+      return `
+        <tr class="${isCurrent ? 'is-selected' : ''}">
+          <td style="font-weight: 600; color: #14264b;">${escapeAttr(bank.code)}</td>
+          <td>${escapeAttr(bank.name)}</td>
+          <td class="center">
+            <button type="button" class="btn primary small btn-pick-bank" data-code="${escapeAttr(bank.code)}">選擇</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    tbody.querySelectorAll('.btn-pick-bank').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const code = e.currentTarget.dataset.code;
+        const found = bankCatalog.find(b => b.code === code);
+        if (!found) return;
+        const label = formatBankLabel(found.code, found.name);
+        if (bankModalTarget === 'form') {
+          setFormBankValue(label);
+        } else {
+          setFilterBankValue(label);
+        }
+        closeBankSelectModal();
+      });
+    });
+  };
+
+  const openBankSelectModal = async (target = 'filter') => {
+    await dataReady;
+    bankModalTarget = target === 'form' ? 'form' : 'filter';
+    $('bank-modal-filter').value = '';
+    renderBankModalTable('');
+    $('bank-select-modal').classList.remove('hidden');
+    setTimeout(() => $('bank-modal-filter').focus(), 30);
+  };
+
+  const closeBankSelectModal = () => {
+    $('bank-select-modal').classList.add('hidden');
+  };
+
+  $('btn-open-filter-bank-modal').addEventListener('click', () => openBankSelectModal('filter'));
+  $('filter-bank-code').addEventListener('click', () => openBankSelectModal('filter'));
+  $('btn-clear-filter-bank').addEventListener('click', (e) => {
+    e.stopPropagation();
+    setFilterBankValue('');
   });
 
-  const formBankCombo = window.CTA.createComboSelect({
-    inputId: 'form-bank-code',
-    wrapId: 'form-bank-combo-wrap',
-    menuId: 'form-bank-combo-menu',
-    clearBtnId: 'btn-clear-form-bank',
-    toggleBtnId: 'btn-toggle-form-bank',
-    getOptions: getBankOptions,
-    beforeOpen: () => dataReady,
-    emptyText: '無相符代碼 / 銀行名稱',
-    onSelect: () => {
-      $('form-bank-code').classList.remove('highlight-error');
-    }
+  $('btn-open-form-bank-modal').addEventListener('click', () => openBankSelectModal('form'));
+  $('form-bank-code').addEventListener('click', () => openBankSelectModal('form'));
+  $('btn-clear-form-bank').addEventListener('click', (e) => {
+    e.stopPropagation();
+    setFormBankValue('');
+  });
+
+  $('close-bank-modal').addEventListener('click', closeBankSelectModal);
+  $('btn-bank-modal-cancel').addEventListener('click', closeBankSelectModal);
+  window.CTA.registerModalEsc('bank-select-modal', closeBankSelectModal);
+  $('bank-modal-filter').addEventListener('input', (e) => {
+    renderBankModalTable(e.target.value);
   });
 
   ['form-bank-code', 'form-account-name', 'form-account-number'].forEach(fid => {
@@ -207,7 +278,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     $('filter-bank-code').value = rawBank;
     $('filter-account-keyword').value = rawKeyword;
-    filterBankCombo.close();
 
     $('table-loading').classList.remove('hidden');
     setTimeout(() => {
@@ -247,8 +317,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   $('btn-reset').addEventListener('click', () => {
-    filterBankCombo.setValue('');
-    filterBankCombo.close();
+    setFilterBankValue('');
     $('filter-account-keyword').value = '';
     filteredAccounts = [...bankAccounts];
     pager.setPage(1);
@@ -473,8 +542,7 @@ document.addEventListener("DOMContentLoaded", () => {
     $('btn-switch-create-top').classList.remove('hidden');
     $('btn-new-bank-mode').classList.remove('hidden');
 
-    formBankCombo.setValue(formatBankLabel(account.bankCode, account.bankName));
-    formBankCombo.close();
+    setFormBankValue(formatBankLabel(account.bankCode, account.bankName));
     $('form-account-name').value = account.accountName || '';
     $('form-account-number').value = account.accountNumber || '';
 
@@ -501,8 +569,7 @@ document.addEventListener("DOMContentLoaded", () => {
     $('btn-switch-create-top').classList.add('hidden');
     $('btn-new-bank-mode').classList.add('hidden');
 
-    formBankCombo.setValue('');
-    formBankCombo.close();
+    setFormBankValue('');
     $('form-account-name').value = '';
     $('form-account-number').value = '';
 
