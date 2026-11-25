@@ -510,12 +510,18 @@ document.addEventListener("DOMContentLoaded", () => {
       }, 220);
     };
 
+    const applyDefaultTodayDates = () => {
+      const todayHyphen = getTodayDates().hyphen;
+      if ($(startId)) $(startId).value = todayHyphen;
+      if ($(endId)) $(endId).value = todayHyphen;
+    };
+    applyDefaultTodayDates();
+
     const reset = () => {
       combo.setValue('');
       combo.close();
       $(itemId).value = '';
-      $(startId).value = '';
-      $(endId).value = '';
+      applyDefaultTodayDates();
       [inputId, itemId, startId, endId].forEach(fid => $(fid).classList.remove('highlight-error'));
       onReset();
     };
@@ -3434,12 +3440,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
   $('btn-search').addEventListener('click', executeSearch);
 
+  const applyQueryDefaultTodayDates = () => {
+    const todayHyphen = getTodayDates().hyphen;
+    if ($('filter-start-date')) $('filter-start-date').value = todayHyphen;
+    if ($('filter-end-date')) $('filter-end-date').value = todayHyphen;
+  };
+  applyQueryDefaultTodayDates();
+
   $('btn-reset').addEventListener('click', () => {
     warehouseCombo.setValue('');
     warehouseCombo.close();
     $('filter-item').value = '';
-    $('filter-start-date').value = '';
-    $('filter-end-date').value = '';
+    applyQueryDefaultTodayDates();
+    applyQueryDefaultTodayDates();
     ['filter-warehouse', 'filter-item', 'filter-start-date', 'filter-end-date'].forEach(fid => {
       $(fid).classList.remove('highlight-error');
     });
