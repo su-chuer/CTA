@@ -109,14 +109,14 @@ document.addEventListener("DOMContentLoaded", () => {
   let bankModalTarget = 'filter';
 
   const measureFilterTextWidth = (text, inputEl) => {
-    if (!text) return 240;
+    if (!text) return 280;
     const canvas = measureFilterTextWidth._canvas || (measureFilterTextWidth._canvas = document.createElement('canvas'));
     const ctx = canvas.getContext('2d');
     const style = window.getComputedStyle(inputEl);
     ctx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
     const textWidth = Math.ceil(ctx.measureText(text).width);
-    // 左側 padding(14px) + 右側預留清除鈕與放大鏡空間(66px)
-    return Math.max(240, textWidth + 80);
+    // 左側 padding(14px) + 右側預留清除鈕與放大鏡空間(66px)，基準寬度 280px
+    return Math.max(280, textWidth + 80);
   };
 
   const setFilterBankValue = (val) => {
@@ -249,7 +249,7 @@ document.addEventListener("DOMContentLoaded", () => {
     $('account-count-display').textContent = String(list.length);
 
     if (list.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="empty">查無符合條件的匯款帳戶資料</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" class="empty">查無符合條件的匯款帳戶資料</td></tr>';
       pager.render(0, 1, 1);
       return;
     }
@@ -272,17 +272,18 @@ document.addEventListener("DOMContentLoaded", () => {
       return `
         <tr class="${isSelected ? 'is-selected' : ''}" data-id="${row.id}">
           <td class="center">${startIndex + idx + 1}</td>
-          <td>${escapeAttr(formatBankLabel(row.bankCode, row.bankName))}</td>
           <td>${escapeAttr(row.accountName || '')}</td>
+          <td>${escapeAttr(row.bankCode || '')}</td>
           <td style="font-variant-numeric: tabular-nums;">${escapeAttr(row.accountNumber || '')}</td>
           <td class="center">${statusHtml}</td>
+          <td class="center"><button type="button" class="btn primary small btn-edit-account" data-id="${row.id}">編輯</button></td>
         </tr>
       `;
     }).join('');
 
-    tbody.querySelectorAll('tr[data-id]').forEach(tr => {
-      tr.addEventListener('click', () => {
-        const id = Number(tr.dataset.id);
+    tbody.querySelectorAll('.btn-edit-account').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = Number(e.currentTarget.dataset.id);
         const target = bankAccounts.find(a => a.id === id);
         if (target) {
           loadAccountIntoEditor(target);

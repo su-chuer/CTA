@@ -15,8 +15,8 @@
   position: relative;
   display: inline-flex;
   align-items: center;
-  min-width: 240px;
-  width: 240px;
+  min-width: 280px;
+  width: 280px;
   max-width: 100%;
   transition: width 0.15s ease;
 }
@@ -89,7 +89,6 @@
   width: 100%;
 }
 #bank-account-table tbody tr {
-  cursor: pointer;
   transition: background-color 0.15s;
 }
 #bank-account-table tbody tr.is-selected td {
@@ -275,7 +274,6 @@
       <div>
         <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px;">
           <div style="font-size: 15px; color: #556477; font-weight: 600;">銀行帳戶列表：<span id="account-count-display" style="color: #14264b; font-weight: 700;">0</span> 筆</div>
-          <span style="font-size: 13px; color: #72809c;">點選任一列可檢視與修改資料</span>
         </div>
 
         <div class="table-scroll">
@@ -283,14 +281,15 @@
             <thead>
               <tr>
                 <th class="center" style="width: 68px;">序號</th>
-                <th>銀行代碼</th>
                 <th>戶名</th>
+                <th style="width: 104px;">銀行代碼</th>
                 <th>帳戶</th>
                 <th class="center" style="width: 104px;">狀態</th>
+                <th class="center" style="width: 80px;">編輯</th>
               </tr>
             </thead>
             <tbody id="bank-account-tbody">
-              <tr><td colspan="5" class="empty">資料載入中...</td></tr>
+              <tr><td colspan="6" class="empty">資料載入中...</td></tr>
             </tbody>
           </table>
         </div>
@@ -516,7 +515,7 @@
 
 <script src="js/navbar.js?v=352"></script>
 <script src="js/common.js?v=349"></script>
-<script src="js/remitbank.js?v=358"></script>
+<script src="js/remitbank.js?v=359"></script>
 
 </body>
 </html>
