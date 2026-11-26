@@ -623,6 +623,16 @@ select.highlight-error {
 .combo-select-wrap.wide {
   width: 240px;
 }
+.combo-select-wrap.group-select-auto {
+  min-width: 185px;
+  width: 185px;
+  max-width: 100%;
+  transition: width 0.15s ease;
+}
+.combo-select-wrap.group-select-auto .combo-dropdown-menu {
+  min-width: 100%;
+  width: max-content;
+}
 .combo-select-wrap .filter-input {
   width: 100%;
   padding-right: 54px;

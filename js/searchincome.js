@@ -593,6 +593,8 @@ function payment(id, detailYear) {
 // 七、事件綁定與初始化啟動
 // ==========================================
 ['heqi', 'xieli'].forEach(sortDropdownByStroke);
+const syncHeqiWidth = window.CTA.bindSelectAutoWidth('heqi');
+const syncXieliWidth = window.CTA.bindSelectAutoWidth('xieli');
 
 $('search').onclick = () => {
   const heqi = $('heqi');
@@ -620,6 +622,8 @@ $('reset').onclick = () => {
     $('year').value = '2026';
     $('heqi').value = '';
     $('xieli').value = '';
+    syncHeqiWidth();
+    syncXieliWidth();
     $('heqi').classList.remove('highlight-error');
     $('xieli').classList.remove('highlight-error');
     document.querySelector('input[value="隊"]').checked = true;
@@ -693,6 +697,7 @@ $('total').onclick = () => {
         link.onclick = e => {
           e.preventDefault();
           $('xieli').value = link.dataset.xieli;
+          syncXieliWidth();
           document.querySelector(`input[name="unit"][value="${link.dataset.unit}"]`).checked = true;
           hideModal();
           $('search').click();

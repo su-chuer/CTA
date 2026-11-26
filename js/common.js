@@ -340,12 +340,49 @@
     return optionsList.find(k => k.toLowerCase().includes(kw)) || '';
   };
 
+  const measureControlTextWidth = (text, refEl, { minWidth = 185, extraPadding = 52 } = {}) => {
+    const cleaned = cleanTrim(text);
+    if (!cleaned || !refEl) return minWidth;
+    const canvas = measureControlTextWidth._canvas || (measureControlTextWidth._canvas = document.createElement('canvas'));
+    const ctx = canvas.getContext('2d');
+    const style = window.getComputedStyle(refEl);
+    ctx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    const textWidth = Math.ceil(ctx.measureText(cleaned).width);
+    return Math.max(minWidth, textWidth + extraPadding);
+  };
+
+  const syncComboAutoWidth = (wrapEl, inputEl, { minWidth = 185, extraPadding = 52 } = {}) => {
+    if (!wrapEl || !inputEl) return;
+    const cleaned = cleanTrim(inputEl.value);
+    inputEl.title = cleaned;
+    wrapEl.style.width = `${measureControlTextWidth(cleaned, inputEl, { minWidth, extraPadding })}px`;
+  };
+
+  const bindSelectAutoWidth = (selectId, { minWidth = 185, extraPadding = 52 } = {}) => {
+    const sel = $(selectId);
+    if (!sel) return () => {};
+    sel.style.minWidth = `${minWidth}px`;
+    sel.style.width = `${minWidth}px`;
+    sel.style.maxWidth = '100%';
+    sel.style.transition = 'width 0.15s ease';
+    const sync = () => {
+      const opt = sel.options[sel.selectedIndex];
+      const text = (sel.value && opt) ? opt.textContent : '';
+      sel.title = cleanTrim(text);
+      sel.style.width = `${measureControlTextWidth(text, sel, { minWidth, extraPadding })}px`;
+    };
+    sel.addEventListener('change', sync);
+    sync();
+    return sync;
+  };
+
   const createComboSelect = ({
     inputId, wrapId, menuId, clearBtnId, toggleBtnId,
     getOptions = () => [], beforeOpen = null,
     onSelect = null, onInput = null, onClear = null, onEnter = null,
     emptyText = '無相符資料', filterOptions = null, renderOption = null,
-    getOptionValue = (opt) => (typeof opt === 'string' ? opt : opt.value)
+    getOptionValue = (opt) => (typeof opt === 'string' ? opt : opt.value),
+    autoWidth = false, minWidth = 185, extraPadding = 52
   }) => {
     const input = $(inputId);
     const wrap = $(wrapId);
@@ -354,8 +391,17 @@
     const toggleBtn = $(toggleBtnId);
     let highlightedIndex = -1;
 
+    if (autoWidth && wrap) {
+      wrap.classList.add('group-select-auto');
+    }
+
+    const syncWidth = () => {
+      if (autoWidth) syncComboAutoWidth(wrap, input, { minWidth, extraPadding });
+    };
+
     const syncClearBtn = () => {
       if (clearBtn && input) clearBtn.classList.toggle('hidden', input.value.trim().length === 0);
+      syncWidth();
     };
 
     const close = () => {
@@ -628,7 +674,7 @@
     toHyphenDate, toSlashDate, getTodayDates, getNowMsRecord, syncRecordedFloorMs, parseTimestampMs, getRecordTimeMs,
     toast, alert: alertModal, closeAlert, confirm: confirmModal, closeConfirm, registerModalEsc,
     getPageList, createPagination,
-    resolveOptionKey, createComboSelect,
+    resolveOptionKey, measureControlTextWidth, syncComboAutoWidth, bindSelectAutoWidth, createComboSelect,
     bindFormLeaveGuard,
     openPersonSelectModal, closePersonSelectModal, lookupMemberByCode,
     sortByApplyDateDesc

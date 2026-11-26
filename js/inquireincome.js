@@ -71,6 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const heqiCombo = window.CTA.createComboSelect({
     inputId: 'filter-heqi',
+    autoWidth: true,
     wrapId: 'heqi-combo-wrap',
     menuId: 'heqi-combo-menu',
     clearBtnId: 'btn-clear-heqi',
