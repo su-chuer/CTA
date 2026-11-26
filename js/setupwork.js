@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
         areaAssignments: savedAreaAssignments
       }));
     } catch (err) {
-      console.error('儲存維護作業區設定失敗：', err);
+      console.error('儲存作業區設定失敗：', err);
     }
   };
 

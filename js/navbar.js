@@ -97,11 +97,11 @@ document.addEventListener("DOMContentLoaded", function() {
           <a class="menu-link has-dropdown" href="#"><span>系統設定</span><span class="mobile-arrow">▾</span></a>
           <ul class="dropdown-menu">
             <li><a class="dropdown-item" href="remitbank.html">匯款帳戶設定</a></li>
-            <li><a class="dropdown-item" href="setupwork.html">維護作業區</a></li>
-            <li><a class="dropdown-item" href="#">維護人員</a></li>
-            <li><a class="dropdown-item" href="#">維護作業區倉庫</a></li>
-            <li><a class="dropdown-item" href="#">維護倉庫管理者</a></li>
-            <li><a class="dropdown-item" href="#">維護物資安全庫存量</a></li>
+            <li><a class="dropdown-item" href="setupwork.html">作業區設定</a></li>
+            <li><a class="dropdown-item" href="#">人員設定</a></li>
+            <li><a class="dropdown-item" href="#">作業區倉庫設定</a></li>
+            <li><a class="dropdown-item" href="#">倉庫管理者設定</a></li>
+            <li><a class="dropdown-item" href="#">物資安全庫存量設定</a></li>
           </ul>
         </li>
         <li class="menu-node">
