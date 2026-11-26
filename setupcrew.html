@@ -19,7 +19,8 @@ html, body {
   min-height: calc(100vh - 58px);
 }
 #ldap-account-input {
-  width: 240px;
+  width: 330px;
+  max-width: 100%;
 }
 .shuttle-layout {
   display: grid;
@@ -234,7 +235,7 @@ html, body {
   <section class="panel filters" aria-label="人員查詢條件">
     <div class="field">
       <label for="ldap-account-input">LDAP帳號 <b>*</b></label>
-      <input type="text" id="ldap-account-input" class="filter-input" autocomplete="off" placeholder="請輸入 LDAP 帳號">
+      <input type="text" id="ldap-account-input" class="filter-input" autocomplete="off" placeholder="請輸入 LDAP 帳號，如：test1, test2, test3">
     </div>
 
     <div class="search-actions" style="margin-left: 6px;">
