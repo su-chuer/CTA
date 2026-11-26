@@ -625,7 +625,7 @@ select.highlight-error {
 }
 .combo-select-wrap.group-select-auto {
   min-width: 185px;
-  width: 185px;
+  width: 218px;
   max-width: 100%;
   transition: width 0.15s ease;
 }
