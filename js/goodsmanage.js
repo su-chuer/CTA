@@ -3483,7 +3483,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const applyRoleUI = () => {
     const roleSelect = $('simulated-role');
-    if (roleSelect && roleSelect.value !== currentRole) {
+    if (roleSelect && currentRole && roleSelect.value !== currentRole) {
       roleSelect.value = currentRole;
     }
 
@@ -4158,6 +4158,8 @@ document.addEventListener("DOMContentLoaded", () => {
       sessionStorage.removeItem(GOODS_MANAGE_TAB_KEY);
     } catch (_) {}
     currentRole = '';
+    const roleSelect = $('simulated-role');
+    if (roleSelect) roleSelect.value = 'hq';
     applyRoleUI();
   });
 });
