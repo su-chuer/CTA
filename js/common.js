@@ -386,20 +386,22 @@
     getOptionValue = (opt) => (typeof opt === 'string' ? opt : opt.value),
     autoWidth = false, minWidth = 185, extraPadding = null
   }) => {
-    const resolvedExtraPadding = extraPadding != null ? extraPadding : (clearBtnId ? 76 : 56);
     const input = $(inputId);
     const wrap = $(wrapId);
     const menu = $(menuId);
     const clearBtn = $(clearBtnId);
     const toggleBtn = $(toggleBtnId);
+    const isAutoWidth = Boolean(autoWidth || (wrap && wrap.classList.contains('group-select-auto')));
+    const hasActiveClearBtn = Boolean(clearBtn && !clearBtn.hasAttribute('aria-hidden'));
+    const resolvedExtraPadding = extraPadding != null ? extraPadding : (hasActiveClearBtn ? 76 : 56);
     let highlightedIndex = -1;
 
-    if (autoWidth && wrap) {
+    if (isAutoWidth && wrap) {
       wrap.classList.add('group-select-auto');
     }
 
     const syncWidth = () => {
-      if (autoWidth) syncComboAutoWidth(wrap, input, { minWidth, extraPadding: resolvedExtraPadding });
+      if (isAutoWidth) syncComboAutoWidth(wrap, input, { minWidth, extraPadding: resolvedExtraPadding });
     };
 
     const syncClearBtn = () => {
@@ -672,6 +674,40 @@
       return Number((b && b.id) || 0) - Number((a && a.id) || 0);
     });
   };
+
+
+  // 自動同步所有帶有 .group-select-auto 的下拉欄位寬度（涵蓋獨立實作選單邏輯的頁面如 goodsmanage.js）
+  const initAllGroupSelectAutoWidth = () => {
+    document.querySelectorAll('.combo-select-wrap.group-select-auto').forEach(wrap => {
+      const input = wrap.querySelector('input.filter-input, input[type="text"]');
+      if (!input || wrap.dataset.ctaAutoWidthHooked === '1') return;
+      wrap.dataset.ctaAutoWidthHooked = '1';
+      const clearBtn = wrap.querySelector('.combo-clear-btn');
+      const hasActiveClear = Boolean(clearBtn && !clearBtn.hasAttribute('aria-hidden'));
+      const extraPad = hasActiveClear ? 76 : 56;
+      const sync = () => syncComboAutoWidth(wrap, input, { minWidth: 185, extraPadding: extraPad });
+      input.addEventListener('input', sync);
+      input.addEventListener('change', sync);
+      wrap.addEventListener('click', () => setTimeout(sync, 0));
+      wrap.addEventListener('mousedown', () => setTimeout(sync, 0));
+      // 攔截外部 JS 直接賦值 input.value = '...'（例如點選下拉選項或按清除鈕時）
+      const desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+      if (desc && desc.set && desc.get) {
+        Object.defineProperty(input, 'value', {
+          configurable: true,
+          get() { return desc.get.call(this); },
+          set(v) { desc.set.call(this, v); sync(); }
+        });
+      }
+      sync();
+    });
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAllGroupSelectAutoWidth);
+  } else {
+    initAllGroupSelectAutoWidth();
+  }
 
   window.CTA = Object.assign(window.CTA || {}, {
     $, cleanTrim, stripLeadingSpace, money, escapeAttr,

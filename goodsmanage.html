@@ -19,7 +19,6 @@ html, body {
 }
 #role-combo-wrap {
   min-width: 185px;
-  width: 185px;
   max-width: 100%;
   transition: width 0.15s ease;
 }
@@ -48,7 +47,7 @@ html, body {
   <section class="panel filters" aria-label="作業倉庫切換區" style="margin-bottom: 15px;">
     <div class="field">
       <label for="simulated-role">作業倉庫 <b>*</b></label>
-      <div class="combo-select-wrap" id="role-combo-wrap">
+      <div class="combo-select-wrap group-select-auto" id="role-combo-wrap">
         <input type="text" id="simulated-role" class="filter-input" readonly autocomplete="off" value="本會倉庫" placeholder="請選擇" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="role-combo-menu" style="cursor: pointer; background-color: #ffffff;">
         <button type="button" class="combo-clear-btn hidden" id="btn-clear-role" aria-hidden="true" tabindex="-1"></button>
         <button type="button" class="combo-arrow-btn" id="btn-toggle-role" title="展開作業倉庫選單" aria-label="展開作業倉庫選單">
@@ -88,7 +87,7 @@ html, body {
     <section class="panel filters" aria-label="查詢條件">
       <div class="field">
         <label for="filter-warehouse">倉庫 <b>*</b></label>
-        <div class="combo-select-wrap" id="warehouse-combo-wrap">
+        <div class="combo-select-wrap group-select-auto" id="warehouse-combo-wrap">
           <input type="text" id="filter-warehouse" class="filter-input" autocomplete="off" placeholder="請選擇或輸入文字" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="warehouse-combo-menu">
           <button type="button" class="combo-clear-btn hidden" id="btn-clear-warehouse" title="清除倉庫" aria-label="清除倉庫">&times;</button>
           <button type="button" class="combo-arrow-btn" id="btn-toggle-warehouse" title="展開倉庫選單" aria-label="展開倉庫選單">
@@ -223,7 +222,7 @@ html, body {
     <section class="panel filters" aria-label="廠商入庫查詢條件">
       <div class="field">
         <label for="vendor-query-warehouse">倉庫入庫</label>
-        <div class="combo-select-wrap" id="vendor-wh-combo-wrap">
+        <div class="combo-select-wrap group-select-auto" id="vendor-wh-combo-wrap">
           <input type="text" id="vendor-query-warehouse" class="filter-input" autocomplete="off" placeholder="請選擇或輸入文字" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="vendor-wh-combo-menu">
           <button type="button" class="combo-clear-btn hidden" id="btn-clear-vendor-wh" title="清除倉庫入庫" aria-label="清除倉庫入庫">&times;</button>
           <button type="button" class="combo-arrow-btn" id="btn-toggle-vendor-wh" title="展開倉庫入庫選單" aria-label="展開倉庫入庫選單">
@@ -346,7 +345,7 @@ html, body {
     <section class="panel filters" aria-label="出庫與調貨查詢條件">
       <div class="field">
         <label for="transfer-query-warehouse">倉庫</label>
-        <div class="combo-select-wrap" id="transfer-wh-combo-wrap">
+        <div class="combo-select-wrap group-select-auto" id="transfer-wh-combo-wrap">
           <input type="text" id="transfer-query-warehouse" class="filter-input" autocomplete="off" placeholder="請選擇或輸入文字" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="transfer-wh-combo-menu">
           <button type="button" class="combo-clear-btn hidden" id="btn-clear-transfer-wh" title="清除倉庫" aria-label="清除倉庫">&times;</button>
           <button type="button" class="combo-arrow-btn" id="btn-toggle-transfer-wh" title="展開倉庫選單" aria-label="展開倉庫選單">
@@ -476,7 +475,7 @@ html, body {
     <section class="panel filters" aria-label="簽收入庫查詢條件">
       <div class="field">
         <label for="signin-query-out-warehouse">出庫倉庫</label>
-        <div class="combo-select-wrap" id="signin-out-wh-combo-wrap">
+        <div class="combo-select-wrap group-select-auto" id="signin-out-wh-combo-wrap">
           <input type="text" id="signin-query-out-warehouse" class="filter-input" autocomplete="off" placeholder="請選擇或輸入文字" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="signin-out-wh-combo-menu">
           <button type="button" class="combo-clear-btn hidden" id="btn-clear-signin-out-wh" title="清除出庫倉庫" aria-label="清除出庫倉庫">&times;</button>
           <button type="button" class="combo-arrow-btn" id="btn-toggle-signin-out-wh" title="展開出庫倉庫選單" aria-label="展開出庫倉庫選單">
@@ -488,7 +487,7 @@ html, body {
 
       <div class="field">
         <label for="signin-query-in-warehouse">入庫倉庫</label>
-        <div class="combo-select-wrap" id="signin-in-wh-combo-wrap">
+        <div class="combo-select-wrap group-select-auto" id="signin-in-wh-combo-wrap">
           <input type="text" id="signin-query-in-warehouse" class="filter-input" autocomplete="off" placeholder="請選擇或輸入文字" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="signin-in-wh-combo-menu">
           <button type="button" class="combo-clear-btn hidden" id="btn-clear-signin-in-wh" title="清除入庫倉庫" aria-label="清除入庫倉庫">&times;</button>
           <button type="button" class="combo-arrow-btn" id="btn-toggle-signin-in-wh" title="展開入庫倉庫選單" aria-label="展開入庫倉庫選單">
@@ -570,7 +569,7 @@ html, body {
     <section class="panel filters" aria-label="盤差作業查詢條件">
       <div class="field">
         <label for="diff-query-warehouse">倉庫</label>
-        <div class="combo-select-wrap" id="diff-wh-combo-wrap">
+        <div class="combo-select-wrap group-select-auto" id="diff-wh-combo-wrap">
           <input type="text" id="diff-query-warehouse" class="filter-input" autocomplete="off" placeholder="請選擇或輸入文字" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="diff-wh-combo-menu">
           <button type="button" class="combo-clear-btn hidden" id="btn-clear-diff-wh" title="清除倉庫" aria-label="清除倉庫">&times;</button>
           <button type="button" class="combo-arrow-btn" id="btn-toggle-diff-wh" title="展開倉庫選單" aria-label="展開倉庫選單">
@@ -761,7 +760,7 @@ html, body {
 <div id="toast" class="toast hidden"></div>
 
 <script src="js/navbar.js?v=352"></script>
-<script src="js/common.js?v=384"></script>
+<script src="js/common.js?v=385"></script>
 <script src="js/goodsmanage.js?v=380"></script>
 
 </body>

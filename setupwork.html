@@ -20,7 +20,6 @@ html, body {
 }
 #area-combo-wrap {
   min-width: 185px;
-  width: 185px;
   max-width: 100%;
   transition: width 0.15s ease;
 }
@@ -243,7 +242,7 @@ html, body {
   <section class="panel filters" aria-label="作業區查詢條件">
     <div class="field">
       <label for="work-area-select">作業區 <b>*</b></label>
-      <div class="combo-select-wrap" id="area-combo-wrap">
+      <div class="combo-select-wrap group-select-auto" id="area-combo-wrap">
         <input type="text" id="work-area-select" class="filter-input" autocomplete="off" placeholder="請選擇" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="area-combo-menu">
         <button type="button" class="combo-arrow-btn" id="btn-toggle-area" title="展開作業區選單" aria-label="展開作業區選單">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
@@ -389,7 +388,7 @@ html, body {
 <div id="toast" class="toast hidden"></div>
 
 <script src="js/navbar.js?v=353"></script>
-<script src="js/common.js?v=384"></script>
+<script src="js/common.js?v=385"></script>
 <script src="js/setupwork.js?v=379"></script>
 
 </body>
