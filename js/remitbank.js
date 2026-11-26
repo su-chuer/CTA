@@ -562,7 +562,6 @@ document.addEventListener("DOMContentLoaded", () => {
     badge.textContent = `序號 #${filteredAccounts.findIndex(r => r.id === account.id) + 1 || account.id}`;
     badge.className = 'status-badge pending';
     $('btn-switch-create-top').classList.remove('hidden');
-    $('btn-new-bank-mode').classList.remove('hidden');
 
     setFormBankValue(formatBankLabel(account.bankCode, account.bankName));
     $('form-account-name').value = account.accountName || '';
@@ -584,12 +583,11 @@ document.addEventListener("DOMContentLoaded", () => {
     selectedAccountId = null;
     clearFormValidationErrors();
 
-    $('editor-mode-title').textContent = '新增匯款帳戶資料';
+    $('editor-mode-title').textContent = '新增匯款帳戶';
     const badge = $('editor-mode-badge');
-    badge.textContent = '新增模式';
+    badge.textContent = '新增';
     badge.className = 'status-badge new-apply';
     $('btn-switch-create-top').classList.add('hidden');
-    $('btn-new-bank-mode').classList.add('hidden');
 
     setFormBankValue('');
     $('form-account-name').value = '';
@@ -606,12 +604,11 @@ document.addEventListener("DOMContentLoaded", () => {
     renderAccountTable();
 
     if (showToastMsg) {
-      toast('已切換為「新增匯款帳戶資料」模式，請填寫欄位後按儲存。');
+      toast('已切換為「新增匯款帳戶」，請填寫欄位後按儲存。');
     }
     $('form-bank-code').focus();
   };
 
-  $('btn-new-bank-mode').addEventListener('click', () => enterCreateMode(true));
   $('btn-switch-create-top').addEventListener('click', () => enterCreateMode(true));
 
   // ==================== 儲存匯款帳戶資料（新增 / 修改共用驗證與儲存） ====================

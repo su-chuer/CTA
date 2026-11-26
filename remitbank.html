@@ -309,15 +309,19 @@
         </div>
       </div>
 
-      <!-- 右側：新增 / 修改銀行相關資料表單卡片（圖 2 ~ 圖 6） -->
-      <div class="claim-add-box" id="bank-editor-box" aria-label="匯款銀行編輯表單">
-        <div class="bank-editor-header">
-          <div class="bank-editor-title">
-            <span id="editor-mode-title">匯款帳戶資料</span>
-            <span class="status-badge pending" id="editor-mode-badge">編輯中</span>
-          </div>
-          <button type="button" class="btn small hidden" id="btn-switch-create-top">+ 新增模式</button>
+      <!-- 右側：上方「+ 新增匯款帳戶」操作列 + 下方「匯款帳戶資料」表單卡片 -->
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; justify-content: flex-end; align-items: center;">
+          <button type="button" class="btn primary" id="btn-switch-create-top" style="height: 38px; padding: 0 16px; font-size: 14px; font-weight: 600;">+ 新增匯款帳戶</button>
         </div>
+
+        <div class="claim-add-box" id="bank-editor-box" aria-label="匯款銀行編輯表單">
+          <div class="bank-editor-header">
+            <div class="bank-editor-title">
+              <span id="editor-mode-title">匯款帳戶資料</span>
+              <span class="status-badge pending" id="editor-mode-badge">編輯中</span>
+            </div>
+          </div>
 
         <!-- 銀行代碼 * -->
         <div class="claim-field">
@@ -406,11 +410,11 @@
           </div>
         </div>
 
-        <!-- 底部操作按鈕：儲存 / 新增匯款帳戶資料 -->
+        <!-- 底部操作按鈕：儲存 -->
         <div class="bank-editor-actions">
           <button type="button" class="btn primary" id="btn-save-bank">儲存</button>
-          <button type="button" class="btn" id="btn-new-bank-mode">新增匯款帳戶資料</button>
         </div>
+      </div>
       </div>
     </div>
   </section>
@@ -515,7 +519,7 @@
 
 <script src="js/navbar.js?v=352"></script>
 <script src="js/common.js?v=349"></script>
-<script src="js/remitbank.js?v=361"></script>
+<script src="js/remitbank.js?v=362"></script>
 
 </body>
 </html>
