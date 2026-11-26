@@ -481,11 +481,11 @@ function payment(id, detailYear) {
           <input id="payment-count" type="number" min="${maxCount > 0 ? 1 : 0}" max="${maxCount}" step="1" value="" class="elegant-input" ${(isClosed || maxCount === 0) ? 'disabled' : ''}>
         </div>
 
-        <div class="inline-underline-field custom-select-group ${isClosed ? 'disabled' : ''}">
+        <div class="inline-underline-field custom-select-group ${(isClosed || maxCount === 0) ? 'disabled' : ''}">
           <label>金額：</label>
           <div class="elegant-select" id="wrapper-amount">
             <input type="hidden" id="payment-amount" value="">
-            <div class="elegant-select-trigger ${isClosed ? 'disabled' : ''}" id="trigger-amount">
+            <div class="elegant-select-trigger ${(isClosed || maxCount === 0) ? 'disabled' : ''}" id="trigger-amount">
               <span id="text-amount"></span>
               <span class="elegant-select-arrow">▾</span>
             </div>
@@ -497,17 +497,21 @@ function payment(id, detailYear) {
         </div>
 
         <div style="display:flex; flex-direction:column; gap:10px; margin-top:6px;">
-          <button class="btn elegant-btn-add" id="savepay" ${isClosed ? 'disabled' : ''}>批次新增</button>
+          <button class="btn elegant-btn-add" id="savepay" ${(isClosed || maxCount === 0) ? 'disabled' : ''}>批次新增</button>
           <button class="btn elegant-btn-del" id="deletepay" ${isClosed ? 'disabled' : ''}>刪除</button>
         </div>
       </div>
     </div>
   `;
 
+  const isPaidFullYear = hasExistingPayments && maxCount === 0;
+  const hideSaveBtn = isClosed || isPaidFullYear;
+  const saveBtnHtml = hideSaveBtn ? '' : '<button class="btn primary" id="modal-save" style="background:#25aae1; border-color:#25aae1;">儲存</button>';
+
   modal('收入管理 / 編輯收入明細 / 詳細', form, `
     <button class="btn" id="history">下載歷史繳款紀錄</button>
     <button class="btn" id="modal-leave">關閉</button>
-    <button class="btn primary" id="modal-save" style="background:#25aae1; border-color:#25aae1;">儲存</button>
+    ${saveBtnHtml}
   `);
 
   const initialRemark = (r.remark || '').trim();
@@ -537,12 +541,14 @@ function payment(id, detailYear) {
 
   $('detail-year-select').onchange = e => payment(id, e.target.value);
   $('modal-leave').onclick = requestCloseDetailModal;
-  $('modal-save').onclick = () => {
-    if ($('remark-input')) r.remark = $('remark-input').value.trim();
-    toast('已儲存更新');
-    hideModal();
-    render();
-  };
+  if ($('modal-save')) {
+    $('modal-save').onclick = () => {
+      if ($('remark-input')) r.remark = $('remark-input').value.trim();
+      toast('已儲存更新');
+      hideModal();
+      render();
+    };
+  }
   $('savepay').onclick = () => { if (!isClosed) toast('批次新增功能目前為靜態展示'); };
   $('deletepay').onclick = () => { if (!isClosed) toast('刪除功能目前為靜態展示'); };
   $('history').onclick = () => toast('下載歷史繳款紀錄尚未串接後端');
