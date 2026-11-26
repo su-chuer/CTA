@@ -570,9 +570,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const triggerEditorFlash = () => {
     const box = $('bank-editor-box');
     if (!box) return;
-    box.classList.remove('flash-bounce');
+    box.classList.remove('blue-pulse');
     void box.offsetWidth;
-    box.classList.add('flash-bounce');
+    box.classList.add('blue-pulse');
   };
 
   const requestLeaveEditor = () => {
