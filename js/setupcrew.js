@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!loaded) {
       try {
-        const res = await fetch('json/setup_crew_data.json?v=395', { cache: 'no-store' });
+        const res = await fetch('json/setup_crew_data.json?v=405', { cache: 'no-store' });
         if (res && res.ok) {
           loaded = await res.json();
         }
@@ -52,15 +52,18 @@ document.addEventListener("DOMContentLoaded", () => {
     if (loaded && typeof loaded === 'object') {
       const fallbackLdap = {
         chang01: '張1', chang02: '張2', lin01: '林1', lin02: '林2',
-        shih01: '釋德1法師', su02: '蘇2', chiu01: '丘1', huang01: '黃1',
-        kuo01: '郭1', kuo02: '郭2', wang01: '王1', wang02: '王凱2',
+        su02: '蘇2', chiu01: '丘1', huang01: '黃1',
+        kuo01: '郭1', kuo02: '郭2', wang01: '王1',
         chen01: '陳1', wu01: '吳1', test1: '蘇1', test2: '林1', test3: '王1'
       };
-      ldapDirectory = Object.assign(
+      const mergedLdap = Object.assign(
         {},
         fallbackLdap,
         (loaded.ldapDirectory && typeof loaded.ldapDirectory === 'object') ? loaded.ldapDirectory : {}
       );
+      delete mergedLdap.shih01;
+      delete mergedLdap.wang02;
+      ldapDirectory = mergedLdap;
       allTeams = Array.isArray(loaded.allTeams) ? loaded.allTeams : [];
       savedCrewAssignments = (loaded.crewAssignments && typeof loaded.crewAssignments === 'object')
         ? loaded.crewAssignments
