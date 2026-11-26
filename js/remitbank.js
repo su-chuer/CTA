@@ -96,12 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     filteredAccounts = [...bankAccounts];
-    renderAccountTable();
-    if (bankAccounts.length > 0) {
-      loadAccountIntoEditor(bankAccounts[0]);
-    } else {
-      enterCreateMode(false);
-    }
+    hideEditorPanel();
   };
 
 
@@ -552,18 +547,63 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
+  let editorInitialSnapshot = '';
+
+  const getEditorSnapshot = () => {
+    const statusChecked = document.querySelector('input[name="form-bank-status"]:checked');
+    return JSON.stringify({
+      bank: cleanTrim($('form-bank-code').value),
+      name: cleanTrim($('form-account-name').value),
+      number: cleanTrim($('form-account-number').value),
+      status: statusChecked ? statusChecked.value : '啟用',
+      staff: draftStaff.map(s => `${s.ldap}|${s.name}`),
+      teams: draftTeams.map(t => `${t.code}|${t.name}`)
+    });
+  };
+
+  const isEditorDirty = () => {
+    const box = $('bank-editor-box');
+    if (!box || box.classList.contains('hidden')) return false;
+    return getEditorSnapshot() !== editorInitialSnapshot;
+  };
+
+  const hideEditorPanel = () => {
+    selectedAccountId = null;
+    clearFormValidationErrors();
+    $('bank-editor-box').classList.add('hidden');
+    $('bank-editor-box').classList.remove('is-create-mode');
+    draftStaff = [];
+    draftTeams = [];
+    editorInitialSnapshot = '';
+    renderAccountTable();
+  };
+
+  const requestLeaveEditor = () => {
+    if (isEditorDirty()) {
+      openConfirmModal(
+        '你的資料尚未儲存，確定要離開嗎？',
+        { title: '離開確認', okClass: 'btn primary', okText: '確定' },
+        () => hideEditorPanel()
+      );
+    } else {
+      hideEditorPanel();
+    }
+  };
+
   const loadAccountIntoEditor = (account) => {
     if (!account) return;
     selectedAccountId = account.id;
     clearFormValidationErrors();
 
-    $('bank-editor-box').classList.remove('is-create-mode');
+    const box = $('bank-editor-box');
+    box.classList.remove('hidden');
+    box.classList.remove('is-create-mode');
     $('editor-mode-title').textContent = '匯款帳戶資料';
     const badge = $('editor-mode-badge');
     badge.textContent = `序號 #${filteredAccounts.findIndex(r => r.id === account.id) + 1 || account.id}`;
     badge.className = 'status-badge pending';
     badge.classList.remove('hidden');
-    $('btn-switch-create-top').classList.remove('hidden');
+    $('btn-delete-bank').classList.remove('hidden');
 
     setFormBankValue(formatBankLabel(account.bankCode, account.bankName));
     $('form-account-name').value = account.accountName || '';
@@ -576,20 +616,23 @@ document.addEventListener("DOMContentLoaded", () => {
     $('form-ldap-input').value = '';
     draftStaff = Array.isArray(account.staff) ? account.staff.map(s => ({ ...s })) : [];
     draftTeams = Array.isArray(account.teams) ? account.teams.map(t => ({ ...t })) : [];
+    switchSubTab('staff');
     renderDraftStaffTable();
     renderDraftTeamTable();
     renderAccountTable();
+    editorInitialSnapshot = getEditorSnapshot();
   };
 
-  const enterCreateMode = (showToastMsg = true) => {
+  const enterCreateMode = (showToastMsg = false) => {
     selectedAccountId = null;
     clearFormValidationErrors();
 
-    $('bank-editor-box').classList.add('is-create-mode');
+    const box = $('bank-editor-box');
+    box.classList.remove('hidden');
+    box.classList.add('is-create-mode');
     $('editor-mode-title').textContent = '新增匯款帳戶';
-    const badge = $('editor-mode-badge');
-    badge.classList.add('hidden');
-    $('btn-switch-create-top').classList.add('hidden');
+    $('editor-mode-badge').classList.add('hidden');
+    $('btn-delete-bank').classList.add('hidden');
 
     setFormBankValue('');
     $('form-account-name').value = '';
@@ -601,17 +644,55 @@ document.addEventListener("DOMContentLoaded", () => {
     $('form-ldap-input').value = '';
     draftStaff = [];
     draftTeams = [];
+    switchSubTab('staff');
     renderDraftStaffTable();
     renderDraftTeamTable();
     renderAccountTable();
+    editorInitialSnapshot = getEditorSnapshot();
 
     if (showToastMsg) {
-      toast('已切換為「新增匯款帳戶」，請填寫欄位後按儲存。');
+      toast('已開啟「新增匯款帳戶」表單。');
     }
-    $('form-bank-code').focus();
   };
 
-  $('btn-switch-create-top').addEventListener('click', () => enterCreateMode(true));
+  $('btn-switch-create-top').addEventListener('click', () => {
+    if (isEditorDirty()) {
+      openConfirmModal(
+        '你的資料尚未儲存，確定要切換至「新增匯款帳戶」嗎？',
+        { title: '切換確認', okClass: 'btn primary', okText: '確定' },
+        () => enterCreateMode(false)
+      );
+    } else {
+      enterCreateMode(false);
+    }
+  });
+
+  $('btn-leave-bank').addEventListener('click', requestLeaveEditor);
+
+  $('btn-delete-bank').addEventListener('click', () => {
+    if (selectedAccountId == null) return;
+    const target = bankAccounts.find(r => r.id === selectedAccountId);
+    if (!target) {
+      hideEditorPanel();
+      return;
+    }
+    const label = `${formatBankLabel(target.bankCode, target.bankName)} - ${target.accountName}（${target.accountNumber}）`;
+    openConfirmModal(
+      `確定要刪除匯款帳戶「<strong>${escapeAttr(label)}</strong>」嗎？`,
+      { title: '刪除確認', okClass: 'btn btn-danger-solid', okText: '刪除' },
+      () => {
+        bankAccounts = bankAccounts.filter(r => r.id !== selectedAccountId);
+        filteredAccounts = filteredAccounts.filter(r => r.id !== selectedAccountId);
+        saveStateToLocalStorage();
+        hideEditorPanel();
+        toast(`已刪除匯款帳戶「${target.accountName} (${target.accountNumber})」`);
+      }
+    );
+  });
+
+  window.CTA.bindFormLeaveGuard({
+    isActive: () => isEditorDirty()
+  });
 
   // ==================== 儲存匯款帳戶資料（新增 / 修改共用驗證與儲存） ====================
   $('btn-save-bank').addEventListener('click', async () => {
@@ -668,7 +749,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ? `確定要新增匯款帳戶「<strong>${escapeAttr(formatBankLabel(parsedBank.code, parsedBank.name))} - ${escapeAttr(accName)}（${escapeAttr(accNum)}）</strong>」嗎？`
       : `確定要儲存「<strong>${escapeAttr(formatBankLabel(parsedBank.code, parsedBank.name))} - ${escapeAttr(accName)}（${escapeAttr(accNum)}）</strong>」的修改嗎？`;
 
-    openConfirmModal(confirmText, '確定', () => {
+    openConfirmModal(confirmText, { title: '儲存確認', okClass: 'btn primary', okText: '確定' }, () => {
       if (isCreate) {
         const newRecord = {
           id: nextAccountId++,

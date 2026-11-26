@@ -309,12 +309,18 @@
 
 .bank-editor-actions {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 2px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid #e1e7f0;
+}
+.claim-add-box.is-create-mode .bank-editor-actions {
+  border-top-color: #bfdbfe;
 }
 .bank-editor-actions .btn {
-  width: 100%;
+  flex: 1;
   height: 40px;
   font-size: 15px;
   font-weight: 600;
@@ -451,7 +457,7 @@
       </div>
 
       <!-- 右側：新增 / 修改匯款帳戶資料精簡表單卡片 -->
-      <div class="claim-add-box" id="bank-editor-box" aria-label="匯款銀行編輯表單">
+      <div class="claim-add-box hidden" id="bank-editor-box" aria-label="匯款銀行編輯表單">
         <div class="bank-editor-header">
           <div class="bank-editor-title">
             <span id="editor-mode-title">匯款帳戶資料</span>
@@ -522,9 +528,11 @@
           </div>
         </div>
 
-        <!-- 底部操作按鈕：儲存 -->
+        <!-- 底部操作按鈕：儲存 / 刪除 / 離開 -->
         <div class="bank-editor-actions">
           <button type="button" class="btn primary" id="btn-save-bank">儲存</button>
+          <button type="button" class="btn btn-danger-solid" id="btn-delete-bank">刪除</button>
+          <button type="button" class="btn" id="btn-leave-bank">離開</button>
         </div>
       </div>
     </div>
@@ -631,7 +639,7 @@
 
 <script src="js/navbar.js?v=352"></script>
 <script src="js/common.js?v=349"></script>
-<script src="js/remitbank.js?v=366"></script>
+<script src="js/remitbank.js?v=367"></script>
 
 </body>
 </html>
