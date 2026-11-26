@@ -100,7 +100,7 @@ document.addEventListener("DOMContentLoaded", function() {
             <li><a class="dropdown-item" href="setupwork.html">作業區設定</a></li>
             <li><a class="dropdown-item" href="setupcrew.html">人員設定</a></li>
             <li><a class="dropdown-item" href="setupworkstock.html">作業區倉庫設定</a></li>
-            <li><a class="dropdown-item" href="#">倉庫管理者設定</a></li>
+            <li><a class="dropdown-item" href="stockmanager.html">倉庫管理者設定</a></li>
             <li><a class="dropdown-item" href="#">物資安全庫存量設定</a></li>
           </ul>
         </li>

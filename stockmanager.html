@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>系統設定｜倉庫管理者設定</title>
+<link rel="stylesheet" href="css/style.css?v=384">
+<link rel="icon" href="images/logo.png" type="image/png">
+<style>
+html, body {
+  min-height: 100%;
+  background: linear-gradient(120deg, #f0f5fb, #f9fbff) fixed;
+}
+.page {
+  min-height: calc(100vh - 58px);
+}
+.stockmgr-split-layout {
+  display: grid;
+  grid-template-columns: 1.48fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.stockmgr-split-layout > * {
+  min-width: 0;
+}
+#stockmgr-table {
+  min-width: 0;
+  width: 100%;
+}
+.stockmgr-ldap-box {
+  margin-top: 4px;
+  padding-top: 16px;
+  border-top: 1px solid #e1e7f0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.stockmgr-ldap-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.stockmgr-ldap-row .claim-control {
+  flex: 1;
+}
+.btn-ldap-plus {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  flex: 0 0 40px;
+  border-radius: 6px;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+}
+.stockmgr-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e5ebf5;
+}
+@media (max-width: 960px) {
+  .stockmgr-split-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+</style>
+</head>
+<body>
+
+<main class="page">
+  <nav class="crumb" id="page-crumb">
+    <span class="home-icon">
+      <svg class="ico" aria-hidden="true"><use href="#ico-users"></use></svg>
+    </span>
+    <span class="sep">│</span>
+    <span>系統設定</span>
+    <span class="sep">/</span>
+    <strong id="crumb-current">倉庫管理者設定</strong>
+  </nav>
+
+  <section class="panel table-panel" style="margin-top: 6px;" aria-label="倉庫管理者設定">
+    <div id="table-loading" class="block-loading hidden"><div class="spinner"></div></div>
+
+    <div class="stockmgr-split-layout">
+      <!-- 左側：該倉庫已設定的管理者清單 -->
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; min-height: 36px;">
+          <div style="font-size: 15px; color: #556477; font-weight: 600;">
+            查詢倉庫：<span id="active-warehouse-badge" style="color: #0869ed; font-weight: 700;">尚未查詢</span>
+          </div>
+          <div style="font-size: 14px; color: #556477; font-weight: 600;">
+            管理者人數：<span id="manager-count-display" style="color: #14264b; font-weight: 700;">0</span> 人
+          </div>
+        </div>
+
+        <div class="table-scroll">
+          <table class="detail-table" id="stockmgr-table">
+            <thead>
+              <tr>
+                <th class="center" style="width: 68px;">序號</th>
+                <th>名字</th>
+                <th style="width: 150px;">LDAP帳號</th>
+                <th class="center" style="width: 110px;">刪除</th>
+              </tr>
+            </thead>
+            <tbody id="stockmgr-tbody">
+              <tr><td colspan="4" class="empty">請於右側選擇倉庫後點擊「查詢」</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 右側：倉庫層級單選（比照圖二）＋ 查詢 / 清除 ＋ 新增 LDAP 管理者 -->
+      <div class="claim-add-box" aria-label="倉庫篩選與新增管理者">
+        <div class="claim-field">
+          <label>倉庫層級 <b>*</b></label>
+          <div class="choice diff-tier-choice" role="radiogroup" aria-label="倉庫層級">
+            <label><input type="radio" name="mgr-wh-tier" value="hq" checked>本會倉庫</label>
+            <label><input type="radio" name="mgr-wh-tier" value="region">中繼倉庫</label>
+            <label><input type="radio" name="mgr-wh-tier" value="area">作業區倉庫</label>
+          </div>
+          <div class="diff-wh-stack">
+            <select id="mgr-wh-hq" class="claim-control" aria-label="本會倉庫">
+              <option value="" selected disabled>請選擇</option>
+            </select>
+            <select id="mgr-wh-region" class="claim-control hidden" aria-label="中繼倉庫">
+              <option value="" selected disabled>請選擇</option>
+            </select>
+            <select id="mgr-wh-area" class="claim-control hidden" aria-label="作業區倉庫" disabled>
+              <option value="" selected disabled>請選擇</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <button type="button" class="btn primary" id="btn-mgr-search" style="width: 100%; height: 42px; font-size: 15px; font-weight: 600;">
+            <svg class="ico" aria-hidden="true"><use href="#ico-search"></use></svg>查詢
+          </button>
+          <button type="button" class="btn" id="btn-mgr-reset" style="width: 100%; height: 42px; font-size: 15px; font-weight: 600;">
+            <svg class="ico" aria-hidden="true"><use href="#ico-refresh-cw"></use></svg>清除
+          </button>
+        </div>
+
+        <div class="stockmgr-ldap-box">
+          <div class="claim-field">
+            <label for="mgr-ldap-input">新增倉庫管理者</label>
+            <div class="stockmgr-ldap-row">
+              <input type="text" id="mgr-ldap-input" class="claim-control" autocomplete="off" placeholder="請填LDAP（例如：su02、kuo01）" disabled>
+              <button type="button" class="btn primary btn-ldap-plus" id="btn-mgr-add-ldap" title="新增管理者" aria-label="新增管理者" disabled>+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部狀態與儲存列 -->
+    <div class="stockmgr-footer">
+      <div style="font-size: 14px; color: #64748b;" id="dirty-status-hint">目前尚未有未儲存的變更</div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <button type="button" class="btn" id="btn-mgr-revert" disabled>還原變更</button>
+        <button type="button" class="btn primary" id="btn-mgr-save" style="min-width: 96px; height: 38px; font-size: 15px; font-weight: 600;" disabled>儲存</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- 操作確認彈窗 -->
+<div class="overlay hidden" id="confirm-modal" style="z-index: 1320;">
+  <div class="modal dialog-modal">
+    <div class="modal-head dialog-head">
+      <h2 id="confirm-modal-title">操作確認</h2>
+      <button type="button" class="x" id="close-confirm" aria-label="關閉">&times;</button>
+    </div>
+    <div class="modal-body dialog-body" id="confirm-modal-body"></div>
+    <div class="modal-foot dialog-foot">
+      <button type="button" class="btn primary" id="btn-confirm-ok">確定</button>
+      <button type="button" class="btn" id="btn-confirm-cancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 單一按鈕提示彈窗 -->
+<div class="overlay hidden" id="alert-modal" style="z-index: 1360;">
+  <div class="modal dialog-modal">
+    <div class="modal-head dialog-head">
+      <h2>提示訊息</h2>
+      <button type="button" class="x" id="close-alert" aria-label="關閉">&times;</button>
+    </div>
+    <div class="modal-body dialog-body" id="alert-modal-body">提示訊息</div>
+    <div class="modal-foot dialog-foot">
+      <button type="button" class="btn primary" id="btn-alert-ok">確定</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="js/navbar.js?v=400"></script>
+<script src="js/common.js?v=390"></script>
+<script src="js/stockmanager.js?v=400"></script>
+
+</body>
+</html>
