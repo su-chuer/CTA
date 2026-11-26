@@ -81,6 +81,9 @@
   gap: 22px;
   align-items: start;
 }
+.bank-split-layout.is-single-col {
+  grid-template-columns: minmax(0, 1fr);
+}
 .bank-split-layout > * {
   min-width: 0;
 }
@@ -223,6 +226,9 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+.bank-sub-panel.hidden {
+  display: none !important;
 }
 .ldap-input-row {
   display: flex;
@@ -415,7 +421,7 @@
   <section class="panel table-panel" style="margin-top: 15px;" aria-label="匯款銀行維護作業">
     <div id="table-loading" class="block-loading hidden"><div class="spinner"></div></div>
 
-    <div class="bank-split-layout">
+    <div class="bank-split-layout is-single-col" id="bank-split-layout">
       <!-- 左側：匯款銀行帳戶列表 -->
       <div>
         <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; min-height: 36px;">
@@ -639,7 +645,7 @@
 
 <script src="js/navbar.js?v=352"></script>
 <script src="js/common.js?v=349"></script>
-<script src="js/remitbank.js?v=367"></script>
+<script src="js/remitbank.js?v=368"></script>
 
 </body>
 </html>

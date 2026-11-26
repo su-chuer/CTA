@@ -572,6 +572,7 @@ document.addEventListener("DOMContentLoaded", () => {
     clearFormValidationErrors();
     $('bank-editor-box').classList.add('hidden');
     $('bank-editor-box').classList.remove('is-create-mode');
+    if ($('bank-split-layout')) $('bank-split-layout').classList.add('is-single-col');
     draftStaff = [];
     draftTeams = [];
     editorInitialSnapshot = '';
@@ -598,6 +599,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const box = $('bank-editor-box');
     box.classList.remove('hidden');
     box.classList.remove('is-create-mode');
+    if ($('bank-split-layout')) $('bank-split-layout').classList.remove('is-single-col');
     $('editor-mode-title').textContent = '匯款帳戶資料';
     const badge = $('editor-mode-badge');
     badge.textContent = `序號 #${filteredAccounts.findIndex(r => r.id === account.id) + 1 || account.id}`;
@@ -630,6 +632,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const box = $('bank-editor-box');
     box.classList.remove('hidden');
     box.classList.add('is-create-mode');
+    if ($('bank-split-layout')) $('bank-split-layout').classList.remove('is-single-col');
     $('editor-mode-title').textContent = '新增匯款帳戶';
     $('editor-mode-badge').classList.add('hidden');
     $('btn-delete-bank').classList.add('hidden');
