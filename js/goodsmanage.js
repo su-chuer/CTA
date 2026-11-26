@@ -3482,15 +3482,19 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   const applyRoleUI = () => {
-    const roleSelect = $('simulated-role');
-    if (roleSelect && currentRole && roleSelect.value !== currentRole) {
-      roleSelect.value = currentRole;
+    const roleInput = $('simulated-role');
+    if (roleInput && currentRole) {
+      const targetLabel = getRoleLabelFromKey(currentRole);
+      if (targetLabel && roleInput.value !== targetLabel) {
+        roleInput.value = targetLabel;
+      }
     }
+    if ($('btn-clear-role')) $('btn-clear-role').classList.add('hidden');
     syncSimulatedRoleWidth();
 
     if (!currentRole) {
       $('manage-sub-tabs').classList.add('hidden');
-      $('tab-empty-view').classList.remove('hidden');
+      if ($('tab-empty-view')) $('tab-empty-view').classList.add('hidden');
       Object.values(tabViewIds).forEach(viewId => {
         const el = $(viewId);
         if (el) el.classList.add('hidden');
@@ -3498,7 +3502,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     } else {
       $('manage-sub-tabs').classList.remove('hidden');
-      $('tab-empty-view').classList.add('hidden');
+      if ($('tab-empty-view')) $('tab-empty-view').classList.add('hidden');
     }
 
     $('tab-btn-vendor-in').classList.toggle('hidden', currentRole !== 'hq');
@@ -4111,7 +4115,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!currentRole) {
       currentRole = 'hq';
-      $('simulated-role').value = 'hq';
+      roleCombo.setValue('本會倉庫');
       applyRoleUI();
       saveGoodsManageSessionUI();
     } else {
@@ -4124,44 +4128,75 @@ document.addEventListener("DOMContentLoaded", () => {
     toast('已清除舊快取並套用預設範例庫存資料，可直接進行查詢與單據操作。');
   });
 
-  const measureSelectTextWidth = (selEl) => {
-    if (!selEl) return 185;
-    const opt = selEl.options[selEl.selectedIndex];
-    const text = opt ? opt.textContent.trim() : '';
+  const ROLE_OPTIONS = [
+    { key: 'hq', label: '本會倉庫' },
+    { key: 'region', label: '中繼倉庫 (北、中、南、東)' },
+    { key: 'area', label: '作業區倉庫' }
+  ];
+
+  const getRoleKeyFromInput = () => {
+    const raw = cleanTrim($('simulated-role') ? $('simulated-role').value : '');
+    const found = ROLE_OPTIONS.find(r => r.label === raw || r.key === raw);
+    return found ? found.key : '';
+  };
+
+  const getRoleLabelFromKey = (key) => {
+    const found = ROLE_OPTIONS.find(r => r.key === key);
+    return found ? found.label : '';
+  };
+
+  const measureRoleTextWidth = (text, inputEl) => {
     if (!text) return 185;
-    const canvas = measureSelectTextWidth._canvas || (measureSelectTextWidth._canvas = document.createElement('canvas'));
+    const canvas = measureRoleTextWidth._canvas || (measureRoleTextWidth._canvas = document.createElement('canvas'));
     const ctx = canvas.getContext('2d');
-    const style = window.getComputedStyle(selEl);
+    const style = window.getComputedStyle(inputEl);
     ctx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
     const textWidth = Math.ceil(ctx.measureText(text).width);
     return Math.max(185, textWidth + 56);
   };
 
   const syncSimulatedRoleWidth = () => {
-    const selEl = $('simulated-role');
-    if (!selEl) return;
-    selEl.style.width = `${measureSelectTextWidth(selEl)}px`;
+    const inputEl = $('simulated-role');
+    const wrapEl = $('role-combo-wrap');
+    if (!inputEl || !wrapEl) return;
+    const cleaned = cleanTrim(inputEl.value);
+    inputEl.title = cleaned;
+    wrapEl.style.width = `${measureRoleTextWidth(cleaned, inputEl)}px`;
+    if ($('btn-clear-role')) $('btn-clear-role').classList.add('hidden');
   };
 
-  $('simulated-role').addEventListener('change', (e) => {
-    e.currentTarget.classList.remove('highlight-error');
-    syncSimulatedRoleWidth();
+  const roleCombo = window.CTA.createComboSelect({
+    inputId: 'simulated-role',
+    wrapId: 'role-combo-wrap',
+    menuId: 'role-combo-menu',
+    clearBtnId: 'btn-clear-role',
+    toggleBtnId: 'btn-toggle-role',
+    getOptions: () => ROLE_OPTIONS.map(r => r.label),
+    emptyText: '無相符倉庫',
+    onChange: () => {
+      if ($('btn-clear-role')) $('btn-clear-role').classList.add('hidden');
+      syncSimulatedRoleWidth();
+    },
+    onEnter: () => {
+      if ($('btn-confirm-role')) $('btn-confirm-role').click();
+    }
   });
 
   const confirmRoleBtn = $('btn-confirm-role');
   if (confirmRoleBtn) {
     confirmRoleBtn.addEventListener('click', () => {
-      const roleSelect = $('simulated-role');
-      const selectedVal = roleSelect ? roleSelect.value : '';
+      const roleInput = $('simulated-role');
+      const selectedVal = getRoleKeyFromInput();
       if (!selectedVal) {
-        if (roleSelect) {
-          roleSelect.classList.add('highlight-error');
-          roleSelect.focus();
+        if (roleInput) {
+          roleInput.classList.add('highlight-error');
+          roleInput.focus();
         }
         openAlertModal('請先選擇「作業倉庫」！');
         return;
       }
-      if (roleSelect) roleSelect.classList.remove('highlight-error');
+      if (roleInput) roleInput.classList.remove('highlight-error');
+      roleCombo.close();
       const isRoleChanged = currentRole !== selectedVal;
       currentRole = selectedVal;
       if (isRoleChanged) {
@@ -4179,8 +4214,8 @@ document.addEventListener("DOMContentLoaded", () => {
       sessionStorage.removeItem(GOODS_MANAGE_TAB_KEY);
     } catch (_) {}
     currentRole = '';
-    const roleSelect = $('simulated-role');
-    if (roleSelect) roleSelect.value = 'hq';
+    roleCombo.setValue('本會倉庫');
+    if ($('btn-clear-role')) $('btn-clear-role').classList.add('hidden');
     syncSimulatedRoleWidth();
     applyRoleUI();
   });

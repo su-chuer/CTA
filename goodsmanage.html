@@ -9,6 +9,21 @@
 <title>庫存管理｜物資庫存管理</title>
 <link rel="stylesheet" href="css/style.css?v=349">
 <link rel="icon" href="images/logo.png" type="image/png">
+<style>
+html, body {
+  min-height: 100%;
+  background: linear-gradient(120deg, #f0f5fb, #f9fbff) fixed;
+}
+.page {
+  min-height: calc(100vh - 58px);
+}
+#role-combo-wrap {
+  min-width: 185px;
+  width: 185px;
+  max-width: 100%;
+  transition: width 0.15s ease;
+}
+</style>
 </head>
 <body>
 
@@ -26,11 +41,14 @@
   <section class="panel filters" aria-label="作業倉庫切換區" style="margin-bottom: 15px;">
     <div class="field">
       <label for="simulated-role">作業倉庫 <b>*</b></label>
-      <select id="simulated-role" style="min-width: 185px; width: 185px; transition: width 0.15s ease;">
-        <option value="hq" selected>本會倉庫</option>
-        <option value="region">中繼倉庫 (北、中、南、東)</option>
-        <option value="area">作業區倉庫</option>
-      </select>
+      <div class="combo-select-wrap" id="role-combo-wrap">
+        <input type="text" id="simulated-role" class="filter-input" readonly autocomplete="off" value="本會倉庫" placeholder="請選擇" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="role-combo-menu" style="cursor: pointer; background-color: #ffffff;">
+        <button type="button" class="combo-clear-btn hidden" id="btn-clear-role" aria-hidden="true" tabindex="-1"></button>
+        <button type="button" class="combo-arrow-btn" id="btn-toggle-role" title="展開作業倉庫選單" aria-label="展開作業倉庫選單">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <div class="combo-dropdown-menu hidden" id="role-combo-menu" role="listbox"></div>
+      </div>
     </div>
 
     <div class="search-actions" style="margin-left: 6px;">
@@ -55,7 +73,7 @@
   </div>
 
   <!-- ==================== 空白預設提示 ==================== -->
-  <div id="tab-empty-view" style="padding: 60px 20px; text-align: center; color: #6a7994; background: #ffffff; border: 1px solid #e1e7f0; border-radius: 8px;">請由上方選擇「作業倉庫」以載入對應的庫存管理功能。</div>
+  <div id="tab-empty-view" class="hidden" style="padding: 60px 20px; text-align: center; color: #6a7994; background: #ffffff; border: 1px solid #e1e7f0; border-radius: 8px;">請由上方選擇「作業倉庫」以載入對應的庫存管理功能。</div>
 
   <!-- ==================== 分頁一：庫存查詢 ==================== -->
   <div id="tab-query-view" class="hidden">
@@ -737,7 +755,7 @@
 
 <script src="js/navbar.js?v=352"></script>
 <script src="js/common.js?v=349"></script>
-<script src="js/goodsmanage.js?v=378"></script>
+<script src="js/goodsmanage.js?v=379"></script>
 
 </body>
 </html>
