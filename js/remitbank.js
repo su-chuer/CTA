@@ -48,44 +48,42 @@ document.addEventListener("DOMContentLoaded", () => {
   // ==================== 資料載入與 localStorage 持久化 ====================
   const saveStateToLocalStorage = () => {
     try {
-      const payload = {
-        banks: bankCatalog,
-        heqiTeams: heqiTeamCatalog,
-        ldapDirectory,
+      localStorage.setItem(REMIT_BANK_STORAGE_KEY, JSON.stringify({
         accounts: bankAccounts
-      };
-      localStorage.setItem(REMIT_BANK_STORAGE_KEY, JSON.stringify(payload));
+      }));
     } catch (err) {
       console.error('儲存匯款帳戶資料失敗：', err);
     }
   };
 
   const loadInitialData = async () => {
-    let loaded = null;
+    let baseData = null;
+    try {
+      const res = await fetch('json/remit_bank_data.json?v=410', { cache: 'no-store' });
+      if (res && res.ok) {
+        baseData = await res.json();
+      }
+    } catch (err) {
+      console.error('讀取 remit_bank_data.json 失敗：', err);
+    }
+
+    let cachedAccounts = null;
     try {
       const raw = localStorage.getItem(REMIT_BANK_STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && Array.isArray(parsed.accounts)) {
-          loaded = parsed;
+          cachedAccounts = parsed.accounts;
+          if ('banks' in parsed || 'heqiTeams' in parsed || 'ldapDirectory' in parsed) {
+            localStorage.setItem(REMIT_BANK_STORAGE_KEY, JSON.stringify({ accounts: cachedAccounts }));
+          }
         }
       }
     } catch (_) {}
 
-    if (!loaded) {
-      try {
-        const res = await fetch('json/remit_bank_data.json?v=409', { cache: 'no-store' });
-        if (res && res.ok) {
-          loaded = await res.json();
-        }
-      } catch (err) {
-        console.error('讀取 remit_bank_data.json 失敗：', err);
-      }
-    }
-
-    if (loaded && typeof loaded === 'object') {
-      bankCatalog = Array.isArray(loaded.banks) ? loaded.banks : [];
-      heqiTeamCatalog = Array.isArray(loaded.heqiTeams) ? loaded.heqiTeams : [];
+    if (baseData && typeof baseData === 'object') {
+      bankCatalog = Array.isArray(baseData.banks) ? baseData.banks : [];
+      heqiTeamCatalog = Array.isArray(baseData.heqiTeams) ? baseData.heqiTeams : [];
       const fallbackLdap = {
         chang01: '張1', chang02: '張2', lin01: '林1', lin02: '林2',
         su02: '蘇2', chiu01: '丘1', huang01: '黃1',
@@ -95,18 +93,22 @@ document.addEventListener("DOMContentLoaded", () => {
       const mergedLdap = Object.assign(
         {},
         fallbackLdap,
-        (loaded.ldapDirectory && typeof loaded.ldapDirectory === 'object') ? loaded.ldapDirectory : {}
+        (baseData.ldapDirectory && typeof baseData.ldapDirectory === 'object') ? baseData.ldapDirectory : {}
       );
       delete mergedLdap.shih01;
       delete mergedLdap.wang02;
       ldapDirectory = mergedLdap;
-      bankAccounts = Array.isArray(loaded.accounts) ? loaded.accounts.map(acc => ({
-        ...acc,
-        staff: Array.isArray(acc.staff) ? acc.staff.filter(s => s && s.ldap !== 'shih01' && s.ldap !== 'wang02' && s.name !== '釋德1法師' && s.name !== '王凱2').map(s => ({ ...s })) : [],
-        teams: Array.isArray(acc.teams) ? acc.teams.map(t => ({ ...t })) : []
-      })) : [];
-      nextAccountId = bankAccounts.reduce((m, r) => Math.max(m, Number(r.id || 0)), 0) + 1;
     }
+
+    const rawAccs = cachedAccounts !== null
+      ? cachedAccounts
+      : ((baseData && Array.isArray(baseData.accounts)) ? baseData.accounts : []);
+    bankAccounts = rawAccs.map(acc => ({
+      ...acc,
+      staff: Array.isArray(acc.staff) ? acc.staff.filter(s => s && s.ldap !== 'shih01' && s.ldap !== 'wang02' && s.name !== '釋德1法師' && s.name !== '王凱2').map(s => ({ ...s })) : [],
+      teams: Array.isArray(acc.teams) ? acc.teams.map(t => ({ ...t })) : []
+    }));
+    nextAccountId = bankAccounts.reduce((m, r) => Math.max(m, Number(r.id || 0)), 0) + 1;
 
     filteredAccounts = [...bankAccounts];
     enterCreateMode(false);

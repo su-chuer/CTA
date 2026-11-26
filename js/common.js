@@ -2,6 +2,18 @@
 (() => {
   'use strict';
 
+  // 自動清除已棄用的舊版 localStorage 快取鍵值，避免殘留垃圾資料
+  (() => {
+    try {
+      const obsoleteKeys = [
+        'cta_stockmanager_state_v2',
+        'cta_setupcrew_state_v2',
+        'cta_remitbank_state_v2'
+      ];
+      obsoleteKeys.forEach(k => localStorage.removeItem(k));
+    } catch (_) {}
+  })();
+
   const $ = id => document.getElementById(id);
 
   // ==================== 一、字串、金額與日期格式化工具 ====================

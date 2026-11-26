@@ -17,8 +17,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const saveStateToLocalStorage = () => {
     try {
       localStorage.setItem(SETUP_CREW_STORAGE_KEY, JSON.stringify({
-        ldapDirectory,
-        allTeams,
         crewAssignments: savedCrewAssignments
       }));
     } catch (err) {
@@ -27,29 +25,31 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const loadInitialData = async () => {
-    let loaded = null;
+    let baseData = null;
+    try {
+      const res = await fetch('json/setup_crew_data.json?v=410', { cache: 'no-store' });
+      if (res && res.ok) {
+        baseData = await res.json();
+      }
+    } catch (err) {
+      console.error('讀取 setup_crew_data.json 失敗：', err);
+    }
+
+    let cachedAssignments = null;
     try {
       const raw = localStorage.getItem(SETUP_CREW_STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed && parsed.ldapDirectory && Array.isArray(parsed.allTeams)) {
-          loaded = parsed;
+        if (parsed && parsed.crewAssignments && typeof parsed.crewAssignments === 'object') {
+          cachedAssignments = parsed.crewAssignments;
+          if ('allTeams' in parsed || 'ldapDirectory' in parsed) {
+            localStorage.setItem(SETUP_CREW_STORAGE_KEY, JSON.stringify({ crewAssignments: cachedAssignments }));
+          }
         }
       }
     } catch (_) {}
 
-    if (!loaded) {
-      try {
-        const res = await fetch('json/setup_crew_data.json?v=409', { cache: 'no-store' });
-        if (res && res.ok) {
-          loaded = await res.json();
-        }
-      } catch (err) {
-        console.error('讀取 setup_crew_data.json 失敗：', err);
-      }
-    }
-
-    if (loaded && typeof loaded === 'object') {
+    if (baseData && typeof baseData === 'object') {
       const fallbackLdap = {
         chang01: '張1', chang02: '張2', lin01: '林1', lin02: '林2',
         su02: '蘇2', chiu01: '丘1', huang01: '黃1',
@@ -59,18 +59,20 @@ document.addEventListener("DOMContentLoaded", () => {
       const mergedLdap = Object.assign(
         {},
         fallbackLdap,
-        (loaded.ldapDirectory && typeof loaded.ldapDirectory === 'object') ? loaded.ldapDirectory : {}
+        (baseData.ldapDirectory && typeof baseData.ldapDirectory === 'object') ? baseData.ldapDirectory : {}
       );
       delete mergedLdap.shih01;
       delete mergedLdap.wang02;
       ldapDirectory = mergedLdap;
-      allTeams = Array.isArray(loaded.allTeams) ? loaded.allTeams : [];
-      savedCrewAssignments = (loaded.crewAssignments && typeof loaded.crewAssignments === 'object')
-        ? { ...loaded.crewAssignments }
-        : {};
-      delete savedCrewAssignments.shih01;
-      delete savedCrewAssignments.wang02;
+      allTeams = Array.isArray(baseData.allTeams) ? baseData.allTeams : [];
     }
+
+    const rawAssign = cachedAssignments !== null
+      ? cachedAssignments
+      : ((baseData && baseData.crewAssignments && typeof baseData.crewAssignments === 'object') ? baseData.crewAssignments : {});
+    savedCrewAssignments = { ...rawAssign };
+    delete savedCrewAssignments.shih01;
+    delete savedCrewAssignments.wang02;
 
     activeLdap = '';
     if ($('shuttle-panel')) $('shuttle-panel').classList.add('hidden');

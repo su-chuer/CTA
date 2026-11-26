@@ -17,10 +17,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const saveStateToLocalStorage = () => {
     try {
       localStorage.setItem(STOCK_MANAGER_STORAGE_KEY, JSON.stringify({
-        hqWarehouses,
-        regionalWarehouses,
-        areaWarehousesByRelay,
-        ldapDirectory,
         managersByWarehouse: savedManagersByWarehouse
       }));
     } catch (err) {
@@ -216,33 +212,36 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const loadInitialData = async () => {
-    let loaded = null;
+    let baseData = null;
+    try {
+      const res = await fetch('json/stock_manager_data.json?v=410', { cache: 'no-store' });
+      if (res && res.ok) {
+        baseData = await res.json();
+      }
+    } catch (err) {
+      console.error('讀取 stock_manager_data.json 失敗：', err);
+    }
+
+    let cachedManagers = null;
     try {
       const raw = localStorage.getItem(STOCK_MANAGER_STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed && Array.isArray(parsed.hqWarehouses) && parsed.managersByWarehouse) {
-          loaded = parsed;
+        if (parsed && parsed.managersByWarehouse && typeof parsed.managersByWarehouse === 'object') {
+          cachedManagers = parsed.managersByWarehouse;
+          // 若舊快取還包含下拉選單等冗餘欄位，自動瘦身覆寫為精簡格式
+          if ('hqWarehouses' in parsed || 'ldapDirectory' in parsed) {
+            localStorage.setItem(STOCK_MANAGER_STORAGE_KEY, JSON.stringify({ managersByWarehouse: cachedManagers }));
+          }
         }
       }
     } catch (_) {}
 
-    if (!loaded) {
-      try {
-        const res = await fetch('json/stock_manager_data.json?v=409', { cache: 'no-store' });
-        if (res && res.ok) {
-          loaded = await res.json();
-        }
-      } catch (err) {
-        console.error('讀取 stock_manager_data.json 失敗：', err);
-      }
-    }
-
-    if (loaded && typeof loaded === 'object') {
-      hqWarehouses = Array.isArray(loaded.hqWarehouses) ? loaded.hqWarehouses : [];
-      regionalWarehouses = Array.isArray(loaded.regionalWarehouses) ? loaded.regionalWarehouses : [];
-      areaWarehousesByRelay = (loaded.areaWarehousesByRelay && typeof loaded.areaWarehousesByRelay === 'object')
-        ? loaded.areaWarehousesByRelay
+    if (baseData && typeof baseData === 'object') {
+      hqWarehouses = Array.isArray(baseData.hqWarehouses) ? baseData.hqWarehouses : [];
+      regionalWarehouses = Array.isArray(baseData.regionalWarehouses) ? baseData.regionalWarehouses : [];
+      areaWarehousesByRelay = (baseData.areaWarehousesByRelay && typeof baseData.areaWarehousesByRelay === 'object')
+        ? baseData.areaWarehousesByRelay
         : {};
       const fallbackLdap = {
         chang01: '張1', chang02: '張2', lin01: '林1', lin02: '林2',
@@ -253,21 +252,22 @@ document.addEventListener("DOMContentLoaded", () => {
       const mergedLdap = Object.assign(
         {},
         fallbackLdap,
-        (loaded.ldapDirectory && typeof loaded.ldapDirectory === 'object') ? loaded.ldapDirectory : {}
+        (baseData.ldapDirectory && typeof baseData.ldapDirectory === 'object') ? baseData.ldapDirectory : {}
       );
       delete mergedLdap.shih01;
       delete mergedLdap.wang02;
       ldapDirectory = mergedLdap;
-      const rawMgrs = (loaded.managersByWarehouse && typeof loaded.managersByWarehouse === 'object')
-        ? loaded.managersByWarehouse
-        : {};
-      savedManagersByWarehouse = {};
-      Object.entries(rawMgrs).forEach(([wh, list]) => {
-        savedManagersByWarehouse[wh] = Array.isArray(list)
-          ? list.filter(m => m && m.ldap !== 'shih01' && m.ldap !== 'wang02' && m.name !== '釋德1法師' && m.name !== '王凱2')
-          : [];
-      });
     }
+
+    const rawMgrs = cachedManagers !== null
+      ? cachedManagers
+      : ((baseData && baseData.managersByWarehouse && typeof baseData.managersByWarehouse === 'object') ? baseData.managersByWarehouse : {});
+    savedManagersByWarehouse = {};
+    Object.entries(rawMgrs).forEach(([wh, list]) => {
+      savedManagersByWarehouse[wh] = Array.isArray(list)
+        ? list.filter(m => m && m.ldap !== 'shih01' && m.ldap !== 'wang02' && m.name !== '釋德1法師' && m.name !== '王凱2')
+        : [];
+    });
 
     populateDropdowns();
     renderManagersTable();
