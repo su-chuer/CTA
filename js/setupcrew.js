@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const SETUP_CREW_STORAGE_KEY = 'cta_setupcrew_state_v1';
 
-  let ldapDirectory = {};          // { 'suchuer': '蘇主兒', ... }
+  let ldapDirectory = {};          // { 'suchuer': '蘇1', ... }
   let allTeams = [];               // [{ code, name }]
   let savedCrewAssignments = {};   // { 'suchuer': ['ETE03', ...], ... }
   let activeLdap = '';
@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (loaded && typeof loaded === 'object') {
       ldapDirectory = (loaded.ldapDirectory && typeof loaded.ldapDirectory === 'object')
         ? loaded.ldapDirectory
-        : { suchuer: '蘇主兒' };
+        : { suchuer: '蘇1' };
       allTeams = Array.isArray(loaded.allTeams) ? loaded.allTeams : [];
       savedCrewAssignments = (loaded.crewAssignments && typeof loaded.crewAssignments === 'object')
         ? loaded.crewAssignments
