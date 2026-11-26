@@ -1,0 +1,423 @@
+document.addEventListener("DOMContentLoaded", () => {
+  const { $, cleanTrim, escapeAttr, toast, confirm: openConfirmModal } = window.CTA;
+
+  const SETUP_WORK_STORAGE_KEY = 'cta_setupwork_state_v1';
+
+  let workAreas = [];
+  let allTeams = [];               // [{ code, name }]
+  let savedAreaAssignments = {};   // { '台北': ['NTN35', ...], ... }
+  let activeArea = '台北';
+  let draftAssignedCodes = [];     // 目前作業區右側的組隊代碼陣列
+
+  let leftCheckedCodes = new Set();
+  let rightCheckedCodes = new Set();
+  let dragSourceSide = null;       // 'left' | 'right'
+  let draggedCodes = [];
+
+  const saveStateToLocalStorage = () => {
+    try {
+      localStorage.setItem(SETUP_WORK_STORAGE_KEY, JSON.stringify({
+        workAreas,
+        allTeams,
+        areaAssignments: savedAreaAssignments
+      }));
+    } catch (err) {
+      console.error('儲存維護作業區設定失敗：', err);
+    }
+  };
+
+  const loadInitialData = async () => {
+    let loaded = null;
+    try {
+      const raw = localStorage.getItem(SETUP_WORK_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.workAreas) && Array.isArray(parsed.allTeams)) {
+          loaded = parsed;
+        }
+      }
+    } catch (_) {}
+
+    if (!loaded) {
+      try {
+        const res = await fetch('json/setup_work_data.json?v=374', { cache: 'no-store' });
+        if (res && res.ok) {
+          loaded = await res.json();
+        }
+      } catch (err) {
+        console.error('讀取 setup_work_data.json 失敗：', err);
+      }
+    }
+
+    if (loaded && typeof loaded === 'object') {
+      workAreas = Array.isArray(loaded.workAreas) ? loaded.workAreas : ['台北'];
+      allTeams = Array.isArray(loaded.allTeams) ? loaded.allTeams : [];
+      savedAreaAssignments = (loaded.areaAssignments && typeof loaded.areaAssignments === 'object')
+        ? loaded.areaAssignments
+        : {};
+    }
+
+    const selectEl = $('work-area-select');
+    selectEl.innerHTML = workAreas.map(area =>
+      `<option value="${escapeAttr(area)}" ${area === '台北' ? 'selected' : ''}>${escapeAttr(area)}</option>`
+    ).join('');
+
+    activeArea = selectEl.value || workAreas[0] || '台北';
+    loadAreaIntoDraft(activeArea);
+  };
+
+  const getSavedCodesForArea = (areaName) => {
+    const raw = savedAreaAssignments[areaName];
+    return Array.isArray(raw) ? [...raw] : [];
+  };
+
+  const isAreaDirty = () => {
+    const saved = getSavedCodesForArea(activeArea);
+    if (saved.length !== draftAssignedCodes.length) return true;
+    const savedSet = new Set(saved);
+    return draftAssignedCodes.some(c => !savedSet.has(c));
+  };
+
+  const syncDirtyStatusUI = () => {
+    const dirty = isAreaDirty();
+    const hintEl = $('dirty-status-hint');
+    const resetBtn = $('btn-reset-area');
+    if (hintEl) {
+      hintEl.textContent = dirty
+        ? '您已調整組隊配置，請點擊「儲存」生效。'
+        : '目前尚未有未儲存的變更';
+      hintEl.style.color = dirty ? '#0869ed' : '#64748b';
+      hintEl.style.fontWeight = dirty ? '600' : '400';
+    }
+    if (resetBtn) {
+      resetBtn.disabled = !dirty;
+    }
+  };
+
+  const loadAreaIntoDraft = (areaName) => {
+    activeArea = areaName;
+    draftAssignedCodes = getSavedCodesForArea(areaName);
+    leftCheckedCodes.clear();
+    rightCheckedCodes.clear();
+    $('left-filter-input').value = '';
+    $('right-filter-input').value = '';
+    $('btn-clear-left-filter').classList.add('hidden');
+    $('btn-clear-right-filter').classList.add('hidden');
+    $('notice-area-name').textContent = areaName;
+    $('right-area-label').textContent = areaName;
+    renderBothTables();
+  };
+
+  // 取得其他作業區已認領的組隊（避免同一個和氣組隊重複歸屬多個作業區）
+  const getClaimedByOtherAreasSet = () => {
+    const claimed = new Set();
+    Object.entries(savedAreaAssignments).forEach(([area, codes]) => {
+      if (area === activeArea || !Array.isArray(codes)) return;
+      codes.forEach(c => claimed.add(c));
+    });
+    return claimed;
+  };
+
+  const getLeftFilteredTeams = () => {
+    const assignedSet = new Set(draftAssignedCodes);
+    const otherClaimedSet = getClaimedByOtherAreasSet();
+    const kw = cleanTrim($('left-filter-input').value).toLowerCase();
+
+    return allTeams.filter(team => {
+      if (assignedSet.has(team.code)) return false;
+      if (otherClaimedSet.has(team.code)) return false;
+      if (!kw) return true;
+      return team.code.toLowerCase().includes(kw) || team.name.toLowerCase().includes(kw);
+    });
+  };
+
+  const getRightFilteredTeams = () => {
+    const teamMap = new Map(allTeams.map(t => [t.code, t]));
+    const kw = cleanTrim($('right-filter-input').value).toLowerCase();
+
+    return draftAssignedCodes
+      .map(code => teamMap.get(code) || { code, name: code })
+      .filter(team => {
+        if (!kw) return true;
+        return team.code.toLowerCase().includes(kw) || team.name.toLowerCase().includes(kw);
+      });
+  };
+
+  const renderShuttleSide = ({
+    side,
+    list,
+    tbodyEl,
+    checkedSet,
+    checkAllEl,
+    countPillEl,
+    selectedHintEl,
+    moveBtnEl
+  }) => {
+    countPillEl.textContent = `${list.length} 筆`;
+
+    const visibleCodes = new Set(list.map(t => t.code));
+    Array.from(checkedSet).forEach(code => {
+      if (!visibleCodes.has(code)) checkedSet.delete(code);
+    });
+
+    selectedHintEl.textContent = `已勾選 ${checkedSet.size} 筆`;
+    moveBtnEl.disabled = checkedSet.size === 0;
+
+    if (list.length === 0) {
+      checkAllEl.checked = false;
+      checkAllEl.indeterminate = false;
+      checkAllEl.disabled = true;
+      const emptyMsg = side === 'left' ? '無可選取的未分配組隊' : '尚未設定所屬組隊（可由左側移轉或拖曳加入）';
+      tbodyEl.innerHTML = `<tr><td colspan="4" class="empty" style="padding: 36px 12px;">${emptyMsg}</td></tr>`;
+      return;
+    }
+
+    checkAllEl.disabled = false;
+    checkAllEl.checked = checkedSet.size === list.length;
+    checkAllEl.indeterminate = checkedSet.size > 0 && checkedSet.size < list.length;
+
+    tbodyEl.innerHTML = list.map(team => {
+      const isChecked = checkedSet.has(team.code);
+      return `
+        <tr class="${isChecked ? 'is-checked' : ''}" draggable="true" data-side="${side}" data-code="${escapeAttr(team.code)}">
+          <td class="center"><input type="checkbox" class="submit-row-checkbox row-chk" data-code="${escapeAttr(team.code)}" ${isChecked ? 'checked' : ''} aria-label="選取 ${escapeAttr(team.code)} ${escapeAttr(team.name)}"></td>
+          <td class="center"><span class="shuttle-drag-handle" title="拖曳移動">⋮⋮</span></td>
+          <td style="font-weight: 600; color: #14264b;">${escapeAttr(team.code)}</td>
+          <td>${escapeAttr(team.name)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    tbodyEl.querySelectorAll('tr[data-code]').forEach(tr => {
+      const code = tr.dataset.code;
+      const chk = tr.querySelector('.row-chk');
+
+      chk.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (chk.checked) checkedSet.add(code);
+        else checkedSet.delete(code);
+        renderBothTables();
+      });
+
+      tr.addEventListener('click', () => {
+        if (checkedSet.has(code)) checkedSet.delete(code);
+        else checkedSet.add(code);
+        renderBothTables();
+      });
+
+      tr.addEventListener('dblclick', () => {
+        if (side === 'left') {
+          moveCodesToRight([code]);
+        } else {
+          moveCodesToLeft([code]);
+        }
+      });
+
+      tr.addEventListener('dragstart', (e) => {
+        dragSourceSide = side;
+        draggedCodes = checkedSet.has(code) ? Array.from(checkedSet) : [code];
+        tr.classList.add('is-dragging');
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', draggedCodes.join(','));
+        }
+      });
+
+      tr.addEventListener('dragend', () => {
+        tr.classList.remove('is-dragging');
+        $('left-shuttle-box').classList.remove('drag-over');
+        $('right-shuttle-box').classList.remove('drag-over');
+        dragSourceSide = null;
+        draggedCodes = [];
+      });
+    });
+  };
+
+  const renderBothTables = () => {
+    const leftList = getLeftFilteredTeams();
+    const rightList = getRightFilteredTeams();
+
+    renderShuttleSide({
+      side: 'left',
+      list: leftList,
+      tbodyEl: $('left-team-tbody'),
+      checkedSet: leftCheckedCodes,
+      checkAllEl: $('check-all-left'),
+      countPillEl: $('left-count-pill'),
+      selectedHintEl: $('left-selected-hint'),
+      moveBtnEl: $('btn-move-right')
+    });
+
+    renderShuttleSide({
+      side: 'right',
+      list: rightList,
+      tbodyEl: $('right-team-tbody'),
+      checkedSet: rightCheckedCodes,
+      checkAllEl: $('check-all-right'),
+      countPillEl: $('right-count-pill'),
+      selectedHintEl: $('right-selected-hint'),
+      moveBtnEl: $('btn-move-left')
+    });
+
+    syncDirtyStatusUI();
+  };
+
+  const moveCodesToRight = (codes) => {
+    if (!Array.isArray(codes) || codes.length === 0) return;
+    const existingSet = new Set(draftAssignedCodes);
+    codes.forEach(code => {
+      if (!existingSet.has(code)) {
+        draftAssignedCodes.unshift(code);
+        existingSet.add(code);
+      }
+      leftCheckedCodes.delete(code);
+    });
+    renderBothTables();
+  };
+
+  const moveCodesToLeft = (codes) => {
+    if (!Array.isArray(codes) || codes.length === 0) return;
+    const removeSet = new Set(codes);
+    draftAssignedCodes = draftAssignedCodes.filter(c => !removeSet.has(c));
+    codes.forEach(code => rightCheckedCodes.delete(code));
+    renderBothTables();
+  };
+
+  // 全選切換
+  $('check-all-left').addEventListener('change', (e) => {
+    const leftList = getLeftFilteredTeams();
+    if (e.target.checked) leftList.forEach(t => leftCheckedCodes.add(t.code));
+    else leftCheckedCodes.clear();
+    renderBothTables();
+  });
+
+  $('check-all-right').addEventListener('change', (e) => {
+    const rightList = getRightFilteredTeams();
+    if (e.target.checked) rightList.forEach(t => rightCheckedCodes.add(t.code));
+    else rightCheckedCodes.clear();
+    renderBothTables();
+  });
+
+  // 中間 > 與 < 按鈕
+  $('btn-move-right').addEventListener('click', () => {
+    moveCodesToRight(Array.from(leftCheckedCodes));
+  });
+
+  $('btn-move-left').addEventListener('click', () => {
+    moveCodesToLeft(Array.from(rightCheckedCodes));
+  });
+
+  // 拖曳放置區綁定（左拖到右、右拖到左）
+  const bindDropZone = (boxEl, targetSide) => {
+    boxEl.addEventListener('dragover', (e) => {
+      if (!dragSourceSide || dragSourceSide === targetSide) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+      boxEl.classList.add('drag-over');
+    });
+
+    boxEl.addEventListener('dragleave', (e) => {
+      if (!boxEl.contains(e.relatedTarget)) {
+        boxEl.classList.remove('drag-over');
+      }
+    });
+
+    boxEl.addEventListener('drop', (e) => {
+      e.preventDefault();
+      boxEl.classList.remove('drag-over');
+      if (!dragSourceSide || dragSourceSide === targetSide || draggedCodes.length === 0) return;
+      if (targetSide === 'right') {
+        moveCodesToRight(draggedCodes);
+      } else {
+        moveCodesToLeft(draggedCodes);
+      }
+    });
+  };
+
+  bindDropZone($('right-shuttle-box'), 'right');
+  bindDropZone($('left-shuttle-box'), 'left');
+
+  // 左右篩選框（左側自動轉大寫英文，並提供一鍵清除鈕）
+  $('left-filter-input').addEventListener('input', (e) => {
+    const upper = e.target.value.toUpperCase();
+    if (e.target.value !== upper) e.target.value = upper;
+    $('btn-clear-left-filter').classList.toggle('hidden', !upper);
+    renderBothTables();
+  });
+
+  $('btn-clear-left-filter').addEventListener('click', () => {
+    $('left-filter-input').value = '';
+    $('btn-clear-left-filter').classList.add('hidden');
+    renderBothTables();
+    $('left-filter-input').focus();
+  });
+
+  $('right-filter-input').addEventListener('input', (e) => {
+    const val = e.target.value;
+    $('btn-clear-right-filter').classList.toggle('hidden', !val);
+    renderBothTables();
+  });
+
+  $('btn-clear-right-filter').addEventListener('click', () => {
+    $('right-filter-input').value = '';
+    $('btn-clear-right-filter').classList.add('hidden');
+    renderBothTables();
+    $('right-filter-input').focus();
+  });
+
+  // 切換作業區下拉選單（若有未儲存變更先跳出確認）
+  $('work-area-select').addEventListener('change', (e) => {
+    const nextArea = e.target.value;
+    if (isAreaDirty()) {
+      openConfirmModal(
+        `「${escapeAttr(activeArea)}」的組隊變更尚未儲存，確定要切換至「${escapeAttr(nextArea)}」嗎？`,
+        { title: '切換作業區確認', okClass: 'btn primary', okText: '確定' },
+        () => loadAreaIntoDraft(nextArea)
+      );
+      // 若使用者按取消，先還原下拉選單值
+      $('btn-confirm-cancel').onclick = () => {
+        $('work-area-select').value = activeArea;
+        window.CTA.closeConfirm();
+      };
+      $('close-confirm').onclick = () => {
+        $('work-area-select').value = activeArea;
+        window.CTA.closeConfirm();
+      };
+    } else {
+      loadAreaIntoDraft(nextArea);
+    }
+  });
+
+  // 還原變更
+  $('btn-reset-area').addEventListener('click', () => {
+    if (!isAreaDirty()) return;
+    openConfirmModal(
+      `確定要還原「<strong>${escapeAttr(activeArea)}</strong>」尚未儲存的組隊變更嗎？`,
+      { title: '還原確認', okClass: 'btn primary', okText: '確定' },
+      () => {
+        loadAreaIntoDraft(activeArea);
+        toast(`已還原「${activeArea}」的組隊設定`);
+      }
+    );
+  });
+
+  // 儲存作業區組隊設定
+  $('btn-save-area').addEventListener('click', () => {
+    openConfirmModal(
+      `確定要儲存「<strong>${escapeAttr(activeArea)}</strong>」的所屬組隊設定（共 ${draftAssignedCodes.length} 筆）嗎？`,
+      { title: '儲存確認', okClass: 'btn primary', okText: '確定' },
+      () => {
+        savedAreaAssignments[activeArea] = [...draftAssignedCodes];
+        saveStateToLocalStorage();
+        syncDirtyStatusUI();
+        toast(`已成功儲存「${activeArea}」的所屬組隊設定（共 ${draftAssignedCodes.length} 筆）。`);
+      }
+    );
+  });
+
+  window.CTA.bindFormLeaveGuard({
+    isActive: () => isAreaDirty()
+  });
+
+  loadInitialData();
+});
