@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   const { $, cleanTrim, escapeAttr, toast, alert: openAlertModal, confirm: openConfirmModal } = window.CTA;
 
-  const REMIT_BANK_STORAGE_KEY = 'cta_remitbank_state_v2';
+  const REMIT_BANK_STORAGE_KEY = 'cta_remitbank_state_v1';
 
   let bankCatalog = [];       // [{ code: '008', name: '華南商業銀行' }, ...]
   let heqiTeamCatalog = [];   // [{ code: 'ETE04', name: '永康和氣' }, ...]
@@ -74,7 +74,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!loaded) {
       try {
-        const res = await fetch('json/remit_bank_data.json?v=408', { cache: 'no-store' });
+        const res = await fetch('json/remit_bank_data.json?v=409', { cache: 'no-store' });
         if (res && res.ok) {
           loaded = await res.json();
         }

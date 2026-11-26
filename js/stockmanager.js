@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   const { $, cleanTrim, escapeAttr, toast, alert: openAlertModal, confirm: openConfirmModal } = window.CTA;
 
-  const STOCK_MANAGER_STORAGE_KEY = 'cta_stockmanager_state_v2';
+  const STOCK_MANAGER_STORAGE_KEY = 'cta_stockmanager_state_v1';
 
   let hqWarehouses = [];
   let regionalWarehouses = [];
@@ -229,7 +229,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!loaded) {
       try {
-        const res = await fetch('json/stock_manager_data.json?v=408', { cache: 'no-store' });
+        const res = await fetch('json/stock_manager_data.json?v=409', { cache: 'no-store' });
         if (res && res.ok) {
           loaded = await res.json();
         }

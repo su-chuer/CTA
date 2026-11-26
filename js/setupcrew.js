@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   const { $, cleanTrim, escapeAttr, toast, alert: openAlertModal, confirm: openConfirmModal } = window.CTA;
 
-  const SETUP_CREW_STORAGE_KEY = 'cta_setupcrew_state_v2';
+  const SETUP_CREW_STORAGE_KEY = 'cta_setupcrew_state_v1';
 
   let ldapDirectory = {};          // { 'test1': '蘇1', 'test2': '林1', 'test3': '王1', ... }
   let allTeams = [];               // [{ code, name }]
@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!loaded) {
       try {
-        const res = await fetch('json/setup_crew_data.json?v=408', { cache: 'no-store' });
+        const res = await fetch('json/setup_crew_data.json?v=409', { cache: 'no-store' });
         if (res && res.ok) {
           loaded = await res.json();
         }
