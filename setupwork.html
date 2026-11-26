@@ -220,13 +220,23 @@
     <strong id="crumb-current">維護作業區</strong>
   </nav>
 
-  <!-- ==================== 頂部作業區選擇 ==================== -->
-  <section class="panel filters" aria-label="作業區選擇">
+  <!-- ==================== 頂部作業區查詢條件 ==================== -->
+  <section class="panel filters" aria-label="作業區查詢條件">
     <div class="field">
       <label for="work-area-select">作業區 <b>*</b></label>
-      <select id="work-area-select" style="min-width: 180px;">
-        <option value="" selected disabled>請選擇</option>
-      </select>
+      <div class="combo-select-wrap" id="area-combo-wrap">
+        <input type="text" id="work-area-select" class="filter-input" autocomplete="off" placeholder="請選擇" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="area-combo-menu">
+        <button type="button" class="combo-clear-btn hidden" id="btn-clear-area" title="清除作業區" aria-label="清除作業區">&times;</button>
+        <button type="button" class="combo-arrow-btn" id="btn-toggle-area" title="展開作業區選單" aria-label="展開作業區選單">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <div class="combo-dropdown-menu hidden" id="area-combo-menu" role="listbox"></div>
+      </div>
+    </div>
+
+    <div class="search-actions" style="margin-left: 6px;">
+      <button type="button" class="btn primary" id="btn-search"><svg class="ico" aria-hidden="true"><use href="#ico-search"></use></svg>查詢</button>
+      <button type="button" class="btn" id="btn-reset"><svg class="ico" aria-hidden="true"><use href="#ico-refresh-cw"></use></svg>清除</button>
     </div>
   </section>
 
@@ -362,7 +372,7 @@
 
 <script src="js/navbar.js?v=353"></script>
 <script src="js/common.js?v=349"></script>
-<script src="js/setupwork.js?v=376"></script>
+<script src="js/setupwork.js?v=377"></script>
 
 </body>
 </html>

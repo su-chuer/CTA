@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const { $, cleanTrim, escapeAttr, toast, confirm: openConfirmModal } = window.CTA;
+  const { $, cleanTrim, escapeAttr, toast, alert: openAlertModal, confirm: openConfirmModal } = window.CTA;
 
   const SETUP_WORK_STORAGE_KEY = 'cta_setupwork_state_v1';
 
@@ -57,13 +57,22 @@ document.addEventListener("DOMContentLoaded", () => {
         : {};
     }
 
-    const selectEl = $('work-area-select');
-    selectEl.innerHTML = `<option value="" selected disabled>請選擇</option>` +
-      workAreas.map(area => `<option value="${escapeAttr(area)}">${escapeAttr(area)}</option>`).join('');
-
     activeArea = '';
     if ($('shuttle-panel')) $('shuttle-panel').classList.add('hidden');
   };
+
+  const areaInput = $('work-area-select');
+  const areaCombo = window.CTA.createComboSelect({
+    inputId: 'work-area-select',
+    wrapId: 'area-combo-wrap',
+    menuId: 'area-combo-menu',
+    clearBtnId: 'btn-clear-area',
+    toggleBtnId: 'btn-toggle-area',
+    getOptions: () => workAreas,
+    beforeOpen: () => dataReady,
+    emptyText: '無相符作業區',
+    onEnter: () => executeSearch()
+  });
 
   const getSavedCodesForArea = (areaName) => {
     const raw = savedAreaAssignments[areaName];
@@ -384,23 +393,69 @@ document.addEventListener("DOMContentLoaded", () => {
     $('right-filter-input').focus();
   });
 
-  // 切換作業區下拉選單（若有未儲存變更先跳出確認）
-  $('work-area-select').addEventListener('change', (e) => {
-    const nextArea = e.target.value;
-    if (!nextArea) return;
-    if (isAreaDirty()) {
-      const prevArea = activeArea;
-      $('work-area-select').value = prevArea;
+  // 查詢作業區所屬組隊（與全站查詢條件列操作邏輯一致）
+  const executeSearch = async () => {
+    await dataReady;
+    const rawVal = cleanTrim(areaInput.value);
+    areaInput.value = rawVal;
+    areaInput.classList.remove('highlight-error');
+
+    if (!rawVal) {
+      areaInput.classList.add('highlight-error');
+      openAlertModal('請先選擇或輸入「作業區」！', () => areaInput.focus());
+      return;
+    }
+
+    const matchedArea = window.CTA.resolveOptionKey(rawVal, workAreas);
+    if (!matchedArea) {
+      areaInput.classList.add('highlight-error');
+      openAlertModal(`查無作業區「${rawVal}」，請從下拉選單選擇有效的作業區！`, () => areaInput.focus());
+      return;
+    }
+
+    const runQuery = () => {
+      areaCombo.close();
+      areaCombo.setValue(matchedArea);
+      $('table-loading').classList.remove('hidden');
+      setTimeout(() => {
+        loadAreaIntoDraft(matchedArea);
+        $('table-loading').classList.add('hidden');
+      }, 150);
+    };
+
+    if (isAreaDirty() && activeArea && activeArea !== matchedArea) {
       openConfirmModal(
-        `「${escapeAttr(prevArea)}」的組隊變更尚未儲存，確定要切換至「${escapeAttr(nextArea)}」嗎？`,
+        `「${escapeAttr(activeArea)}」的組隊變更尚未儲存，確定要切換查詢「${escapeAttr(matchedArea)}」嗎？`,
         { title: '切換作業區確認', okClass: 'btn primary', okText: '確定' },
-        () => {
-          $('work-area-select').value = nextArea;
-          loadAreaIntoDraft(nextArea);
-        }
+        runQuery
       );
     } else {
-      loadAreaIntoDraft(nextArea);
+      runQuery();
+    }
+  };
+
+  $('btn-search').addEventListener('click', executeSearch);
+
+  $('btn-reset').addEventListener('click', () => {
+    const runReset = () => {
+      areaCombo.setValue('');
+      areaCombo.close();
+      areaInput.classList.remove('highlight-error');
+      activeArea = '';
+      draftAssignedCodes = [];
+      leftCheckedCodes.clear();
+      rightCheckedCodes.clear();
+      if ($('shuttle-panel')) $('shuttle-panel').classList.add('hidden');
+    };
+
+    if (isAreaDirty()) {
+      openConfirmModal(
+        `「${escapeAttr(activeArea)}」的組隊變更尚未儲存，確定要清除嗎？`,
+        { title: '清除確認', okClass: 'btn primary', okText: '確定' },
+        runReset
+      );
+    } else {
+      runReset();
     }
   });
 
@@ -435,5 +490,5 @@ document.addEventListener("DOMContentLoaded", () => {
     isActive: () => isAreaDirty()
   });
 
-  loadInitialData();
+  const dataReady = loadInitialData();
 });
