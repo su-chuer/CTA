@@ -410,8 +410,8 @@
   <section class="panel filters" aria-label="匯款銀行查詢條件">
     <div class="field">
       <label for="filter-bank-code">代碼 / 銀行名稱</label>
-      <div class="bank-picker-wrap" id="filter-bank-picker-wrap">
-        <input type="text" id="filter-bank-code" class="filter-input" readonly autocomplete="off" placeholder="請選擇">
+      <div class="bank-picker-wrap group-select-auto" id="filter-bank-picker-wrap">
+        <input type="text" id="filter-bank-code" class="filter-input" readonly autocomplete="off" value="全部帳號" placeholder="全部帳號">
         <button type="button" class="bank-picker-search-btn" id="btn-open-filter-bank-modal" title="選擇銀行代碼" aria-label="選擇銀行代碼">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="20" y1="20" x2="16.2" y2="16.2"></line></svg>
         </button>
@@ -430,7 +430,7 @@
   </section>
 
   <!-- ==================== 下方雙欄作業區：左側帳戶列表 / 右側新增與修改表單 ==================== -->
-  <section class="panel table-panel" style="margin-top: 15px;" aria-label="匯款銀行維護作業">
+  <section class="panel table-panel hidden" id="bank-result-panel" style="margin-top: 15px;" aria-label="匯款銀行維護作業">
     <div id="table-loading" class="block-loading hidden"><div class="spinner"></div></div>
 
     <div class="bank-split-layout" id="bank-split-layout">
@@ -454,7 +454,7 @@
               </tr>
             </thead>
             <tbody id="bank-account-tbody">
-              <tr><td colspan="6" class="empty">資料載入中...</td></tr>
+              <tr><td colspan="6" class="empty">請選擇條件搜尋</td></tr>
             </tbody>
           </table>
         </div>
@@ -655,7 +655,93 @@
 <div id="toast" class="toast hidden"></div>
 
 <script src="js/navbar.js?v=353"></script>
-<script src="js/common.js?v=386"></script>
+<script src="js/common.js?v=387"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const filterBankInput = document.getElementById('filter-bank-code');
+  const filterKwInput = document.getElementById('filter-account-keyword');
+  const resultPanel = document.getElementById('bank-result-panel');
+  const btnSearch = document.getElementById('btn-search');
+  const btnReset = document.getElementById('btn-reset');
+  const bankModalTbody = document.getElementById('bank-modal-tbody');
+  const bankModalFilter = document.getElementById('bank-modal-filter');
+  const openFilterBankBtn = document.getElementById('btn-open-filter-bank-modal');
+  const openFormBankBtn = document.getElementById('btn-open-form-bank-modal');
+
+  let activeBankPickerTarget = 'filter';
+  if (filterBankInput) filterBankInput.addEventListener('click', () => { activeBankPickerTarget = 'filter'; }, true);
+  if (openFilterBankBtn) openFilterBankBtn.addEventListener('click', () => { activeBankPickerTarget = 'filter'; }, true);
+  if (openFormBankBtn) openFormBankBtn.addEventListener('click', () => { activeBankPickerTarget = 'form'; }, true);
+
+  // 當上方查詢欄開啟銀行選擇彈窗時，於最上方動態補入「全部帳號」選項
+  if (bankModalTbody) {
+    let isInjectingAllRow = false;
+    const injectAllAccountsOption = () => {
+      if (isInjectingAllRow || activeBankPickerTarget !== 'filter') return;
+      if (bankModalTbody.querySelector('tr[data-all-accounts="1"]')) return;
+      const kw = (bankModalFilter ? bankModalFilter.value : '').trim();
+      if (kw && !'全部帳號'.includes(kw)) return;
+      isInjectingAllRow = true;
+      try {
+        const tr = document.createElement('tr');
+        tr.dataset.allAccounts = '1';
+        tr.innerHTML = `
+          <td>全部</td>
+          <td>全部帳號</td>
+          <td class="center"><button type="button" class="btn primary small">選擇</button></td>
+        `;
+        tr.querySelector('button').addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (filterBankInput) filterBankInput.value = '全部帳號';
+          const modal = document.getElementById('bank-select-modal');
+          if (modal) modal.classList.add('hidden');
+        });
+        bankModalTbody.insertBefore(tr, bankModalTbody.firstChild);
+      } finally {
+        isInjectingAllRow = false;
+      }
+    };
+    const obs = new MutationObserver(injectAllAccountsOption);
+    obs.observe(bankModalTbody, { childList: true });
+  }
+
+  // 攔截「查詢」按鈕：若代碼/銀行名稱為「全部帳號」，暫轉為空值給 remitbank.js 查全部，再還原顯示「全部帳號」並展開下方列表
+  if (btnSearch && filterBankInput) {
+    btnSearch.addEventListener('click', () => {
+      const wasAll = filterBankInput.value.trim() === '全部帳號';
+      if (wasAll) filterBankInput.value = '';
+      if (resultPanel) resultPanel.classList.remove('hidden');
+      setTimeout(() => {
+        if (wasAll && filterBankInput.value.trim() === '') {
+          filterBankInput.value = '全部帳號';
+        }
+      }, 0);
+    }, true);
+  }
+
+  if (filterKwInput && btnSearch) {
+    filterKwInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        btnSearch.click();
+      }
+    }, true);
+  }
+
+  // 攔截「清除」按鈕：重設回「全部帳號」並將下方結果區塊恢復空白（隱藏）
+  if (btnReset && filterBankInput) {
+    btnReset.addEventListener('click', () => {
+      setTimeout(() => {
+        filterBankInput.value = '全部帳號';
+        if (filterKwInput) filterKwInput.value = '';
+        if (resultPanel) resultPanel.classList.add('hidden');
+      }, 0);
+    }, true);
+  }
+});
+</script>
 <script src="js/remitbank.js?v=375"></script>
 
 </body>
