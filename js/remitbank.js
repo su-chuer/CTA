@@ -111,7 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ctx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
     const textWidth = Math.ceil(ctx.measureText(text).width);
     // 左側 padding(14px) + 右側預留清除鈕與放大鏡空間(60px)，基準寬度 185px（約「004 臺灣銀行」寬度）
-    return Math.max(185, textWidth + 74);
+    return Math.max(185, textWidth + 52);
   };
 
   const setFilterBankValue = (val) => {
@@ -120,7 +120,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const wrapEl = $('filter-bank-picker-wrap');
     inputEl.value = cleaned;
     inputEl.title = cleaned;
-    $('btn-clear-filter-bank').classList.toggle('hidden', !cleaned);
     if (wrapEl) {
       wrapEl.style.width = `${measureFilterTextWidth(cleaned, inputEl)}px`;
     }
@@ -131,7 +130,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const inputEl = $('form-bank-code');
     inputEl.value = cleaned;
     inputEl.title = cleaned;
-    $('btn-clear-form-bank').classList.toggle('hidden', !cleaned);
     inputEl.classList.remove('highlight-error');
   };
 
@@ -199,18 +197,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   $('btn-open-filter-bank-modal').addEventListener('click', () => openBankSelectModal('filter'));
   $('filter-bank-code').addEventListener('click', () => openBankSelectModal('filter'));
-  $('btn-clear-filter-bank').addEventListener('click', (e) => {
-    e.stopPropagation();
-    setFilterBankValue('');
-  });
-
   $('btn-open-form-bank-modal').addEventListener('click', () => openBankSelectModal('form'));
   $('form-bank-code').addEventListener('click', () => openBankSelectModal('form'));
-  $('btn-clear-form-bank').addEventListener('click', (e) => {
-    e.stopPropagation();
-    setFormBankValue('');
-  });
-
   $('close-bank-modal').addEventListener('click', closeBankSelectModal);
   $('btn-bank-modal-cancel').addEventListener('click', closeBankSelectModal);
   window.CTA.registerModalEsc('bank-select-modal', closeBankSelectModal);

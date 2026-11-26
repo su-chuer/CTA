@@ -71,7 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const style = window.getComputedStyle(inputEl);
     ctx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
     const textWidth = Math.ceil(ctx.measureText(text).width);
-    return Math.max(185, textWidth + 74);
+    return Math.max(185, textWidth + 56);
   };
 
   const syncAreaComboWidth = (val) => {
@@ -85,7 +85,6 @@ document.addEventListener("DOMContentLoaded", () => {
     inputId: 'work-area-select',
     wrapId: 'area-combo-wrap',
     menuId: 'area-combo-menu',
-    clearBtnId: 'btn-clear-area',
     toggleBtnId: 'btn-toggle-area',
     getOptions: () => workAreas,
     beforeOpen: () => dataReady,
