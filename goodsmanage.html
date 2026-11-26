@@ -23,20 +23,27 @@
     <strong id="crumb-current">物資庫存管理</strong>
   </nav>
 
-  <div class="role-simulator" aria-label="作業倉庫切換區" style="background: #ffffff; border-color: #e1e7f0; color: #14264b;">
-    <label for="simulated-role" style="color: #3d5176;">作業倉庫：</label>
-    <select id="simulated-role" style="border-color: #c7d3e3; color: #101c38; min-width: 140px;">
-      <option value="hq" selected>本會倉庫</option>
-      <option value="region">中繼倉庫 (北、中、南、東)</option>
-      <option value="area">作業區倉庫</option>
-    </select>
-    <button type="button" class="btn primary small" id="btn-confirm-role">確認</button>
-    <span class="role-simulator-hint hidden" id="role-simulator-hint"></span>
-    <div style="margin-left: auto; display: inline-flex; align-items: center; gap: 8px;">
-      <button type="button" class="btn danger small" id="btn-clear-all-inventory">清空庫存</button>
-      <button type="button" class="btn primary small" id="btn-view-sample">觀看範例</button>
+  <section class="panel filters" aria-label="作業倉庫切換區" style="margin-bottom: 15px;">
+    <div class="field">
+      <label for="simulated-role">作業倉庫 <b>*</b></label>
+      <select id="simulated-role" style="min-width: 185px;">
+        <option value="hq" selected>本會倉庫</option>
+        <option value="region">中繼倉庫 (北、中、南、東)</option>
+        <option value="area">作業區倉庫</option>
+      </select>
     </div>
-  </div>
+
+    <div class="search-actions" style="margin-left: 6px;">
+      <button type="button" class="btn primary" id="btn-confirm-role"><svg class="ico" aria-hidden="true"><use href="#ico-search"></use></svg>查詢</button>
+    </div>
+
+    <span class="role-simulator-hint hidden" id="role-simulator-hint"></span>
+
+    <div class="search-actions" style="margin-left: auto;">
+      <button type="button" class="btn danger" id="btn-clear-all-inventory">清空庫存</button>
+      <button type="button" class="btn primary" id="btn-view-sample">觀看範例</button>
+    </div>
+  </section>
 
   <!-- 次功能頁籤列 -->
   <div class="sub-tabs-bar hidden" id="manage-sub-tabs" role="tablist" aria-label="物資庫存管理功能頁籤">
@@ -728,7 +735,7 @@
 
 <div id="toast" class="toast hidden"></div>
 
-<script src="js/navbar.js?v=353"></script>
+<script src="js/navbar.js?v=352"></script>
 <script src="js/common.js?v=349"></script>
 <script src="js/goodsmanage.js?v=377"></script>
 
