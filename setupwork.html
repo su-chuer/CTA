@@ -11,6 +11,16 @@
 <link rel="icon" href="images/logo.png" type="image/png">
 <style>
 /* === 維護作業區專屬雙向穿梭框與拖曳樣式（沿用全站設計系統） === */
+html, body {
+  min-height: 100%;
+  background: linear-gradient(120deg, #f0f5fb, #f9fbff) fixed;
+}
+.page {
+  min-height: calc(100vh - 58px);
+}
+#area-combo-menu {
+  max-height: 360px;
+}
 .shuttle-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 76px minmax(0, 1fr);
