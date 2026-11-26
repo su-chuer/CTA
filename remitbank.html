@@ -655,7 +655,7 @@
 <div id="toast" class="toast hidden"></div>
 
 <script src="js/navbar.js?v=353"></script>
-<script src="js/common.js?v=387"></script>
+<script src="js/common.js?v=389"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const filterBankInput = document.getElementById('filter-bank-code');
@@ -673,30 +673,40 @@ document.addEventListener('DOMContentLoaded', () => {
   if (openFilterBankBtn) openFilterBankBtn.addEventListener('click', () => { activeBankPickerTarget = 'filter'; }, true);
   if (openFormBankBtn) openFormBankBtn.addEventListener('click', () => { activeBankPickerTarget = 'form'; }, true);
 
-  // 當上方查詢欄開啟銀行選擇彈窗時，於最上方動態補入「全部帳號」選項
+  // 當上方查詢欄開啟銀行選擇彈窗時，於最上方動態補入「全部帳號」選項，並依目前選取狀態顯示「已選擇」
   if (bankModalTbody) {
     let isInjectingAllRow = false;
     const injectAllAccountsOption = () => {
       if (isInjectingAllRow || activeBankPickerTarget !== 'filter') return;
       if (bankModalTbody.querySelector('tr[data-all-accounts="1"]')) return;
       const kw = (bankModalFilter ? bankModalFilter.value : '').trim();
-      if (kw && !'全部帳號'.includes(kw)) return;
+      if (kw && !'全部帳號'.includes(kw) && !'全部'.includes(kw)) return;
       isInjectingAllRow = true;
       try {
+        const currentVal = (filterBankInput ? filterBankInput.value : '').trim();
+        const isSelected = currentVal === '' || currentVal === '全部帳號';
         const tr = document.createElement('tr');
         tr.dataset.allAccounts = '1';
+        if (isSelected) tr.classList.add('is-selected');
         tr.innerHTML = `
-          <td>全部</td>
+          <td><strong>全部</strong></td>
           <td>全部帳號</td>
-          <td class="center"><button type="button" class="btn primary small">選擇</button></td>
+          <td class="center">${
+            isSelected
+              ? '<button type="button" class="btn small" disabled>已選擇</button>'
+              : '<button type="button" class="btn primary small">選擇</button>'
+          }</td>
         `;
-        tr.querySelector('button').addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (filterBankInput) filterBankInput.value = '全部帳號';
-          const modal = document.getElementById('bank-select-modal');
-          if (modal) modal.classList.add('hidden');
-        });
+        const btn = tr.querySelector('button');
+        if (!isSelected && btn) {
+          btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (filterBankInput) filterBankInput.value = '全部帳號';
+            const modal = document.getElementById('bank-select-modal');
+            if (modal) modal.classList.add('hidden');
+          });
+        }
         bankModalTbody.insertBefore(tr, bankModalTbody.firstChild);
       } finally {
         isInjectingAllRow = false;
