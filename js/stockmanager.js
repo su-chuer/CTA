@@ -406,7 +406,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const matchedEntry = Object.entries(ldapDirectory).find(([k]) => k.toLowerCase() === lower);
     if (!matchedEntry) {
       input.classList.add('highlight-error');
-      openAlertModal(`查無 LDAP 帳號「${escapeAttr(raw)}」，僅能輸入 LDAP 對照表內的帳號！`, () => input.focus());
+      openAlertModal('此 LDAP 帳號無效！', () => input.focus());
       return;
     }
     const matchedLdap = matchedEntry[0];

@@ -422,7 +422,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const matchedLdap = resolveLdapKey(rawVal);
     if (!matchedLdap) {
       ldapInput.classList.add('highlight-error');
-      openAlertModal(`查無 LDAP 帳號「${rawVal}」，請確認後重新輸入！`, () => ldapInput.focus());
+      openAlertModal('此 LDAP 帳號無效！', () => ldapInput.focus());
       return;
     }
 
