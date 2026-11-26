@@ -507,5 +507,111 @@ document.addEventListener("DOMContentLoaded", () => {
     isActive: () => isCrewDirty()
   });
 
+
+  // ==================== 清空名單 & 觀看範例 / 套用範例 ====================
+  const fetchFreshSetupCrewJson = async () => {
+    const res = await fetch('json/setup_crew_data.json?v=' + Date.now(), { cache: 'no-store' });
+    if (!res || !res.ok) throw new Error('無法讀取 setup_crew_data.json');
+    return await res.json();
+  };
+
+  $('btn-clear-all-sample').addEventListener('click', () => {
+    openConfirmModal(
+      '確定要清空所有人員的所屬組隊設定與瀏覽器快取嗎？<br>清空後所有人員組隊配置將歸零（可隨時點擊「觀看範例」重新套用）。',
+      { title: '清空名單確認', okClass: 'btn btn-danger-solid', okText: '確定清空' },
+      () => {
+        try { localStorage.removeItem(SETUP_CREW_STORAGE_KEY); } catch (_) {}
+        savedCrewAssignments = {};
+        draftAssignedCodes = [];
+        leftCheckedCodes.clear();
+        rightCheckedCodes.clear();
+        saveStateToLocalStorage();
+        if (activeLdap) renderBothTables();
+        toast('已清空所有人員組隊設定與快取。');
+      }
+    );
+  });
+
+  const closeSampleModal = () => $('sample-data-modal').classList.add('hidden');
+  $('close-sample-modal').addEventListener('click', closeSampleModal);
+  $('btn-sample-modal-close').addEventListener('click', closeSampleModal);
+  window.CTA.registerModalEsc('sample-data-modal', closeSampleModal);
+
+  let cachedFreshCrewSample = null;
+
+  $('btn-view-sample').addEventListener('click', async () => {
+    await dataReady;
+    try {
+      cachedFreshCrewSample = await fetchFreshSetupCrewJson();
+    } catch (_) {
+      cachedFreshCrewSample = { ldapDirectory, allTeams, crewAssignments: savedCrewAssignments };
+    }
+    const sampleLdap = cachedFreshCrewSample.ldapDirectory || ldapDirectory;
+    const sampleAssign = cachedFreshCrewSample.crewAssignments || {};
+    const teamNameMap = new Map((cachedFreshCrewSample.allTeams || allTeams).map(t => [t.code, t.name]));
+    const ldapEntries = Object.entries(sampleLdap);
+
+    $('sample-modal-title').textContent = '人員設定｜預設 LDAP 人員與所屬組隊範例總表';
+    $('sample-data-modal-body').innerHTML = `
+      <div style="background: #eef5ff; border: 1px solid #c9ddf8; border-radius: 8px; padding: 12px 16px; margin-bottom: 18px; color: #14264b; font-size: 14px; line-height: 1.65;">
+        <strong>操作說明：</strong><br>
+        • 下表為系統預設可用之 <strong>LDAP 帳號</strong> 與各人員所屬和氣組隊範例。<br>
+        • 點擊下方「<strong>套用此範例資料至系統</strong>」，會自動清除瀏覽器舊快取並載入此份最新名單。
+      </div>
+
+      <div class="table-scroll" style="background: #fff;">
+        <table class="detail-table" style="min-width: 680px;">
+          <thead>
+            <tr>
+              <th class="center" style="width: 68px;">序號</th>
+              <th style="width: 140px;">LDAP 帳號</th>
+              <th style="width: 120px;">姓名</th>
+              <th>預設所屬組隊</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${ldapEntries.map(([code, name], idx) => {
+              const codes = Array.isArray(sampleAssign[code]) ? sampleAssign[code] : [];
+              const teamsText = codes.length > 0
+                ? codes.map(c => `${escapeAttr(teamNameMap.get(c) || c)} (${escapeAttr(c)})`).join('、')
+                : '<span class="blank">尚未分配組隊</span>';
+              return `
+                <tr>
+                  <td class="center">${idx + 1}</td>
+                  <td style="font-weight: 600; color: #0869ed;">${escapeAttr(code)}</td>
+                  <td style="font-weight: 600;">${escapeAttr(name)}</td>
+                  <td>${teamsText}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+    $('sample-data-modal').classList.remove('hidden');
+  });
+
+  $('btn-load-sample-data').addEventListener('click', async () => {
+    try { localStorage.removeItem(SETUP_CREW_STORAGE_KEY); } catch (_) {}
+    const fresh = cachedFreshCrewSample || await fetchFreshSetupCrewJson();
+    if (fresh && typeof fresh === 'object') {
+      if (fresh.ldapDirectory && typeof fresh.ldapDirectory === 'object') {
+        ldapDirectory = { ...fresh.ldapDirectory };
+      }
+      if (Array.isArray(fresh.allTeams)) {
+        allTeams = fresh.allTeams;
+      }
+      savedCrewAssignments = (fresh.crewAssignments && typeof fresh.crewAssignments === 'object')
+        ? JSON.parse(JSON.stringify(fresh.crewAssignments))
+        : {};
+    }
+    saveStateToLocalStorage();
+    closeSampleModal();
+    if (activeLdap && ldapDirectory[activeLdap]) {
+      loadLdapIntoDraft(activeLdap);
+    }
+    toast('已清除舊快取並套用最新範例資料至系統。');
+  });
+
   const dataReady = loadInitialData();
 });

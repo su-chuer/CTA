@@ -795,5 +795,135 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+
+  // ==================== 清空名單 & 觀看範例 / 套用範例 ====================
+  const fetchFreshRemitBankJson = async () => {
+    const res = await fetch('json/remit_bank_data.json?v=' + Date.now(), { cache: 'no-store' });
+    if (!res || !res.ok) throw new Error('無法讀取 remit_bank_data.json');
+    return await res.json();
+  };
+
+  $('btn-clear-all-sample').addEventListener('click', () => {
+    openConfirmModal(
+      '確定要清空所有匯款帳戶名單與瀏覽器快取嗎？<br>清空後匯款帳戶列表將歸零（可隨時點擊「觀看範例」重新套用）。',
+      { title: '清空名單確認', okClass: 'btn btn-danger-solid', okText: '確定清空' },
+      () => {
+        try { localStorage.removeItem(REMIT_BANK_STORAGE_KEY); } catch (_) {}
+        bankAccounts = [];
+        filteredAccounts = [];
+        saveStateToLocalStorage();
+        enterCreateMode(false);
+        toast('已清空所有匯款帳戶名單與快取。');
+      }
+    );
+  });
+
+  const closeSampleModal = () => $('sample-data-modal').classList.add('hidden');
+  $('close-sample-modal').addEventListener('click', closeSampleModal);
+  $('btn-sample-modal-close').addEventListener('click', closeSampleModal);
+  window.CTA.registerModalEsc('sample-data-modal', closeSampleModal);
+
+  let cachedFreshBankSample = null;
+
+  $('btn-view-sample').addEventListener('click', async () => {
+    await dataReady;
+    try {
+      cachedFreshBankSample = await fetchFreshRemitBankJson();
+    } catch (_) {
+      cachedFreshBankSample = { ldapDirectory, accounts: bankAccounts };
+    }
+    const sampleLdap = cachedFreshBankSample.ldapDirectory || ldapDirectory;
+    const sampleAccs = Array.isArray(cachedFreshBankSample.accounts) ? cachedFreshBankSample.accounts : [];
+    const ldapEntries = Object.entries(sampleLdap);
+
+    $('sample-modal-title').textContent = '匯款帳戶設定｜預設人員與帳戶範例總表';
+    $('sample-data-modal-body').innerHTML = `
+      <div style="background: #eef5ff; border: 1px solid #c9ddf8; border-radius: 8px; padding: 12px 16px; margin-bottom: 18px; color: #14264b; font-size: 14px; line-height: 1.65;">
+        <strong>操作說明：</strong><br>
+        • 下表為系統預設可用之 <strong>LDAP 人員名單</strong> 與 <strong>匯款銀行帳戶範例</strong>。<br>
+        • 點擊下方「<strong>套用此範例資料至系統</strong>」，會自動清除瀏覽器舊快取並載入此份最新名單。
+      </div>
+
+      <h3 style="margin: 0 0 10px; font-size: 16px; color: #14264b;">一、可用 LDAP 人員名單（共 ${ldapEntries.length} 筆）</h3>
+      <div class="table-scroll" style="margin-bottom: 20px; background: #fff;">
+        <table class="detail-table" style="min-width: 520px;">
+          <thead>
+            <tr>
+              <th class="center" style="width: 68px;">序號</th>
+              <th style="width: 180px;">LDAP 帳號</th>
+              <th>姓名</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${ldapEntries.map(([code, name], idx) => `
+              <tr>
+                <td class="center">${idx + 1}</td>
+                <td style="font-weight: 600; color: #0869ed;">${escapeAttr(code)}</td>
+                <td>${escapeAttr(name)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <h3 style="margin: 0 0 10px; font-size: 16px; color: #14264b;">二、預設匯款帳戶範例（共 ${sampleAccs.length} 筆）</h3>
+      <div class="table-scroll" style="background: #fff;">
+        <table class="detail-table" style="min-width: 760px;">
+          <thead>
+            <tr>
+              <th class="center" style="width: 60px;">序號</th>
+              <th>銀行</th>
+              <th>戶名</th>
+              <th>帳號</th>
+              <th>對應人員 / 組隊</th>
+              <th class="center">狀態</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${sampleAccs.map((acc, idx) => {
+              const staffStr = (acc.staff || []).map(s => `${s.name}(${s.ldap})`).join('、');
+              const teamStr = (acc.teams || []).map(t => `${t.name}(${t.code})`).join('、');
+              const assignStr = [staffStr, teamStr].filter(Boolean).join('；') || '—';
+              return `
+                <tr>
+                  <td class="center">${idx + 1}</td>
+                  <td>${escapeAttr(acc.bankCode)} ${escapeAttr(acc.bankName)}</td>
+                  <td style="font-weight: 600;">${escapeAttr(acc.accountName)}</td>
+                  <td>${escapeAttr(acc.accountNumber)}</td>
+                  <td>${escapeAttr(assignStr)}</td>
+                  <td class="center">${escapeAttr(acc.status)}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+    $('sample-data-modal').classList.remove('hidden');
+  });
+
+  $('btn-load-sample-data').addEventListener('click', async () => {
+    try { localStorage.removeItem(REMIT_BANK_STORAGE_KEY); } catch (_) {}
+    const fresh = cachedFreshBankSample || await fetchFreshRemitBankJson();
+    if (fresh && typeof fresh === 'object') {
+      if (Array.isArray(fresh.banks)) bankCatalog = fresh.banks;
+      if (Array.isArray(fresh.heqiTeams)) heqiTeamCatalog = fresh.heqiTeams;
+      if (fresh.ldapDirectory && typeof fresh.ldapDirectory === 'object') {
+        ldapDirectory = { ...fresh.ldapDirectory };
+      }
+      bankAccounts = Array.isArray(fresh.accounts) ? fresh.accounts.map(acc => ({
+        ...acc,
+        staff: Array.isArray(acc.staff) ? acc.staff.map(s => ({ ...s })) : [],
+        teams: Array.isArray(acc.teams) ? acc.teams.map(t => ({ ...t })) : []
+      })) : [];
+      nextAccountId = bankAccounts.reduce((m, r) => Math.max(m, Number(r.id || 0)), 0) + 1;
+    }
+    filteredAccounts = [...bankAccounts];
+    saveStateToLocalStorage();
+    closeSampleModal();
+    enterCreateMode(false);
+    toast('已清除舊快取並套用最新範例資料至系統。');
+  });
+
   const dataReady = loadInitialData();
 });

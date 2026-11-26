@@ -396,15 +396,21 @@
 <body>
 
 <main class="page">
-  <nav class="crumb" id="page-crumb">
-    <span class="home-icon">
-      <svg class="ico" aria-hidden="true"><use href="#ico-banknote"></use></svg>
-    </span>
-    <span class="sep">│</span>
-    <span>系統設定</span>
-    <span class="sep">/</span>
-    <strong id="crumb-current">匯款帳戶設定</strong>
-  </nav>
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+    <nav class="crumb" id="page-crumb" style="margin: 0;">
+      <span class="home-icon">
+        <svg class="ico" aria-hidden="true"><use href="#ico-banknote"></use></svg>
+      </span>
+      <span class="sep">│</span>
+      <span>系統設定</span>
+      <span class="sep">/</span>
+      <strong id="crumb-current">匯款帳戶設定</strong>
+    </nav>
+    <div class="search-actions" style="margin-left: auto;">
+      <button type="button" class="btn danger" id="btn-clear-all-sample">清空名單</button>
+      <button type="button" class="btn primary" id="btn-view-sample">觀看範例</button>
+    </div>
+  </div>
 
   <!-- ==================== 頂部查詢條件 ==================== -->
   <section class="panel filters" aria-label="匯款銀行查詢條件">
@@ -652,6 +658,22 @@
   </div>
 </div>
 
+
+<!-- 觀看範例：預設範例總表彈窗 -->
+<div class="overlay hidden" id="sample-data-modal" style="z-index: 1320;">
+  <div class="modal" style="width: min(1040px, 100%); display: flex; flex-direction: column; max-height: 92vh; padding: 0;">
+    <div class="modal-head" style="padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e1e7f0; background: #fff;">
+      <h2 style="margin: 0; font-size: 17px; color: #14264b;" id="sample-modal-title">預設範例總表</h2>
+      <button type="button" class="x" id="close-sample-modal" aria-label="關閉">&times;</button>
+    </div>
+    <div class="modal-body" style="padding: 20px 24px; overflow-y: auto; flex: 1; background: #f8fafc;" id="sample-data-modal-body"></div>
+    <div class="modal-foot" style="padding: 14px 24px; border-top: 1px solid #e1e7f0; background: #fff; display: flex; justify-content: flex-end; gap: 10px;">
+      <button type="button" class="btn primary" id="btn-load-sample-data">套用此範例資料至系統</button>
+      <button type="button" class="btn" id="btn-sample-modal-close">關閉</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast hidden"></div>
 
 <script src="js/navbar.js?v=402"></script>
@@ -752,7 +774,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 </script>
-<script src="js/remitbank.js?v=406"></script>
+<script src="js/remitbank.js?v=407"></script>
 
 </body>
 </html>

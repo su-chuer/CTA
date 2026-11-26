@@ -474,5 +474,141 @@ document.addEventListener("DOMContentLoaded", () => {
     isActive: () => isDirty()
   });
 
+
+  // ==================== 清空名單 & 觀看範例 / 套用範例 ====================
+  const fetchFreshStockManagerJson = async () => {
+    const res = await fetch('json/stock_manager_data.json?v=' + Date.now(), { cache: 'no-store' });
+    if (!res || !res.ok) throw new Error('無法讀取 stock_manager_data.json');
+    return await res.json();
+  };
+
+  $('btn-clear-all-sample').addEventListener('click', () => {
+    openConfirmModal(
+      '確定要清空所有倉庫的管理者名單與瀏覽器快取嗎？<br>清空後所有倉庫管理者名單將歸零（可隨時點擊「觀看範例」重新套用）。',
+      { title: '清空名單確認', okClass: 'btn btn-danger-solid', okText: '確定清空' },
+      () => {
+        try { localStorage.removeItem(STOCK_MANAGER_STORAGE_KEY); } catch (_) {}
+        savedManagersByWarehouse = {};
+        draftManagers = [];
+        saveStateToLocalStorage();
+        renderManagersTable();
+        toast('已清空所有倉庫管理者名單與快取。');
+      }
+    );
+  });
+
+  const closeSampleModal = () => $('sample-data-modal').classList.add('hidden');
+  $('close-sample-modal').addEventListener('click', closeSampleModal);
+  $('btn-sample-modal-close').addEventListener('click', closeSampleModal);
+  window.CTA.registerModalEsc('sample-data-modal', closeSampleModal);
+
+  let cachedFreshSample = null;
+
+  $('btn-view-sample').addEventListener('click', async () => {
+    await dataReady;
+    try {
+      cachedFreshSample = await fetchFreshStockManagerJson();
+    } catch (_) {
+      cachedFreshSample = { ldapDirectory, managersByWarehouse: savedManagersByWarehouse };
+    }
+    const sampleLdap = cachedFreshSample.ldapDirectory || ldapDirectory;
+    const sampleMgrs = cachedFreshSample.managersByWarehouse || {};
+
+    const getWhTierName = (wh) => {
+      if (hqWarehouses.includes(wh)) return '本會倉庫';
+      if (regionalWarehouses.includes(wh)) return '中繼倉庫';
+      for (const [rg, list] of Object.entries(areaWarehousesByRelay)) {
+        if (Array.isArray(list) && list.includes(wh)) return `作業區倉庫（${rg}）`;
+      }
+      return '倉庫';
+    };
+
+    const ldapEntries = Object.entries(sampleLdap);
+    const whEntries = Object.entries(sampleMgrs);
+
+    $('sample-modal-title').textContent = '倉庫管理者設定｜預設人員與倉庫範例總表';
+    $('sample-data-modal-body').innerHTML = `
+      <div style="background: #eef5ff; border: 1px solid #c9ddf8; border-radius: 8px; padding: 12px 16px; margin-bottom: 18px; color: #14264b; font-size: 14px; line-height: 1.65;">
+        <strong>操作說明：</strong><br>
+        • 下表為系統預設可用之 <strong>LDAP 人員帳號對照表</strong> 與 <strong>各層級倉庫管理者範例名單</strong>。<br>
+        • 點擊下方「<strong>套用此範例資料至系統</strong>」，會自動清除瀏覽器舊快取並載入此份最新名單。
+      </div>
+
+      <h3 style="margin: 0 0 10px; font-size: 16px; color: #14264b;">一、可用 LDAP 人員名單（共 ${ldapEntries.length} 筆）</h3>
+      <div class="table-scroll" style="margin-bottom: 20px; background: #fff;">
+        <table class="detail-table" style="min-width: 520px;">
+          <thead>
+            <tr>
+              <th class="center" style="width: 68px;">序號</th>
+              <th style="width: 180px;">LDAP 帳號</th>
+              <th>姓名</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${ldapEntries.map(([code, name], idx) => `
+              <tr>
+                <td class="center">${idx + 1}</td>
+                <td style="font-weight: 600; color: #0869ed;">${escapeAttr(code)}</td>
+                <td>${escapeAttr(name)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <h3 style="margin: 0 0 10px; font-size: 16px; color: #14264b;">二、各倉庫預設管理者範例</h3>
+      <div class="table-scroll" style="background: #fff;">
+        <table class="detail-table" style="min-width: 640px;">
+          <thead>
+            <tr>
+              <th class="center" style="width: 68px;">序號</th>
+              <th style="width: 170px;">倉庫層級</th>
+              <th style="width: 160px;">倉庫名稱</th>
+              <th>預設管理者（姓名 / LDAP）</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${whEntries.map(([wh, list], idx) => `
+              <tr>
+                <td class="center">${idx + 1}</td>
+                <td>${escapeAttr(getWhTierName(wh))}</td>
+                <td style="font-weight: 600; color: #14264b;">${escapeAttr(wh)}</td>
+                <td>${Array.isArray(list) && list.length > 0
+                  ? list.map(m => `${escapeAttr(m.name)} (${escapeAttr(m.ldap)})`).join('、')
+                  : '<span class="blank">無</span>'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+    $('sample-data-modal').classList.remove('hidden');
+  });
+
+  $('btn-load-sample-data').addEventListener('click', async () => {
+    try { localStorage.removeItem(STOCK_MANAGER_STORAGE_KEY); } catch (_) {}
+    const fresh = cachedFreshSample || await fetchFreshStockManagerJson();
+    if (fresh && typeof fresh === 'object') {
+      if (Array.isArray(fresh.hqWarehouses)) hqWarehouses = fresh.hqWarehouses;
+      if (Array.isArray(fresh.regionalWarehouses)) regionalWarehouses = fresh.regionalWarehouses;
+      if (fresh.areaWarehousesByRelay && typeof fresh.areaWarehousesByRelay === 'object') {
+        areaWarehousesByRelay = fresh.areaWarehousesByRelay;
+      }
+      if (fresh.ldapDirectory && typeof fresh.ldapDirectory === 'object') {
+        ldapDirectory = { ...fresh.ldapDirectory };
+      }
+      savedManagersByWarehouse = (fresh.managersByWarehouse && typeof fresh.managersByWarehouse === 'object')
+        ? JSON.parse(JSON.stringify(fresh.managersByWarehouse))
+        : {};
+    }
+    saveStateToLocalStorage();
+    closeSampleModal();
+    if (activeWarehouse) {
+      draftManagers = getSavedManagersForWarehouse(activeWarehouse);
+    }
+    renderManagersTable();
+    toast('已清除舊快取並套用最新範例資料至系統。');
+  });
+
   const dataReady = loadInitialData();
 });
