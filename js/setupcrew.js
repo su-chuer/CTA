@@ -50,9 +50,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (loaded && typeof loaded === 'object') {
-      ldapDirectory = (loaded.ldapDirectory && typeof loaded.ldapDirectory === 'object')
-        ? loaded.ldapDirectory
-        : { test1: '蘇1', test2: '林1', test3: '王1' };
+      const fallbackLdap = {
+        chang01: '張1', chang02: '張2', lin01: '林1', lin02: '林2',
+        shih01: '釋德1法師', su02: '蘇2', chiu01: '丘1', huang01: '黃1',
+        kuo01: '郭1', kuo02: '郭2', wang01: '王1', wang02: '王凱2',
+        chen01: '陳1', wu01: '吳1', test1: '蘇1', test2: '林1', test3: '王1'
+      };
+      ldapDirectory = Object.assign(
+        {},
+        fallbackLdap,
+        (loaded.ldapDirectory && typeof loaded.ldapDirectory === 'object') ? loaded.ldapDirectory : {}
+      );
       allTeams = Array.isArray(loaded.allTeams) ? loaded.allTeams : [];
       savedCrewAssignments = (loaded.crewAssignments && typeof loaded.crewAssignments === 'object')
         ? loaded.crewAssignments
@@ -69,10 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const cleaned = cleanTrim(rawVal);
     if (!cleaned) return '';
     const lower = cleaned.toLowerCase();
-    if (ldapDirectory[lower]) return lower;
-    const exactEntry = Object.entries(ldapDirectory).find(([ldap, name]) =>
-      ldap.toLowerCase() === lower || name === cleaned
-    );
+    const exactEntry = Object.entries(ldapDirectory).find(([ldap]) => ldap.toLowerCase() === lower);
     return exactEntry ? exactEntry[0] : '';
   };
 

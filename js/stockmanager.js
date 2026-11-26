@@ -244,9 +244,17 @@ document.addEventListener("DOMContentLoaded", () => {
       areaWarehousesByRelay = (loaded.areaWarehousesByRelay && typeof loaded.areaWarehousesByRelay === 'object')
         ? loaded.areaWarehousesByRelay
         : {};
-      ldapDirectory = (loaded.ldapDirectory && typeof loaded.ldapDirectory === 'object')
-        ? loaded.ldapDirectory
-        : {};
+      const fallbackLdap = {
+        chang01: '張1', chang02: '張2', lin01: '林1', lin02: '林2',
+        shih01: '釋德1法師', su02: '蘇2', chiu01: '丘1', huang01: '黃1',
+        kuo01: '郭1', kuo02: '郭2', wang01: '王1', wang02: '王凱2',
+        chen01: '陳1', wu01: '吳1', test1: '蘇1', test2: '林1', test3: '王1'
+      };
+      ldapDirectory = Object.assign(
+        {},
+        fallbackLdap,
+        (loaded.ldapDirectory && typeof loaded.ldapDirectory === 'object') ? loaded.ldapDirectory : {}
+      );
       savedManagersByWarehouse = (loaded.managersByWarehouse && typeof loaded.managersByWarehouse === 'object')
         ? loaded.managersByWarehouse
         : {};
@@ -389,28 +397,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const raw = cleanTrim(input.value);
     if (!raw) {
       input.classList.add('highlight-error');
-      openAlertModal('請先填寫 LDAP 帳號或人員姓名！', () => input.focus());
+      openAlertModal('請先填寫 LDAP 帳號！', () => input.focus());
       return;
     }
     input.classList.remove('highlight-error');
 
     const lower = raw.toLowerCase();
-    let matchedLdap = '';
-    let matchedName = '';
-
-    if (ldapDirectory[lower]) {
-      matchedLdap = lower;
-      matchedName = ldapDirectory[lower];
-    } else {
-      const byNameEntry = Object.entries(ldapDirectory).find(([, nm]) => nm === raw);
-      if (byNameEntry) {
-        matchedLdap = byNameEntry[0];
-        matchedName = byNameEntry[1];
-      } else {
-        matchedLdap = raw;
-        matchedName = raw;
-      }
+    const matchedEntry = Object.entries(ldapDirectory).find(([k]) => k.toLowerCase() === lower);
+    if (!matchedEntry) {
+      input.classList.add('highlight-error');
+      openAlertModal(`查無 LDAP 帳號「${escapeAttr(raw)}」，僅能輸入 LDAP 對照表內的帳號！`, () => input.focus());
+      return;
     }
+    const matchedLdap = matchedEntry[0];
+    const matchedName = matchedEntry[1];
 
     const exists = draftManagers.some(m => m.ldap.toLowerCase() === matchedLdap.toLowerCase() || m.name === matchedName);
     if (exists) {
