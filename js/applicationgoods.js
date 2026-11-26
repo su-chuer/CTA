@@ -375,6 +375,7 @@ document.addEventListener("DOMContentLoaded", () => {
       $('goods-item').value = '';
       renderDynamicItemFields('', null);
 
+      $('btn-form-save').textContent = '確認送出';
       $('btn-form-delete').classList.add('hidden');
       $('claim-form-footer').appendChild($('btn-form-leave'));
       $('claim-form-footer').appendChild($('btn-form-save'));
@@ -397,6 +398,7 @@ document.addEventListener("DOMContentLoaded", () => {
       $('goods-item').value = record.goodsItem || '';
       renderDynamicItemFields(record.goodsItem || '', record);
 
+      $('btn-form-save').textContent = '儲存';
       $('btn-form-delete').classList.remove('hidden');
       $('claim-form-footer').appendChild($('btn-form-save'));
       $('claim-form-footer').appendChild($('btn-form-leave'));
@@ -556,7 +558,7 @@ document.addEventListener("DOMContentLoaded", () => {
       };
     }
 
-    toast('已成功儲存請領單。');
+    toast(existingIdx === -1 ? '已成功送出請領單。' : '已成功儲存請領單。');
     returnToListView();
   });
 

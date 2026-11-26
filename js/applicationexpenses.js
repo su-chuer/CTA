@@ -479,8 +479,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       syncCategoryFields();
 
+      $('btn-form-save').textContent = '確認送出';
       $('btn-form-delete').classList.add('hidden');
-      // 順序：離開、儲存
+      // 順序：離開、確認送出
       $('claim-form-footer').appendChild($('btn-form-leave'));
       $('claim-form-footer').appendChild($('btn-form-save'));
     } else if (record) {
@@ -529,6 +530,7 @@ document.addEventListener("DOMContentLoaded", () => {
         $('form-total-amount').value = Number(record.amount || 0) || '';
       }
 
+      $('btn-form-save').textContent = '儲存';
       $('btn-form-delete').classList.remove('hidden');
       // 順序：儲存、離開、刪除
       $('claim-form-footer').appendChild($('btn-form-save'));
@@ -767,7 +769,7 @@ document.addEventListener("DOMContentLoaded", () => {
       };
     }
 
-    toast('已成功儲存請領單。');
+    toast(existingIdx === -1 ? '已成功送出請領單。' : '已成功儲存請領單。');
     returnToListView();
   });
 
