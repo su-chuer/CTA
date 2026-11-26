@@ -170,7 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   $('btn-reset').addEventListener('click', () => {
     $('filter-year').value = '2026';
-    $('filter-area').value = '';
+    $('filter-area').value = '全部';
     $('filter-area').classList.remove('highlight-error');
     currentLedgerRecords = [];
     pager.setPage(1);

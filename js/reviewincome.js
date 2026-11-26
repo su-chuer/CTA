@@ -198,7 +198,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // 清除功能
   $('btn-reset').addEventListener('click', () => {
     $('filter-year').value = '2026';
-    $('filter-status').value = '';
+    $('filter-status').value = 'all';
     $('filter-status').classList.remove('highlight-error');
     if (window.location.search && window.history && window.history.replaceState) {
       window.history.replaceState({}, '', window.location.pathname);
