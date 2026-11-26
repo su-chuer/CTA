@@ -320,36 +320,36 @@
   font-weight: 600;
 }
 .btn.btn-create-account {
-  background: #ec4899;
-  border-color: #ec4899;
+  background: #0869ed;
+  border-color: #0869ed;
   color: #ffffff;
-  box-shadow: 0 2px 6px rgba(236, 72, 153, 0.28);
+  box-shadow: 0 2px 6px rgba(8, 105, 237, 0.24);
 }
 .btn.btn-create-account:hover:not(:disabled) {
-  background: #db2777;
-  border-color: #db2777;
-  box-shadow: 0 3px 8px rgba(236, 72, 153, 0.36);
+  background: #0657c7;
+  border-color: #0657c7;
+  box-shadow: 0 3px 8px rgba(8, 105, 237, 0.32);
 }
 .claim-add-box.is-create-mode {
-  background: #fdf2f8;
-  border: 1.5px solid #f9a8d4;
-  box-shadow: 0 2px 10px rgba(236, 72, 153, 0.08);
+  background: #f0f7ff;
+  border: 1.5px solid #93c5fd;
+  box-shadow: 0 2px 10px rgba(8, 105, 237, 0.08);
 }
 .claim-add-box.is-create-mode .bank-editor-header {
-  border-bottom-color: #fbcfe8;
+  border-bottom-color: #bfdbfe;
 }
 .claim-add-box.is-create-mode .bank-editor-title {
-  color: #9d174d;
+  color: #0657c7;
 }
 .claim-add-box.is-create-mode .bank-status-inline-row,
 .claim-add-box.is-create-mode .bank-assign-box {
-  border-color: #f9a8d4;
+  border-color: #bfdbfe;
 }
 .claim-add-box.is-create-mode .bank-segmented-tabs {
-  background: #fce7f3;
+  background: #dbeafe;
 }
 .claim-add-box.is-create-mode .bank-sub-tab.active {
-  color: #be185d;
+  color: #0869ed;
 }
 .btn.btn-heqi-outline {
   background: #eef5ff;
@@ -531,155 +531,7 @@
   </section>
 
   <!-- ==================== 下方雙欄作業區：左側帳戶列表 / 右側新增與修改表單 ==================== -->
-  <section class="panel table-panel" style="margin-top: 15px;" aria-label="匯款銀行維護作業">
-    <div id="table-loading" class="block-loading hidden"><div class="spinner"></div></div>
-
-    <div class="bank-split-layout">
-      <!-- 左側：匯款銀行帳戶列表 -->
-      <div>
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; min-height: 36px;">
-          <div style="font-size: 15px; color: #556477; font-weight: 600;">銀行帳戶：<span id="account-count-display" style="color: #14264b; font-weight: 700;">0</span> 筆</div>
-          <button type="button" class="btn btn-create-account" id="btn-switch-create-top" style="height: 36px; padding: 0 14px; font-size: 14px; font-weight: 600;">+ 新增匯款帳戶</button>
-        </div>
-
-        <div class="table-scroll">
-          <table class="detail-table" id="bank-account-table">
-            <thead>
-              <tr>
-                <th class="center" style="width: 68px;">序號</th>
-                <th>戶名</th>
-                <th style="width: 104px;">銀行代碼</th>
-                <th>帳戶</th>
-                <th class="center" style="width: 104px;">狀態</th>
-                <th class="center" style="width: 80px;">編輯</th>
-              </tr>
-            </thead>
-            <tbody id="bank-account-tbody">
-              <tr><td colspan="6" class="empty">資料載入中...</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- 分頁元件 -->
-        <div class="pagination hidden" id="pagination">
-          <select id="per-page-select" class="page-select" aria-label="每頁顯示筆數">
-            <option value="10" selected>10 筆 / 頁</option>
-            <option value="20">20 筆 / 頁</option>
-            <option value="50">50 筆 / 頁</option>
-            <option value="100">100 筆 / 頁</option>
-          </select>
-          <button type="button" class="page-btn disabled" id="page-prev" aria-label="上一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-left"></use></svg></button>
-          <div id="page-numbers" style="display:flex; gap:6px; align-items:center;"></div>
-          <button type="button" class="page-btn" id="page-next" aria-label="下一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-right"></use></svg></button>
-          <span class="page-info">共 <span id="total-pages">1</span> 頁 / <span id="total-items">0</span> 筆</span>
-        </div>
-      </div>
-
-      <!-- 右側：新增 / 修改匯款帳戶資料表單卡片 -->
-      <div class="claim-add-box" id="bank-editor-box" aria-label="匯款銀行編輯表單">
-          <div class="bank-editor-header">
-            <div class="bank-editor-title">
-              <span id="editor-mode-title">匯款帳戶資料</span>
-            </div>
-            <span class="status-badge pending" id="editor-mode-badge">編輯中</span>
-          </div>
-
-        <!-- 銀行代碼 * -->
-        <div class="claim-field">
-          <label for="form-bank-code">銀行代碼 <b>*</b></label>
-          <div class="bank-picker-wrap full-width" id="form-bank-picker-wrap">
-            <input type="text" id="form-bank-code" class="claim-control" readonly autocomplete="off" placeholder="請選擇">
-            <button type="button" class="bank-picker-clear hidden" id="btn-clear-form-bank" title="清除銀行代碼" aria-label="清除銀行代碼">&times;</button>
-            <button type="button" class="bank-picker-search-btn" id="btn-open-form-bank-modal" title="選擇銀行代碼" aria-label="選擇銀行代碼">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="20" y1="20" x2="16.2" y2="16.2"></line></svg>
-            </button>
-          </div>
-        </div>
-
-        <!-- 戶名 * -->
-        <div class="claim-field">
-          <label for="form-account-name">戶名 <b>*</b></label>
-          <input type="text" id="form-account-name" class="claim-control" placeholder="請輸入戶名">
-        </div>
-
-        <!-- 帳號 * -->
-        <div class="claim-field">
-          <label for="form-account-number">帳號 <b>*</b></label>
-          <input type="text" id="form-account-number" class="claim-control" inputmode="numeric" placeholder="請輸入帳號">
-        </div>
-
-        <!-- 狀態 -->
-        <div class="claim-field">
-          <label>狀態</label>
-          <div class="choice" style="margin: 2px 0 0; height: 34px;">
-            <label><input type="radio" name="form-bank-status" value="啟用" checked>啟用</label>
-            <label><input type="radio" name="form-bank-status" value="停用">停用</label>
-          </div>
-        </div>
-
-        <!-- 人員 / 組隊 頁籤區塊（圖 2, 3, 5, 6） -->
-        <div>
-          <div class="bank-sub-tabs" role="tablist" aria-label="人員與組隊頁籤">
-            <button type="button" class="bank-sub-tab active" id="subtab-staff" role="tab" aria-selected="true" data-subtab="staff">人員 (<span id="staff-tab-count">0</span>)</button>
-            <button type="button" class="bank-sub-tab" id="subtab-team" role="tab" aria-selected="false" data-subtab="team">組隊 (<span id="team-tab-count">0</span>)</button>
-          </div>
-
-          <!-- 子頁籤一：人員（請填 LDAP + 姓名列表）（圖 2, 5） -->
-          <div class="bank-sub-panel" id="subpanel-staff">
-            <div class="claim-field">
-              <label for="form-ldap-input">請填 LDAP</label>
-              <div class="ldap-input-row">
-                <input type="text" id="form-ldap-input" class="claim-control" placeholder="請輸入 LDAP 帳號或姓名">
-                <button type="button" class="btn primary btn-icon-square" id="btn-add-ldap" title="新增人員" aria-label="新增人員">+</button>
-              </div>
-            </div>
-
-            <div class="table-scroll">
-              <table class="detail-table bank-mini-table" id="staff-list-table">
-                <thead>
-                  <tr>
-                    <th>姓名</th>
-                    <th class="center" style="width: 84px;">刪除</th>
-                  </tr>
-                </thead>
-                <tbody id="staff-list-tbody">
-                  <tr><td colspan="2" class="empty" style="padding: 18px;">尚未新增人員</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- 子頁籤二：組隊（新增和氣組隊按鈕 + 組隊列表）（圖 3, 6） -->
-          <div class="bank-sub-panel hidden" id="subpanel-team">
-            <button type="button" class="btn btn-heqi-outline" id="btn-open-heqi-modal" style="width: 100%; height: 40px; font-size: 15px; font-weight: 600;">
-              <svg class="ico" style="width: 18px; height: 18px;" aria-hidden="true"><use href="#ico-search"></use></svg>新增和氣組隊
-            </button>
-
-            <div class="table-scroll">
-              <table class="detail-table bank-mini-table" id="team-list-table">
-                <thead>
-                  <tr>
-                    <th>組隊</th>
-                    <th class="center" style="width: 84px;">刪除</th>
-                  </tr>
-                </thead>
-                <tbody id="team-list-tbody">
-                  <tr><td colspan="2" class="empty" style="padding: 18px;">尚未新增和氣組隊</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- 底部操作按鈕：儲存 -->
-        <div class="bank-editor-actions">
-          <button type="button" class="btn primary" id="btn-save-bank">儲存</button>
-        </div>
-      </div>
-    </div>
-  </section>
 </main>
-
 <!-- ==================== 彈窗零：請選擇銀行（小放大鏡 Popup） ==================== -->
 <div class="overlay hidden" id="bank-select-modal" style="z-index: 1270;">
   <div class="modal" style="width: min(620px, 100%); display: flex; flex-direction: column; max-height: 88vh; padding: 0;">
@@ -779,7 +631,7 @@
 
 <script src="js/navbar.js?v=352"></script>
 <script src="js/common.js?v=349"></script>
-<script src="js/remitbank.js?v=365"></script>
+<script src="js/remitbank.js?v=366"></script>
 
 </body>
 </html>
