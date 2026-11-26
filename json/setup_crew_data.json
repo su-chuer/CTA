@@ -1,0 +1,216 @@
+{
+  "ldapDirectory": {
+    "kuo01": "郭1",
+    "kuo02": "郭2",
+    "lin01": "林1",
+    "wang01": "王1",
+    "wang02": "王凱2",
+    "chen01": "陳1",
+    "huang01": "黃1",
+    "wu01": "吳1",
+    "su02": "蘇2",
+    "suchuer": "蘇主兒",
+    "lin02": "林哲瑋"
+  },
+  "allTeams": [
+    {
+      "code": "NTN35",
+      "name": "板橋大觀和氣一"
+    },
+    {
+      "code": "NTN66",
+      "name": "雙和永和和氣二"
+    },
+    {
+      "code": "NTN42",
+      "name": "萬華和氣二"
+    },
+    {
+      "code": "NTN68",
+      "name": "雙和中和和氣四"
+    },
+    {
+      "code": "NTN50",
+      "name": "內湖和氣二"
+    },
+    {
+      "code": "TTW03",
+      "name": "台北分會"
+    },
+    {
+      "code": "NTN05",
+      "name": "信義和氣一"
+    },
+    {
+      "code": "NTN23",
+      "name": "中正和氣一"
+    },
+    {
+      "code": "NTN36",
+      "name": "板橋後埔和氣一"
+    },
+    {
+      "code": "NTN67",
+      "name": "雙和永和和氣四"
+    },
+    {
+      "code": "NTO40",
+      "name": "基隆安樂和氣"
+    },
+    {
+      "code": "NTN55",
+      "name": "北投和氣四"
+    },
+    {
+      "code": "DTD15",
+      "name": "苓雅文化和氣"
+    },
+    {
+      "code": "DTD16",
+      "name": "新興和氣"
+    },
+    {
+      "code": "DTD17",
+      "name": "前鎮一和氣"
+    },
+    {
+      "code": "DTD18",
+      "name": "小港宏平和氣"
+    },
+    {
+      "code": "DTD19",
+      "name": "大社和氣"
+    },
+    {
+      "code": "DTD20",
+      "name": "仁武和氣"
+    },
+    {
+      "code": "DTD21",
+      "name": "鳥松和氣"
+    },
+    {
+      "code": "DTD22",
+      "name": "鳳山文德和氣"
+    },
+    {
+      "code": "DTD23",
+      "name": "鳳山興和氣"
+    },
+    {
+      "code": "DTD24",
+      "name": "鳳山五甲和氣"
+    },
+    {
+      "code": "DTD25",
+      "name": "林園和氣"
+    },
+    {
+      "code": "DTD26",
+      "name": "大樹和氣"
+    },
+    {
+      "code": "DTD39",
+      "name": "小港二苓和氣"
+    },
+    {
+      "code": "DTD42",
+      "name": "後勁和氣"
+    },
+    {
+      "code": "ETE01",
+      "name": "安南和氣"
+    },
+    {
+      "code": "ETE02",
+      "name": "市南和氣"
+    },
+    {
+      "code": "ETE03",
+      "name": "市中和氣"
+    },
+    {
+      "code": "ETE04",
+      "name": "永康和氣"
+    },
+    {
+      "code": "ETE05",
+      "name": "仁德和氣"
+    },
+    {
+      "code": "ETE06",
+      "name": "佳里和氣"
+    },
+    {
+      "code": "ETE07",
+      "name": "新營和氣"
+    },
+    {
+      "code": "ETE08",
+      "name": "新化和氣"
+    },
+    {
+      "code": "TXG01",
+      "name": "大里和氣一"
+    },
+    {
+      "code": "TXG02",
+      "name": "大里和氣二"
+    },
+    {
+      "code": "TXG05",
+      "name": "西屯和氣一"
+    },
+    {
+      "code": "HUN01",
+      "name": "南花蓮和氣"
+    },
+    {
+      "code": "HUN02",
+      "name": "花蓮和氣一"
+    },
+    {
+      "code": "ILN01",
+      "name": "宜蘭和氣一"
+    },
+    {
+      "code": "ILN02",
+      "name": "宜蘭和氣二"
+    }
+  ],
+  "crewAssignments": {
+    "suchuer": [
+      "ETE03",
+      "ETE02",
+      "ETE04",
+      "ETE01",
+      "ETE05"
+    ],
+    "su02": [
+      "ETE05",
+      "ETE04"
+    ],
+    "kuo01": [
+      "ETE04"
+    ],
+    "lin01": [
+      "ETE05"
+    ],
+    "chen01": [
+      "ETE01"
+    ],
+    "huang01": [
+      "ETE02",
+      "ETE03"
+    ],
+    "wang01": [
+      "ETE06"
+    ],
+    "wang02": [
+      "DTD42"
+    ],
+    "wu01": [
+      "ETE08"
+    ]
+  }
+}

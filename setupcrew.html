@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>系統設定｜人員設定</title>
+<link rel="stylesheet" href="css/style.css?v=384">
+<link rel="icon" href="images/logo.png" type="image/png">
+<style>
+/* === 人員設定專屬雙向穿梭框與拖曳樣式（沿用全站設計系統） === */
+html, body {
+  min-height: 100%;
+  background: linear-gradient(120deg, #f0f5fb, #f9fbff) fixed;
+}
+.page {
+  min-height: calc(100vh - 58px);
+}
+#ldap-combo-wrap {
+  min-width: 185px;
+  max-width: 100%;
+  transition: width 0.15s ease;
+}
+#ldap-combo-menu {
+  max-height: 360px;
+}
+.shuttle-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 76px minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+  margin-top: 14px;
+}
+.shuttle-box {
+  background: #ffffff;
+  border: 1px solid #d9e3f1;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+}
+.shuttle-box.is-assigned {
+  border-color: #bfd6f6;
+}
+.shuttle-box.drag-over {
+  border: 2px dashed #0869ed;
+  background: #f0f7ff;
+  box-shadow: 0 0 0 3px rgba(8, 105, 237, 0.12);
+}
+.shuttle-box-head {
+  padding: 12px 16px;
+  background: #f4f8fd;
+  border-bottom: 1px solid #dce6f4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.shuttle-box.is-assigned .shuttle-box-head {
+  background: #e8f1ff;
+  border-bottom-color: #c6dbf8;
+}
+.shuttle-box-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #14264b;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.shuttle-count-pill {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #334155;
+}
+.shuttle-box.is-assigned .shuttle-count-pill {
+  background: #0869ed;
+  color: #ffffff;
+}
+.shuttle-filter-bar {
+  padding: 10px 12px;
+  background: #fafcff;
+  border-bottom: 1px solid #e5ecf6;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.shuttle-filter-input-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+.shuttle-filter-input-wrap input {
+  width: 100%;
+  height: 36px;
+  padding: 0 30px 0 12px;
+  font-size: 14px;
+}
+.shuttle-filter-clear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border: 0;
+  background: transparent;
+  color: #6c7992;
+  font-size: 16px;
+  line-height: 1;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+}
+.shuttle-filter-clear:hover {
+  background: #eef2f7;
+  color: #14264b;
+}
+.shuttle-table-wrap {
+  height: 440px;
+  overflow-y: auto;
+  overflow-x: auto;
+  background: #ffffff;
+}
+.shuttle-table {
+  min-width: 0;
+  width: 100%;
+}
+.shuttle-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: #eaf1fa;
+  height: 42px;
+  padding: 6px 12px;
+  font-size: 14px;
+}
+.shuttle-table tbody tr {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.12s;
+}
+.shuttle-table tbody tr[draggable="true"]:active {
+  cursor: grabbing;
+}
+.shuttle-table tbody tr.is-checked td {
+  background: #dceeff;
+  font-weight: 600;
+}
+.shuttle-table tbody tr.is-dragging {
+  opacity: 0.45;
+}
+.shuttle-table td {
+  height: 40px;
+  padding: 5px 12px;
+  font-size: 15px;
+}
+.shuttle-drag-handle {
+  color: #94a3b8;
+  font-size: 15px;
+  letter-spacing: -1px;
+  cursor: grab;
+  display: inline-block;
+  padding: 0 2px;
+}
+.shuttle-table tbody tr:hover .shuttle-drag-handle {
+  color: #0869ed;
+}
+.shuttle-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.shuttle-move-btn {
+  width: 64px;
+  height: 38px;
+  padding: 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 6px;
+}
+.shuttle-hint-text {
+  font-size: 12px;
+  color: #64748b;
+  text-align: center;
+  line-height: 1.4;
+}
+.setupwork-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #e5ebf5;
+}
+@media (max-width: 960px) {
+  .shuttle-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .shuttle-controls {
+    flex-direction: row;
+    padding: 4px 0;
+  }
+  .shuttle-table-wrap {
+    height: 320px;
+  }
+}
+</style>
+</head>
+<body>
+
+<main class="page">
+  <nav class="crumb" id="page-crumb">
+    <span class="home-icon">
+      <svg class="ico" aria-hidden="true"><use href="#ico-users"></use></svg>
+    </span>
+    <span class="sep">│</span>
+    <span>系統設定</span>
+    <span class="sep">/</span>
+    <strong id="crumb-current">人員設定</strong>
+  </nav>
+
+  <!-- ==================== 頂部作業區查詢條件 ==================== -->
+  <section class="panel filters" aria-label="人員查詢條件">
+    <div class="field">
+      <label for="ldap-account-input">LDAP帳號 <b>*</b></label>
+      <div class="combo-select-wrap group-select-auto" id="ldap-combo-wrap">
+        <input type="text" id="ldap-account-input" class="filter-input" autocomplete="off" placeholder="請輸入 LDAP 帳號或姓名" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="ldap-combo-menu">
+        <button type="button" class="combo-clear-btn hidden" id="btn-clear-ldap" title="清除 LDAP 帳號" aria-label="清除 LDAP 帳號">&times;</button>
+        <button type="button" class="combo-arrow-btn" id="btn-toggle-ldap" title="展開人員選單" aria-label="展開人員選單">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <div class="combo-dropdown-menu hidden" id="ldap-combo-menu" role="listbox"></div>
+      </div>
+    </div>
+
+    <div class="search-actions" style="margin-left: 6px;">
+      <button type="button" class="btn primary" id="btn-search"><svg class="ico" aria-hidden="true"><use href="#ico-search"></use></svg>查詢</button>
+      <button type="button" class="btn" id="btn-reset"><svg class="ico" aria-hidden="true"><use href="#ico-refresh-cw"></use></svg>清除</button>
+    </div>
+  </section>
+
+  <!-- ==================== 下方和氣組隊雙欄配置區 ==================== -->
+  <section class="panel table-panel hidden" id="shuttle-panel" style="margin-top: 15px;" aria-label="人員所屬組隊設定">
+    <div id="table-loading" class="block-loading hidden"><div class="spinner"></div></div>
+
+    <!-- 橘黃色操作提示橫幅 -->
+    <div class="fellowship-notice-bar" role="status" style="margin-bottom: 14px;">
+      <span class="fellowship-notice-icon" aria-hidden="true">!</span>
+      <span>請將「<span id="notice-person-name"></span>」所屬組隊，從左邊移到右邊表格。 (可用勾選、雙擊或直接拖曳方式移動)</span>
+    </div>
+
+    <div class="shuttle-layout">
+      <!-- 左側：未分配和氣組隊 -->
+      <div class="shuttle-box" id="left-shuttle-box" aria-label="未分配組隊列表">
+        <div class="shuttle-box-head">
+          <div class="shuttle-box-title">
+            <span>未分配組隊</span>
+            <span class="shuttle-count-pill" id="left-count-pill">0 筆</span>
+          </div>
+          <span style="font-size: 13px; color: #64748b;" id="left-selected-hint">已勾選 0 筆</span>
+        </div>
+
+        <div class="shuttle-filter-bar">
+          <div class="shuttle-filter-input-wrap">
+            <input type="text" id="left-filter-input" class="claim-control" autocomplete="off" placeholder="代碼或名稱篩選（大寫英文字自動轉換，例如：DTD）">
+            <button type="button" class="shuttle-filter-clear hidden" id="btn-clear-left-filter" title="清除篩選" aria-label="清除篩選">&times;</button>
+          </div>
+        </div>
+
+        <div class="shuttle-table-wrap">
+          <table class="detail-table shuttle-table" id="left-team-table">
+            <thead>
+              <tr>
+                <th class="center" style="width: 44px;"><input type="checkbox" class="submit-row-checkbox" id="check-all-left" title="全選 / 取消全選" aria-label="全選未分配組隊"></th>
+                <th style="width: 34px;"></th>
+                <th style="width: 112px;">代碼</th>
+                <th>名稱</th>
+              </tr>
+            </thead>
+            <tbody id="left-team-tbody">
+              <tr><td colspan="4" class="empty">資料載入中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 中間：雙向移轉操作鈕 -->
+      <div class="shuttle-controls" aria-label="組隊移轉操作按鈕">
+        <button type="button" class="btn primary shuttle-move-btn" id="btn-move-right" title="加入所選組隊至右邊" aria-label="加入所選組隊" disabled>&gt;</button>
+        <button type="button" class="btn shuttle-move-btn" id="btn-move-left" title="移出右邊所選組隊" aria-label="移出所選組隊" disabled>&lt;</button>
+        <span class="shuttle-hint-text">勾選移動<br>或拖曳列</span>
+      </div>
+
+      <!-- 右側：目前已歸屬該作業區的組隊 -->
+      <div class="shuttle-box is-assigned" id="right-shuttle-box" aria-label="已歸屬人員組隊列表">
+        <div class="shuttle-box-head">
+          <div class="shuttle-box-title">
+            <span><span id="right-person-label">蘇主兒</span> 所屬組隊</span>
+            <span class="shuttle-count-pill" id="right-count-pill">0 筆</span>
+          </div>
+          <span style="font-size: 13px; color: #0657c7; font-weight: 600;" id="right-selected-hint">已勾選 0 筆</span>
+        </div>
+
+        <div class="shuttle-filter-bar">
+          <div class="shuttle-filter-input-wrap">
+            <input type="text" id="right-filter-input" class="claim-control" autocomplete="off" placeholder="篩選已歸屬的代碼或名稱...">
+            <button type="button" class="shuttle-filter-clear hidden" id="btn-clear-right-filter" title="清除篩選" aria-label="清除篩選">&times;</button>
+          </div>
+        </div>
+
+        <div class="shuttle-table-wrap">
+          <table class="detail-table shuttle-table" id="right-team-table">
+            <thead>
+              <tr>
+                <th class="center" style="width: 44px;"><input type="checkbox" class="submit-row-checkbox" id="check-all-right" title="全選 / 取消全選" aria-label="全選已歸屬組隊"></th>
+                <th style="width: 34px;"></th>
+                <th style="width: 108px;">代碼</th>
+                <th>名稱</th>
+                <th class="center" style="width: 76px;">刪除</th>
+              </tr>
+            </thead>
+            <tbody id="right-team-tbody">
+              <tr><td colspan="5" class="empty">資料載入中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部操作按鈕：儲存 / 還原（沿用全站統一按鈕規範） -->
+    <div class="setupwork-footer">
+      <div style="font-size: 14px; color: #64748b;" id="dirty-status-hint">目前尚未有未儲存的變更</div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <button type="button" class="btn" id="btn-reset-crew" disabled>還原變更</button>
+        <button type="button" class="btn primary" id="btn-save-crew" style="min-width: 96px; height: 38px; font-size: 15px; font-weight: 600;">儲存</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- 操作確認彈窗 -->
+<div class="overlay hidden" id="confirm-modal" style="z-index: 1320;">
+  <div class="modal dialog-modal">
+    <div class="modal-head dialog-head">
+      <h2 id="confirm-modal-title">操作確認</h2>
+      <button type="button" class="x" id="close-confirm" aria-label="關閉">&times;</button>
+    </div>
+    <div class="modal-body dialog-body" id="confirm-modal-body"></div>
+    <div class="modal-foot dialog-foot">
+      <button type="button" class="btn primary" id="btn-confirm-ok">確定</button>
+      <button type="button" class="btn" id="btn-confirm-cancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 單一按鈕提示彈窗 -->
+<div class="overlay hidden" id="alert-modal" style="z-index: 1360;">
+  <div class="modal dialog-modal">
+    <div class="modal-head dialog-head">
+      <h2>提示訊息</h2>
+      <button type="button" class="x" id="close-alert" aria-label="關閉">&times;</button>
+    </div>
+    <div class="modal-body dialog-body" id="alert-modal-body">提示訊息</div>
+    <div class="modal-foot dialog-foot">
+      <button type="button" class="btn primary" id="btn-alert-ok">確定</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="js/navbar.js?v=392"></script>
+<script src="js/common.js?v=390"></script>
+<script src="js/setupcrew.js?v=392"></script>
+
+</body>
+</html>
