@@ -165,12 +165,9 @@
 .bank-status-inline-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  background: #ffffff;
-  border: 1px solid #d9e3f1;
-  border-radius: 6px;
-  padding: 6px 12px;
-  min-height: 38px;
+  gap: 18px;
+  padding: 2px 0;
+  min-height: 30px;
 }
 .bank-status-inline-row > label {
   font-size: 14px;
@@ -353,7 +350,6 @@
 .claim-add-box.is-create-mode .bank-editor-title {
   color: #0657c7;
 }
-.claim-add-box.is-create-mode .bank-status-inline-row,
 .claim-add-box.is-create-mode .bank-assign-box {
   border-color: #bfdbfe;
 }
@@ -496,15 +492,6 @@
           </div>
         </div>
 
-        <!-- 狀態（單行精簡列） -->
-        <div class="bank-status-inline-row">
-          <label>狀態</label>
-          <div class="choice">
-            <label><input type="radio" name="form-bank-status" value="啟用" checked>啟用</label>
-            <label><input type="radio" name="form-bank-status" value="停用">停用</label>
-          </div>
-        </div>
-
         <!-- 人員 / 組隊 精簡膠囊標籤區塊 -->
         <div class="bank-assign-box">
           <div class="bank-segmented-tabs" role="tablist" aria-label="人員與組隊切換">
@@ -531,6 +518,15 @@
             <div class="bank-chip-list" id="team-list-tbody">
               <span class="bank-chip-empty">尚未新增和氣組隊</span>
             </div>
+          </div>
+        </div>
+
+        <!-- 狀態（單行精簡列） -->
+        <div class="bank-status-inline-row">
+          <label>狀態</label>
+          <div class="choice">
+            <label><input type="radio" name="form-bank-status" value="啟用" checked>啟用</label>
+            <label><input type="radio" name="form-bank-status" value="停用">停用</label>
           </div>
         </div>
 
