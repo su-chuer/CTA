@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!loaded) {
       try {
-        const res = await fetch('json/setup_crew_data.json?v=406', { cache: 'no-store' });
+        const res = await fetch('json/setup_crew_data.json?v=408', { cache: 'no-store' });
         if (res && res.ok) {
           loaded = await res.json();
         }
@@ -549,7 +549,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const sampleLdap = cachedFreshCrewSample.ldapDirectory || ldapDirectory;
     const sampleAssign = cachedFreshCrewSample.crewAssignments || {};
     const teamNameMap = new Map((cachedFreshCrewSample.allTeams || allTeams).map(t => [t.code, t.name]));
-    const ldapEntries = Object.entries(sampleLdap);
+    const ldapEntries = Object.entries(sampleLdap).sort((a, b) => a[0].localeCompare(b[0], 'en', { sensitivity: 'base', numeric: true }));
 
     $('sample-modal-title').textContent = '人員設定｜預設 LDAP 人員與所屬組隊範例總表';
     $('sample-data-modal-body').innerHTML = `

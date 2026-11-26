@@ -74,7 +74,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!loaded) {
       try {
-        const res = await fetch('json/remit_bank_data.json?v=406', { cache: 'no-store' });
+        const res = await fetch('json/remit_bank_data.json?v=408', { cache: 'no-store' });
         if (res && res.ok) {
           loaded = await res.json();
         }
@@ -834,7 +834,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     const sampleLdap = cachedFreshBankSample.ldapDirectory || ldapDirectory;
     const sampleAccs = Array.isArray(cachedFreshBankSample.accounts) ? cachedFreshBankSample.accounts : [];
-    const ldapEntries = Object.entries(sampleLdap);
+    const ldapEntries = Object.entries(sampleLdap).sort((a, b) => a[0].localeCompare(b[0], 'en', { sensitivity: 'base', numeric: true }));
 
     $('sample-modal-title').textContent = '匯款帳戶設定｜預設人員與帳戶範例總表';
     $('sample-data-modal-body').innerHTML = `

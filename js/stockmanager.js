@@ -229,7 +229,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!loaded) {
       try {
-        const res = await fetch('json/stock_manager_data.json?v=406', { cache: 'no-store' });
+        const res = await fetch('json/stock_manager_data.json?v=408', { cache: 'no-store' });
         if (res && res.ok) {
           loaded = await res.json();
         }
@@ -523,7 +523,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return '倉庫';
     };
 
-    const ldapEntries = Object.entries(sampleLdap);
+    const ldapEntries = Object.entries(sampleLdap).sort((a, b) => a[0].localeCompare(b[0], 'en', { sensitivity: 'base', numeric: true }));
     const whEntries = Object.entries(sampleMgrs);
 
     $('sample-modal-title').textContent = '倉庫管理者設定｜預設人員與倉庫範例總表';
