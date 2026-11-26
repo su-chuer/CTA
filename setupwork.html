@@ -23,9 +23,6 @@ html, body {
   max-width: 100%;
   transition: width 0.15s ease;
 }
-#area-combo-wrap .filter-input {
-  padding-right: 34px;
-}
 #area-combo-menu {
   max-height: 360px;
 }
@@ -243,7 +240,8 @@ html, body {
     <div class="field">
       <label for="work-area-select">作業區 <b>*</b></label>
       <div class="combo-select-wrap group-select-auto" id="area-combo-wrap">
-        <input type="text" id="work-area-select" class="filter-input" autocomplete="off" placeholder="請選擇" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="area-combo-menu">
+        <input type="text" id="work-area-select" class="filter-input" autocomplete="off" placeholder="請選擇或輸入文字" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="area-combo-menu">
+        <button type="button" class="combo-clear-btn hidden" id="btn-clear-area" title="清除作業區" aria-label="清除作業區">&times;</button>
         <button type="button" class="combo-arrow-btn" id="btn-toggle-area" title="展開作業區選單" aria-label="展開作業區選單">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </button>
@@ -388,7 +386,7 @@ html, body {
 <div id="toast" class="toast hidden"></div>
 
 <script src="js/navbar.js?v=353"></script>
-<script src="js/common.js?v=385"></script>
+<script src="js/common.js?v=386"></script>
 <script src="js/setupwork.js?v=379"></script>
 
 </body>

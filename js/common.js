@@ -389,7 +389,7 @@
     const input = $(inputId);
     const wrap = $(wrapId);
     const menu = $(menuId);
-    const clearBtn = $(clearBtnId);
+    const clearBtn = (clearBtnId && $(clearBtnId)) || (wrap ? wrap.querySelector('.combo-clear-btn:not([aria-hidden="true"])') : null);
     const toggleBtn = $(toggleBtnId);
     const isAutoWidth = Boolean(autoWidth || (wrap && wrap.classList.contains('group-select-auto')));
     const hasActiveClearBtn = Boolean(clearBtn && !clearBtn.hasAttribute('aria-hidden'));
@@ -676,7 +676,7 @@
   };
 
 
-  // 自動同步所有帶有 .group-select-auto 的下拉欄位寬度（涵蓋獨立實作選單邏輯的頁面如 goodsmanage.js）
+  // 自動同步所有帶有 .group-select-auto 的下拉欄位寬度與清除鈕狀態（涵蓋 setupwork.js / goodsmanage.js 等獨立實作選單邏輯的頁面）
   const initAllGroupSelectAutoWidth = () => {
     document.querySelectorAll('.combo-select-wrap.group-select-auto').forEach(wrap => {
       const input = wrap.querySelector('input.filter-input, input[type="text"]');
@@ -685,7 +685,23 @@
       const clearBtn = wrap.querySelector('.combo-clear-btn');
       const hasActiveClear = Boolean(clearBtn && !clearBtn.hasAttribute('aria-hidden'));
       const extraPad = hasActiveClear ? 76 : 56;
-      const sync = () => syncComboAutoWidth(wrap, input, { minWidth: 185, extraPadding: extraPad });
+      const sync = () => {
+        if (hasActiveClear && clearBtn) {
+          clearBtn.classList.toggle('hidden', cleanTrim(input.value).length === 0);
+        }
+        syncComboAutoWidth(wrap, input, { minWidth: 185, extraPadding: extraPad });
+      };
+      if (hasActiveClear && clearBtn && clearBtn.dataset.ctaBound_click !== '1') {
+        clearBtn.dataset.ctaBound_click = '1';
+        clearBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          input.value = '';
+          input.classList.remove('highlight-error');
+          sync();
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          input.focus();
+        });
+      }
       input.addEventListener('input', sync);
       input.addEventListener('change', sync);
       wrap.addEventListener('click', () => setTimeout(sync, 0));
