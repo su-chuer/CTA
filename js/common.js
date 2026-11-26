@@ -382,8 +382,9 @@
     onSelect = null, onInput = null, onClear = null, onEnter = null,
     emptyText = '無相符資料', filterOptions = null, renderOption = null,
     getOptionValue = (opt) => (typeof opt === 'string' ? opt : opt.value),
-    autoWidth = false, minWidth = 185, extraPadding = 52
+    autoWidth = false, minWidth = 185, extraPadding = null
   }) => {
+    const resolvedExtraPadding = extraPadding != null ? extraPadding : (clearBtnId ? 76 : 56);
     const input = $(inputId);
     const wrap = $(wrapId);
     const menu = $(menuId);
@@ -396,7 +397,7 @@
     }
 
     const syncWidth = () => {
-      if (autoWidth) syncComboAutoWidth(wrap, input, { minWidth, extraPadding });
+      if (autoWidth) syncComboAutoWidth(wrap, input, { minWidth, extraPadding: resolvedExtraPadding });
     };
 
     const syncClearBtn = () => {
