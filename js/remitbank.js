@@ -230,6 +230,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const tbody = $('bank-account-tbody');
     const list = Array.isArray(filteredAccounts) ? filteredAccounts : [];
     $('account-count-display').textContent = String(list.length);
+    const activeCount = list.filter(r => r.status === '啟用').length;
+    if ($('account-active-count-display')) {
+      $('account-active-count-display').textContent = String(activeCount);
+    }
 
     if (list.length === 0) {
       tbody.innerHTML = '<tr><td colspan="6" class="empty">查無符合條件的匯款帳戶資料</td></tr>';
