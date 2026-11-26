@@ -157,7 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
       badgeEl.textContent = '尚未查詢';
       badgeEl.style.color = '#64748b';
       countEl.textContent = '0';
-      tbody.innerHTML = '<tr><td colspan="4" class="empty">請於右側選擇倉庫後點擊「查詢」</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="3" class="empty">請於右側選擇倉庫後點擊「查詢」</td></tr>';
       syncFooterAndEditorState();
       return;
     }
@@ -170,7 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
     countEl.textContent = String(draftManagers.length);
 
     if (draftManagers.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" class="empty">此倉庫尚未設定管理者（可於右側「請填LDAP」新增）</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="3" class="empty">此倉庫尚未設定管理者（可於右側「請填LDAP」新增）</td></tr>';
       syncFooterAndEditorState();
       return;
     }
@@ -179,7 +179,6 @@ document.addEventListener("DOMContentLoaded", () => {
       <tr>
         <td class="center">${idx + 1}</td>
         <td style="font-weight: 600; color: #14264b;">${escapeAttr(person.name)}</td>
-        <td>${escapeAttr(person.ldap)}</td>
         <td class="center">
           <button type="button" class="btn btn-danger-solid small btn-del-mgr" data-idx="${idx}">刪除</button>
         </td>
@@ -192,7 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const target = draftManagers[idx];
         if (!target) return;
         openConfirmModal(
-          `確定要移除管理者「<strong>${escapeAttr(target.name)}（${escapeAttr(target.ldap)}）</strong>」嗎？`,
+          `確定要移除管理者「<strong>${escapeAttr(target.name)}</strong>」嗎？`,
           { title: '刪除確認', okClass: 'btn btn-danger-solid', okText: '刪除' },
           () => {
             draftManagers.splice(idx, 1);
@@ -415,7 +414,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const exists = draftManagers.some(m => m.ldap.toLowerCase() === matchedLdap.toLowerCase() || m.name === matchedName);
     if (exists) {
-      openAlertModal(`管理者「${matchedName}（${matchedLdap}）」已在名單中，請勿重複新增！`, () => input.focus());
+      openAlertModal(`管理者「${matchedName}」已在名單中，請勿重複新增！`, () => input.focus());
       return;
     }
 
