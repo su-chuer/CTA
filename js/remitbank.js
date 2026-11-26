@@ -96,7 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     filteredAccounts = [...bankAccounts];
-    hideEditorPanel();
+    enterCreateMode(false);
   };
 
 
