@@ -576,6 +576,10 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const requestLeaveEditor = () => {
+    if (selectedAccountId == null) {
+      enterCreateMode(false, true);
+      return;
+    }
     if (isEditorDirty()) {
       openConfirmModal(
         '你的資料尚未儲存，確定要離開嗎？',
@@ -603,6 +607,7 @@ document.addEventListener("DOMContentLoaded", () => {
     badge.classList.remove('hidden');
     $('btn-save-bank').textContent = '儲存';
     $('btn-delete-bank').classList.remove('hidden');
+    $('btn-leave-bank').textContent = '離開';
 
     setFormBankValue(formatBankLabel(account.bankCode, account.bankName));
     $('form-account-name').value = account.accountName || '';
@@ -634,6 +639,7 @@ document.addEventListener("DOMContentLoaded", () => {
     $('editor-mode-badge').classList.add('hidden');
     $('btn-save-bank').textContent = '確認送出';
     $('btn-delete-bank').classList.add('hidden');
+    $('btn-leave-bank').textContent = '清除';
 
     setFormBankValue('');
     $('form-account-name').value = '';
