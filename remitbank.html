@@ -77,8 +77,8 @@
 }
 .bank-split-layout {
   display: grid;
-  grid-template-columns: 1.45fr 1fr;
-  gap: 24px;
+  grid-template-columns: 1.42fr 1fr;
+  gap: 22px;
   align-items: start;
 }
 .bank-split-layout > * {
@@ -122,12 +122,18 @@
   color: #475569;
   background: #f1f5f9;
 }
+
+/* 右側精簡卡片樣式 */
+#bank-editor-box {
+  padding: 16px 18px;
+  gap: 12px;
+}
 .bank-editor-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding-bottom: 12px;
+  padding-bottom: 10px;
   border-bottom: 1px solid #e1e7f0;
 }
 .bank-editor-title {
@@ -138,86 +144,178 @@
   align-items: center;
   gap: 8px;
 }
-.bank-sub-tabs {
+.bank-form-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 10px;
+}
+.bank-form-two-col > * {
+  min-width: 0;
+}
+#bank-editor-box .claim-field {
+  gap: 4px;
+}
+#bank-editor-box .claim-control {
+  height: 38px;
+  font-size: 14px;
+}
+.bank-status-inline-row {
   display: flex;
-  border-bottom: 1px solid #d9e3f1;
+  align-items: center;
+  justify-content: space-between;
   background: #ffffff;
-  border-radius: 6px 6px 0 0;
-  overflow: hidden;
+  border: 1px solid #d9e3f1;
+  border-radius: 6px;
+  padding: 6px 12px;
+  min-height: 38px;
+}
+.bank-status-inline-row > label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #3d5176;
+  margin: 0;
+}
+.bank-status-inline-row .choice {
+  margin: 0;
+  height: auto;
+  gap: 16px;
+}
+
+/* 精簡分段切換器 + 膠囊標籤區塊（取代佔空間的子表格） */
+.bank-assign-box {
+  background: #ffffff;
+  border: 1px solid #d9e3f1;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bank-segmented-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #eef3fa;
+  border-radius: 6px;
+  padding: 3px;
+  gap: 4px;
 }
 .bank-sub-tab {
-  flex: 1;
   appearance: none;
   background: transparent;
   border: 0;
-  border-bottom: 3px solid transparent;
-  padding: 11px 14px;
-  font-size: 15px;
+  border-radius: 5px;
+  padding: 6px 10px;
+  font-size: 14px;
   font-weight: 600;
   color: #556477;
   cursor: pointer;
-  transition: color 0.15s, background-color 0.15s, border-color 0.15s;
+  transition: color 0.15s, background-color 0.15s, box-shadow 0.15s;
 }
 .bank-sub-tab:hover {
   color: #0869ed;
-  background: #f4f8ff;
 }
 .bank-sub-tab.active {
+  background: #ffffff;
   color: #0869ed;
-  border-bottom-color: #0869ed;
-  background: #f0f6ff;
+  box-shadow: 0 1px 3px rgba(20, 38, 75, 0.12);
 }
 .bank-sub-panel {
-  background: #ffffff;
-  border: 1px solid #d9e3f1;
-  border-top: 0;
-  border-radius: 0 0 6px 6px;
-  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 .ldap-input-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 .ldap-input-row .claim-control {
   flex: 1;
+  height: 36px;
 }
 .btn-icon-square {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   padding: 0;
-  flex: 0 0 40px;
+  flex: 0 0 36px;
   border-radius: 6px;
-  font-size: 20px;
+  font-size: 19px;
   font-weight: 700;
   line-height: 1;
 }
-.bank-mini-table {
-  min-width: 0;
+.bank-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  max-height: 92px;
+  overflow-y: auto;
+  padding: 6px 8px;
+  background: #f8fafd;
+  border: 1px dashed #d3dfef;
+  border-radius: 6px;
+}
+.bank-chip-empty {
+  font-size: 13px;
+  color: #8492a6;
   width: 100%;
-  font-size: 15px;
+  text-align: center;
+  padding: 2px 0;
 }
-.bank-mini-table th {
-  height: 42px;
+.bank-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #e8f1ff;
+  border: 1px solid #c3dafc;
+  color: #14264b;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 3px 8px 3px 10px;
+  border-radius: 999px;
+  line-height: 1.3;
+}
+.bank-chip.team-chip {
+  background: #eef6ff;
+  border-color: #bfd8fb;
+}
+.bank-chip small {
+  color: #5b6d8a;
+  font-weight: 500;
+  font-size: 12px;
+}
+.bank-chip-del {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #6b7c96;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: 14px;
-  padding: 6px 12px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
 }
-.bank-mini-table td {
-  height: 42px;
-  padding: 6px 12px;
+.bank-chip-del:hover {
+  background: #fee2e2;
+  color: #dc2626;
 }
+
 .bank-editor-actions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-top: 4px;
+  gap: 8px;
+  margin-top: 2px;
 }
 .bank-editor-actions .btn {
   width: 100%;
-  height: 42px;
+  height: 40px;
   font-size: 15px;
   font-weight: 600;
 }
@@ -243,9 +341,15 @@
 .claim-add-box.is-create-mode .bank-editor-title {
   color: #9d174d;
 }
-.claim-add-box.is-create-mode .bank-sub-tabs,
-.claim-add-box.is-create-mode .bank-sub-panel {
+.claim-add-box.is-create-mode .bank-status-inline-row,
+.claim-add-box.is-create-mode .bank-assign-box {
   border-color: #f9a8d4;
+}
+.claim-add-box.is-create-mode .bank-segmented-tabs {
+  background: #fce7f3;
+}
+.claim-add-box.is-create-mode .bank-sub-tab.active {
+  color: #be185d;
 }
 .btn.btn-heqi-outline {
   background: #eef5ff;
@@ -298,6 +402,131 @@
     <div class="search-actions" style="margin-left: 6px;">
       <button type="button" class="btn primary" id="btn-search"><svg class="ico" aria-hidden="true"><use href="#ico-search"></use></svg>查詢</button>
       <button type="button" class="btn" id="btn-reset"><svg class="ico" aria-hidden="true"><use href="#ico-refresh-cw"></use></svg>清除</button>
+    </div>
+  </section>
+
+  <!-- ==================== 下方雙欄作業區：左側帳戶列表 / 右側新增與修改表單 ==================== -->
+  <section class="panel table-panel" style="margin-top: 15px;" aria-label="匯款銀行維護作業">
+    <div id="table-loading" class="block-loading hidden"><div class="spinner"></div></div>
+
+    <div class="bank-split-layout">
+      <!-- 左側：匯款銀行帳戶列表 -->
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; min-height: 36px;">
+          <div style="font-size: 15px; color: #556477; font-weight: 600;">銀行帳戶：<span id="account-count-display" style="color: #14264b; font-weight: 700;">0</span> 筆</div>
+          <button type="button" class="btn btn-create-account" id="btn-switch-create-top" style="height: 36px; padding: 0 14px; font-size: 14px; font-weight: 600;">+ 新增匯款帳戶</button>
+        </div>
+
+        <div class="table-scroll">
+          <table class="detail-table" id="bank-account-table">
+            <thead>
+              <tr>
+                <th class="center" style="width: 68px;">序號</th>
+                <th>戶名</th>
+                <th style="width: 104px;">銀行代碼</th>
+                <th>帳戶</th>
+                <th class="center" style="width: 104px;">狀態</th>
+                <th class="center" style="width: 80px;">編輯</th>
+              </tr>
+            </thead>
+            <tbody id="bank-account-tbody">
+              <tr><td colspan="6" class="empty">資料載入中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 分頁元件 -->
+        <div class="pagination hidden" id="pagination">
+          <select id="per-page-select" class="page-select" aria-label="每頁顯示筆數">
+            <option value="10" selected>10 筆 / 頁</option>
+            <option value="20">20 筆 / 頁</option>
+            <option value="50">50 筆 / 頁</option>
+            <option value="100">100 筆 / 頁</option>
+          </select>
+          <button type="button" class="page-btn disabled" id="page-prev" aria-label="上一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-left"></use></svg></button>
+          <div id="page-numbers" style="display:flex; gap:6px; align-items:center;"></div>
+          <button type="button" class="page-btn" id="page-next" aria-label="下一頁"><svg class="ico ico-tiny" aria-hidden="true"><use href="#ico-chevron-right"></use></svg></button>
+          <span class="page-info">共 <span id="total-pages">1</span> 頁 / <span id="total-items">0</span> 筆</span>
+        </div>
+      </div>
+
+      <!-- 右側：新增 / 修改匯款帳戶資料精簡表單卡片 -->
+      <div class="claim-add-box" id="bank-editor-box" aria-label="匯款銀行編輯表單">
+        <div class="bank-editor-header">
+          <div class="bank-editor-title">
+            <span id="editor-mode-title">匯款帳戶資料</span>
+          </div>
+          <span class="status-badge pending" id="editor-mode-badge">編輯中</span>
+        </div>
+
+        <!-- 銀行代碼 * -->
+        <div class="claim-field">
+          <label for="form-bank-code">銀行代碼 <b>*</b></label>
+          <div class="bank-picker-wrap full-width" id="form-bank-picker-wrap">
+            <input type="text" id="form-bank-code" class="claim-control" readonly autocomplete="off" placeholder="請選擇">
+            <button type="button" class="bank-picker-clear hidden" id="btn-clear-form-bank" title="清除銀行代碼" aria-label="清除銀行代碼">&times;</button>
+            <button type="button" class="bank-picker-search-btn" id="btn-open-form-bank-modal" title="選擇銀行代碼" aria-label="選擇銀行代碼">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="20" y1="20" x2="16.2" y2="16.2"></line></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- 戶名 * 與 帳號 * 並排精簡呈現 -->
+        <div class="bank-form-two-col">
+          <div class="claim-field">
+            <label for="form-account-name">戶名 <b>*</b></label>
+            <input type="text" id="form-account-name" class="claim-control" placeholder="請輸入戶名">
+          </div>
+
+          <div class="claim-field">
+            <label for="form-account-number">帳號 <b>*</b></label>
+            <input type="text" id="form-account-number" class="claim-control" inputmode="numeric" placeholder="請輸入帳號">
+          </div>
+        </div>
+
+        <!-- 狀態（單行精簡列） -->
+        <div class="bank-status-inline-row">
+          <label>狀態</label>
+          <div class="choice">
+            <label><input type="radio" name="form-bank-status" value="啟用" checked>啟用</label>
+            <label><input type="radio" name="form-bank-status" value="停用">停用</label>
+          </div>
+        </div>
+
+        <!-- 人員 / 組隊 精簡膠囊標籤區塊 -->
+        <div class="bank-assign-box">
+          <div class="bank-segmented-tabs" role="tablist" aria-label="人員與組隊切換">
+            <button type="button" class="bank-sub-tab active" id="subtab-staff" role="tab" aria-selected="true" data-subtab="staff">人員 (<span id="staff-tab-count">0</span>)</button>
+            <button type="button" class="bank-sub-tab" id="subtab-team" role="tab" aria-selected="false" data-subtab="team">組隊 (<span id="team-tab-count">0</span>)</button>
+          </div>
+
+          <!-- 子頁籤一：人員（輸入 LDAP + 膠囊標籤） -->
+          <div class="bank-sub-panel" id="subpanel-staff">
+            <div class="ldap-input-row">
+              <input type="text" id="form-ldap-input" class="claim-control" placeholder="請輸入 LDAP 帳號或姓名">
+              <button type="button" class="btn primary btn-icon-square" id="btn-add-ldap" title="新增人員" aria-label="新增人員">+</button>
+            </div>
+            <div class="bank-chip-list" id="staff-list-tbody">
+              <span class="bank-chip-empty">尚未新增人員</span>
+            </div>
+          </div>
+
+          <!-- 子頁籤二：組隊（選擇和氣組隊按鈕 + 膠囊標籤） -->
+          <div class="bank-sub-panel hidden" id="subpanel-team">
+            <button type="button" class="btn btn-heqi-outline" id="btn-open-heqi-modal" style="width: 100%; height: 36px; font-size: 14px; font-weight: 600;">
+              <svg class="ico" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#ico-search"></use></svg>新增和氣組隊
+            </button>
+            <div class="bank-chip-list" id="team-list-tbody">
+              <span class="bank-chip-empty">尚未新增和氣組隊</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 底部操作按鈕：儲存 -->
+        <div class="bank-editor-actions">
+          <button type="button" class="btn primary" id="btn-save-bank">儲存</button>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -550,7 +779,7 @@
 
 <script src="js/navbar.js?v=352"></script>
 <script src="js/common.js?v=349"></script>
-<script src="js/remitbank.js?v=364"></script>
+<script src="js/remitbank.js?v=365"></script>
 
 </body>
 </html>

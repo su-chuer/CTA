@@ -363,24 +363,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const renderDraftStaffTable = () => {
     $('staff-tab-count').textContent = String(draftStaff.length);
-    const tbody = $('staff-list-tbody');
+    const container = $('staff-list-tbody');
     if (draftStaff.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="2" class="empty" style="padding: 18px;">尚未新增人員</td></tr>';
+      container.innerHTML = '<span class="bank-chip-empty">尚未新增人員</span>';
       return;
     }
-    tbody.innerHTML = draftStaff.map((person, idx) => {
+    container.innerHTML = draftStaff.map((person, idx) => {
       const displayLabel = person.ldap && person.ldap !== person.name
-        ? `${escapeAttr(person.name)} <span style="color:#6a7994; font-size:13px;">(${escapeAttr(person.ldap)})</span>`
+        ? `${escapeAttr(person.name)} <small>(${escapeAttr(person.ldap)})</small>`
         : escapeAttr(person.name);
       return `
-        <tr>
-          <td>${displayLabel}</td>
-          <td class="center"><button type="button" class="btn btn-danger-solid small btn-del-staff" data-idx="${idx}">刪除</button></td>
-        </tr>
+        <span class="bank-chip">
+          <span>${displayLabel}</span>
+          <button type="button" class="bank-chip-del btn-del-staff" data-idx="${idx}" title="移除 ${escapeAttr(person.name)}" aria-label="移除 ${escapeAttr(person.name)}">&times;</button>
+        </span>
       `;
     }).join('');
 
-    tbody.querySelectorAll('.btn-del-staff').forEach(btn => {
+    container.querySelectorAll('.btn-del-staff').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const idx = Number(e.currentTarget.dataset.idx);
         const target = draftStaff[idx];
@@ -400,19 +400,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const renderDraftTeamTable = () => {
     $('team-tab-count').textContent = String(draftTeams.length);
-    const tbody = $('team-list-tbody');
+    const container = $('team-list-tbody');
     if (draftTeams.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="2" class="empty" style="padding: 18px;">尚未新增和氣組隊</td></tr>';
+      container.innerHTML = '<span class="bank-chip-empty">尚未新增和氣組隊</span>';
       return;
     }
-    tbody.innerHTML = draftTeams.map((team, idx) => `
-      <tr>
-        <td>${escapeAttr(team.name)} <span style="color:#6a7994; font-size:13px;">(${escapeAttr(team.code)})</span></td>
-        <td class="center"><button type="button" class="btn btn-danger-solid small btn-del-team" data-idx="${idx}">刪除</button></td>
-      </tr>
+    container.innerHTML = draftTeams.map((team, idx) => `
+      <span class="bank-chip team-chip">
+        <span>${escapeAttr(team.name)} <small>(${escapeAttr(team.code)})</small></span>
+        <button type="button" class="bank-chip-del btn-del-team" data-idx="${idx}" title="移除 ${escapeAttr(team.name)}" aria-label="移除 ${escapeAttr(team.name)}">&times;</button>
+      </span>
     `).join('');
 
-    tbody.querySelectorAll('.btn-del-team').forEach(btn => {
+    container.querySelectorAll('.btn-del-team').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const idx = Number(e.currentTarget.dataset.idx);
         const target = draftTeams[idx];
