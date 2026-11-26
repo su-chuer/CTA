@@ -224,21 +224,20 @@
   <section class="panel filters" aria-label="作業區選擇">
     <div class="field">
       <label for="work-area-select">作業區 <b>*</b></label>
-      <select id="work-area-select" style="min-width: 180px;"></select>
-    </div>
-    <div style="font-size: 14px; color: #556477; padding-bottom: 10px;">
-      可透過<strong>勾選批次移轉</strong>、<strong>雙擊列快速移動</strong>，或<strong>直接拖曳</strong>調整所屬和氣組隊。
+      <select id="work-area-select" style="min-width: 180px;">
+        <option value="" selected disabled>請選擇</option>
+      </select>
     </div>
   </section>
 
   <!-- ==================== 下方和氣組隊雙欄配置區 ==================== -->
-  <section class="panel table-panel" style="margin-top: 15px;" aria-label="作業區所屬組隊維護">
+  <section class="panel table-panel hidden" id="shuttle-panel" style="margin-top: 15px;" aria-label="作業區所屬組隊維護">
     <div id="table-loading" class="block-loading hidden"><div class="spinner"></div></div>
 
     <!-- 橘黃色操作提示橫幅 -->
     <div class="fellowship-notice-bar" role="status" style="margin-bottom: 14px;">
       <span class="fellowship-notice-icon" aria-hidden="true">!</span>
-      <span>請將「<span id="notice-area-name">台北</span>」所屬組隊，從左邊移轉或拖曳到右邊表格。</span>
+      <span>請將「<span id="notice-area-name"></span>」所屬組隊，從左邊移到右邊表格。 (可用勾選、雙擊或直接拖曳方式移動)</span>
     </div>
 
     <div class="shuttle-layout">
@@ -363,7 +362,7 @@
 
 <script src="js/navbar.js?v=353"></script>
 <script src="js/common.js?v=349"></script>
-<script src="js/setupwork.js?v=375"></script>
+<script src="js/setupwork.js?v=376"></script>
 
 </body>
 </html>

@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let workAreas = [];
   let allTeams = [];               // [{ code, name }]
   let savedAreaAssignments = {};   // { '台北': ['NTN35', ...], ... }
-  let activeArea = '台北';
+  let activeArea = '';
   let draftAssignedCodes = [];     // 目前作業區右側的組隊代碼陣列
 
   let leftCheckedCodes = new Set();
@@ -58,12 +58,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const selectEl = $('work-area-select');
-    selectEl.innerHTML = workAreas.map(area =>
-      `<option value="${escapeAttr(area)}" ${area === '台北' ? 'selected' : ''}>${escapeAttr(area)}</option>`
-    ).join('');
+    selectEl.innerHTML = `<option value="" selected disabled>請選擇</option>` +
+      workAreas.map(area => `<option value="${escapeAttr(area)}">${escapeAttr(area)}</option>`).join('');
 
-    activeArea = selectEl.value || workAreas[0] || '台北';
-    loadAreaIntoDraft(activeArea);
+    activeArea = '';
+    if ($('shuttle-panel')) $('shuttle-panel').classList.add('hidden');
   };
 
   const getSavedCodesForArea = (areaName) => {
@@ -72,6 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const isAreaDirty = () => {
+    if (!activeArea) return false;
     const saved = getSavedCodesForArea(activeArea);
     if (saved.length !== draftAssignedCodes.length) return true;
     const savedSet = new Set(saved);
@@ -95,7 +95,13 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const loadAreaIntoDraft = (areaName) => {
+    if (!areaName) {
+      activeArea = '';
+      if ($('shuttle-panel')) $('shuttle-panel').classList.add('hidden');
+      return;
+    }
     activeArea = areaName;
+    if ($('shuttle-panel')) $('shuttle-panel').classList.remove('hidden');
     draftAssignedCodes = getSavedCodesForArea(areaName);
     leftCheckedCodes.clear();
     rightCheckedCodes.clear();
@@ -381,21 +387,18 @@ document.addEventListener("DOMContentLoaded", () => {
   // 切換作業區下拉選單（若有未儲存變更先跳出確認）
   $('work-area-select').addEventListener('change', (e) => {
     const nextArea = e.target.value;
+    if (!nextArea) return;
     if (isAreaDirty()) {
+      const prevArea = activeArea;
+      $('work-area-select').value = prevArea;
       openConfirmModal(
-        `「${escapeAttr(activeArea)}」的組隊變更尚未儲存，確定要切換至「${escapeAttr(nextArea)}」嗎？`,
+        `「${escapeAttr(prevArea)}」的組隊變更尚未儲存，確定要切換至「${escapeAttr(nextArea)}」嗎？`,
         { title: '切換作業區確認', okClass: 'btn primary', okText: '確定' },
-        () => loadAreaIntoDraft(nextArea)
+        () => {
+          $('work-area-select').value = nextArea;
+          loadAreaIntoDraft(nextArea);
+        }
       );
-      // 若使用者按取消，先還原下拉選單值
-      $('btn-confirm-cancel').onclick = () => {
-        $('work-area-select').value = activeArea;
-        window.CTA.closeConfirm();
-      };
-      $('close-confirm').onclick = () => {
-        $('work-area-select').value = activeArea;
-        window.CTA.closeConfirm();
-      };
     } else {
       loadAreaIntoDraft(nextArea);
     }
