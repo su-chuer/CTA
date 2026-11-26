@@ -605,6 +605,7 @@ document.addEventListener("DOMContentLoaded", () => {
     badge.textContent = `序號 #${filteredAccounts.findIndex(r => r.id === account.id) + 1 || account.id}`;
     badge.className = 'status-badge pending';
     badge.classList.remove('hidden');
+    $('btn-save-bank').textContent = '儲存';
     $('btn-delete-bank').classList.remove('hidden');
 
     setFormBankValue(formatBankLabel(account.bankCode, account.bankName));
@@ -635,6 +636,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if ($('bank-split-layout')) $('bank-split-layout').classList.remove('is-single-col');
     $('editor-mode-title').textContent = '新增匯款帳戶';
     $('editor-mode-badge').classList.add('hidden');
+    $('btn-save-bank').textContent = '確認送出';
     $('btn-delete-bank').classList.add('hidden');
 
     setFormBankValue('');
