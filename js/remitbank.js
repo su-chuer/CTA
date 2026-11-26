@@ -586,7 +586,7 @@ document.addEventListener("DOMContentLoaded", () => {
     $('editor-mode-title').textContent = '新增匯款帳戶';
     const badge = $('editor-mode-badge');
     badge.textContent = '新增';
-    badge.className = 'status-badge new-apply';
+    badge.className = 'status-badge create-pink';
     $('btn-switch-create-top').classList.add('hidden');
 
     setFormBankValue('');
