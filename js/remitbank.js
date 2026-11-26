@@ -567,16 +567,12 @@ document.addEventListener("DOMContentLoaded", () => {
     return getEditorSnapshot() !== editorInitialSnapshot;
   };
 
-  const hideEditorPanel = () => {
-    selectedAccountId = null;
-    clearFormValidationErrors();
-    $('bank-editor-box').classList.add('hidden');
-    $('bank-editor-box').classList.remove('is-create-mode');
-    if ($('bank-split-layout')) $('bank-split-layout').classList.add('is-single-col');
-    draftStaff = [];
-    draftTeams = [];
-    editorInitialSnapshot = '';
-    renderAccountTable();
+  const triggerEditorFlash = () => {
+    const box = $('bank-editor-box');
+    if (!box) return;
+    box.classList.remove('flash-bounce');
+    void box.offsetWidth;
+    box.classList.add('flash-bounce');
   };
 
   const requestLeaveEditor = () => {
@@ -584,10 +580,10 @@ document.addEventListener("DOMContentLoaded", () => {
       openConfirmModal(
         '你的資料尚未儲存，確定要離開嗎？',
         { title: '離開確認', okClass: 'btn primary', okText: '確定' },
-        () => hideEditorPanel()
+        () => enterCreateMode(false, true)
       );
     } else {
-      hideEditorPanel();
+      enterCreateMode(false, true);
     }
   };
 
@@ -626,7 +622,7 @@ document.addEventListener("DOMContentLoaded", () => {
     editorInitialSnapshot = getEditorSnapshot();
   };
 
-  const enterCreateMode = (showToastMsg = false) => {
+  const enterCreateMode = (showToastMsg = false, withFlash = false) => {
     selectedAccountId = null;
     clearFormValidationErrors();
 
@@ -655,6 +651,9 @@ document.addEventListener("DOMContentLoaded", () => {
     renderAccountTable();
     editorInitialSnapshot = getEditorSnapshot();
 
+    if (withFlash) {
+      triggerEditorFlash();
+    }
     if (showToastMsg) {
       toast('已開啟「新增匯款帳戶」表單。');
     }
@@ -665,10 +664,10 @@ document.addEventListener("DOMContentLoaded", () => {
       openConfirmModal(
         '你的資料尚未儲存，確定要切換至「新增匯款帳戶」嗎？',
         { title: '切換確認', okClass: 'btn primary', okText: '確定' },
-        () => enterCreateMode(false)
+        () => enterCreateMode(false, true)
       );
     } else {
-      enterCreateMode(false);
+      enterCreateMode(false, true);
     }
   });
 
@@ -689,7 +688,7 @@ document.addEventListener("DOMContentLoaded", () => {
         bankAccounts = bankAccounts.filter(r => r.id !== selectedAccountId);
         filteredAccounts = filteredAccounts.filter(r => r.id !== selectedAccountId);
         saveStateToLocalStorage();
-        hideEditorPanel();
+        enterCreateMode(false, true);
         toast(`已刪除匯款帳戶「${target.accountName} (${target.accountNumber})」`);
       }
     );
@@ -770,7 +769,7 @@ document.addEventListener("DOMContentLoaded", () => {
         filteredAccounts = [...bankAccounts];
         saveStateToLocalStorage();
         pager.setPage(1);
-        loadAccountIntoEditor(newRecord);
+        enterCreateMode(false, true);
         toast(`已新增匯款帳戶「${accName} (${accNum})」`);
       } else {
         const target = bankAccounts.find(r => r.id === selectedAccountId);

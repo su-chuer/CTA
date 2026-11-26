@@ -339,6 +339,26 @@
   border-color: #0657c7;
   box-shadow: 0 3px 8px rgba(8, 105, 237, 0.32);
 }
+@keyframes editorBoxFlashPulse {
+  0% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 0 0 0 rgba(8, 105, 237, 0.42);
+    border-color: #0869ed;
+  }
+  35% {
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 8px 22px rgba(8, 105, 237, 0.25), 0 0 0 4px rgba(96, 165, 250, 0.35);
+    border-color: #0869ed;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 2px 10px rgba(8, 105, 237, 0.08);
+    border-color: #93c5fd;
+  }
+}
+.claim-add-box.flash-bounce {
+  animation: editorBoxFlashPulse 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
 .claim-add-box.is-create-mode {
   background: #f0f7ff;
   border: 1.5px solid #93c5fd;
@@ -641,7 +661,7 @@
 
 <script src="js/navbar.js?v=352"></script>
 <script src="js/common.js?v=349"></script>
-<script src="js/remitbank.js?v=370"></script>
+<script src="js/remitbank.js?v=371"></script>
 
 </body>
 </html>
