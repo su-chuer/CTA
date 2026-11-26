@@ -9,8 +9,9 @@
     "huang01": "黃1",
     "wu01": "吳1",
     "su02": "蘇2",
-    "suchuer": "蘇1",
-    "lin02": "林1"
+    "test1": "蘇1",
+    "test2": "林1",
+    "test3": "王1"
   },
   "allTeams": [
     {
@@ -179,13 +180,6 @@
     }
   ],
   "crewAssignments": {
-    "suchuer": [
-      "ETE03",
-      "ETE02",
-      "ETE04",
-      "ETE01",
-      "ETE05"
-    ],
     "su02": [
       "ETE05",
       "ETE04"
@@ -211,6 +205,21 @@
     ],
     "wu01": [
       "ETE08"
+    ],
+    "test1": [
+      "ETE03",
+      "ETE02",
+      "ETE04",
+      "ETE01",
+      "ETE05"
+    ],
+    "test2": [
+      "ETE05",
+      "NTN35"
+    ],
+    "test3": [
+      "ETE06",
+      "DTD15"
     ]
   }
 }

@@ -3,9 +3,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const SETUP_CREW_STORAGE_KEY = 'cta_setupcrew_state_v1';
 
-  let ldapDirectory = {};          // { 'suchuer': '蘇1', ... }
+  let ldapDirectory = {};          // { 'test1': '蘇1', 'test2': '林1', 'test3': '王1', ... }
   let allTeams = [];               // [{ code, name }]
-  let savedCrewAssignments = {};   // { 'suchuer': ['ETE03', ...], ... }
+  let savedCrewAssignments = {};   // { 'test1': ['ETE03', ...], 'test2': ['ETE05', ...], ... }
   let activeLdap = '';
   let draftAssignedCodes = [];     // 目前人員右側的組隊代碼陣列
 
@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!loaded) {
       try {
-        const res = await fetch('json/setup_crew_data.json?v=392', { cache: 'no-store' });
+        const res = await fetch('json/setup_crew_data.json?v=395', { cache: 'no-store' });
         if (res && res.ok) {
           loaded = await res.json();
         }
@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (loaded && typeof loaded === 'object') {
       ldapDirectory = (loaded.ldapDirectory && typeof loaded.ldapDirectory === 'object')
         ? loaded.ldapDirectory
-        : { suchuer: '蘇1' };
+        : { test1: '蘇1', test2: '林1', test3: '王1' };
       allTeams = Array.isArray(loaded.allTeams) ? loaded.allTeams : [];
       savedCrewAssignments = (loaded.crewAssignments && typeof loaded.crewAssignments === 'object')
         ? loaded.crewAssignments
