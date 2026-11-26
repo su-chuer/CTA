@@ -232,10 +232,20 @@
   border-color: #db2777;
   box-shadow: 0 3px 8px rgba(236, 72, 153, 0.36);
 }
-.status-badge.create-pink {
-  background: #fce7f3;
-  color: #be185d;
-  border: 1px solid #f9a8d4;
+.claim-add-box.is-create-mode {
+  background: #fdf2f8;
+  border: 1.5px solid #f9a8d4;
+  box-shadow: 0 2px 10px rgba(236, 72, 153, 0.08);
+}
+.claim-add-box.is-create-mode .bank-editor-header {
+  border-bottom-color: #fbcfe8;
+}
+.claim-add-box.is-create-mode .bank-editor-title {
+  color: #9d174d;
+}
+.claim-add-box.is-create-mode .bank-sub-tabs,
+.claim-add-box.is-create-mode .bank-sub-panel {
+  border-color: #f9a8d4;
 }
 .btn.btn-heqi-outline {
   background: #eef5ff;
@@ -296,10 +306,11 @@
     <div id="table-loading" class="block-loading hidden"><div class="spinner"></div></div>
 
     <div class="bank-split-layout">
-      <!-- 左側：匯款銀行帳戶列表（圖 1） -->
+      <!-- 左側：匯款銀行帳戶列表 -->
       <div>
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; min-height: 36px;">
           <div style="font-size: 15px; color: #556477; font-weight: 600;">銀行帳戶：<span id="account-count-display" style="color: #14264b; font-weight: 700;">0</span> 筆</div>
+          <button type="button" class="btn btn-create-account" id="btn-switch-create-top" style="height: 36px; padding: 0 14px; font-size: 14px; font-weight: 600;">+ 新增匯款帳戶</button>
         </div>
 
         <div class="table-scroll">
@@ -335,13 +346,8 @@
         </div>
       </div>
 
-      <!-- 右側：上方「+ 新增匯款帳戶」操作列 + 下方「匯款帳戶資料」表單卡片 -->
-      <div style="display: flex; flex-direction: column; gap: 12px;">
-        <div style="display: flex; justify-content: flex-end; align-items: center;">
-          <button type="button" class="btn btn-create-account" id="btn-switch-create-top" style="height: 38px; padding: 0 16px; font-size: 14px; font-weight: 600;">+ 新增匯款帳戶</button>
-        </div>
-
-        <div class="claim-add-box" id="bank-editor-box" aria-label="匯款銀行編輯表單">
+      <!-- 右側：新增 / 修改匯款帳戶資料表單卡片 -->
+      <div class="claim-add-box" id="bank-editor-box" aria-label="匯款銀行編輯表單">
           <div class="bank-editor-header">
             <div class="bank-editor-title">
               <span id="editor-mode-title">匯款帳戶資料</span>
@@ -440,7 +446,6 @@
         <div class="bank-editor-actions">
           <button type="button" class="btn primary" id="btn-save-bank">儲存</button>
         </div>
-      </div>
       </div>
     </div>
   </section>
@@ -545,7 +550,7 @@
 
 <script src="js/navbar.js?v=352"></script>
 <script src="js/common.js?v=349"></script>
-<script src="js/remitbank.js?v=363"></script>
+<script src="js/remitbank.js?v=364"></script>
 
 </body>
 </html>

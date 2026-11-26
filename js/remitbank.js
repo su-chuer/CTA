@@ -557,10 +557,12 @@ document.addEventListener("DOMContentLoaded", () => {
     selectedAccountId = account.id;
     clearFormValidationErrors();
 
+    $('bank-editor-box').classList.remove('is-create-mode');
     $('editor-mode-title').textContent = '匯款帳戶資料';
     const badge = $('editor-mode-badge');
     badge.textContent = `序號 #${filteredAccounts.findIndex(r => r.id === account.id) + 1 || account.id}`;
     badge.className = 'status-badge pending';
+    badge.classList.remove('hidden');
     $('btn-switch-create-top').classList.remove('hidden');
 
     setFormBankValue(formatBankLabel(account.bankCode, account.bankName));
@@ -583,10 +585,10 @@ document.addEventListener("DOMContentLoaded", () => {
     selectedAccountId = null;
     clearFormValidationErrors();
 
+    $('bank-editor-box').classList.add('is-create-mode');
     $('editor-mode-title').textContent = '新增匯款帳戶';
     const badge = $('editor-mode-badge');
-    badge.textContent = '新增';
-    badge.className = 'status-badge create-pink';
+    badge.classList.add('hidden');
     $('btn-switch-create-top').classList.add('hidden');
 
     setFormBankValue('');
