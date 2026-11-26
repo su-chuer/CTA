@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   const { $, cleanTrim, escapeAttr, toast, alert: openAlertModal, confirm: openConfirmModal } = window.CTA;
 
-  const REMIT_BANK_STORAGE_KEY = 'cta_remitbank_state_v1';
+  const REMIT_BANK_STORAGE_KEY = 'cta_remitbank_state_v2';
 
   let bankCatalog = [];       // [{ code: '008', name: '華南商業銀行' }, ...]
   let heqiTeamCatalog = [];   // [{ code: 'ETE04', name: '永康和氣' }, ...]
@@ -74,7 +74,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!loaded) {
       try {
-        const res = await fetch('json/remit_bank_data.json?v=405', { cache: 'no-store' });
+        const res = await fetch('json/remit_bank_data.json?v=406', { cache: 'no-store' });
         if (res && res.ok) {
           loaded = await res.json();
         }
@@ -102,7 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ldapDirectory = mergedLdap;
       bankAccounts = Array.isArray(loaded.accounts) ? loaded.accounts.map(acc => ({
         ...acc,
-        staff: Array.isArray(acc.staff) ? acc.staff.map(s => ({ ...s })) : [],
+        staff: Array.isArray(acc.staff) ? acc.staff.filter(s => s && s.ldap !== 'shih01' && s.ldap !== 'wang02' && s.name !== '釋德1法師' && s.name !== '王凱2').map(s => ({ ...s })) : [],
         teams: Array.isArray(acc.teams) ? acc.teams.map(t => ({ ...t })) : []
       })) : [];
       nextAccountId = bankAccounts.reduce((m, r) => Math.max(m, Number(r.id || 0)), 0) + 1;

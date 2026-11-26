@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   const { $, cleanTrim, escapeAttr, toast, alert: openAlertModal, confirm: openConfirmModal } = window.CTA;
 
-  const STOCK_MANAGER_STORAGE_KEY = 'cta_stockmanager_state_v1';
+  const STOCK_MANAGER_STORAGE_KEY = 'cta_stockmanager_state_v2';
 
   let hqWarehouses = [];
   let regionalWarehouses = [];
@@ -229,7 +229,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!loaded) {
       try {
-        const res = await fetch('json/stock_manager_data.json?v=405', { cache: 'no-store' });
+        const res = await fetch('json/stock_manager_data.json?v=406', { cache: 'no-store' });
         if (res && res.ok) {
           loaded = await res.json();
         }
@@ -258,9 +258,15 @@ document.addEventListener("DOMContentLoaded", () => {
       delete mergedLdap.shih01;
       delete mergedLdap.wang02;
       ldapDirectory = mergedLdap;
-      savedManagersByWarehouse = (loaded.managersByWarehouse && typeof loaded.managersByWarehouse === 'object')
+      const rawMgrs = (loaded.managersByWarehouse && typeof loaded.managersByWarehouse === 'object')
         ? loaded.managersByWarehouse
         : {};
+      savedManagersByWarehouse = {};
+      Object.entries(rawMgrs).forEach(([wh, list]) => {
+        savedManagersByWarehouse[wh] = Array.isArray(list)
+          ? list.filter(m => m && m.ldap !== 'shih01' && m.ldap !== 'wang02' && m.name !== '釋德1法師' && m.name !== '王凱2')
+          : [];
+      });
     }
 
     populateDropdowns();

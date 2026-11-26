@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   const { $, cleanTrim, escapeAttr, toast, alert: openAlertModal, confirm: openConfirmModal } = window.CTA;
 
-  const SETUP_CREW_STORAGE_KEY = 'cta_setupcrew_state_v1';
+  const SETUP_CREW_STORAGE_KEY = 'cta_setupcrew_state_v2';
 
   let ldapDirectory = {};          // { 'test1': '蘇1', 'test2': '林1', 'test3': '王1', ... }
   let allTeams = [];               // [{ code, name }]
@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!loaded) {
       try {
-        const res = await fetch('json/setup_crew_data.json?v=405', { cache: 'no-store' });
+        const res = await fetch('json/setup_crew_data.json?v=406', { cache: 'no-store' });
         if (res && res.ok) {
           loaded = await res.json();
         }
@@ -66,8 +66,10 @@ document.addEventListener("DOMContentLoaded", () => {
       ldapDirectory = mergedLdap;
       allTeams = Array.isArray(loaded.allTeams) ? loaded.allTeams : [];
       savedCrewAssignments = (loaded.crewAssignments && typeof loaded.crewAssignments === 'object')
-        ? loaded.crewAssignments
+        ? { ...loaded.crewAssignments }
         : {};
+      delete savedCrewAssignments.shih01;
+      delete savedCrewAssignments.wang02;
     }
 
     activeLdap = '';
