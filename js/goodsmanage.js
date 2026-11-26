@@ -3486,6 +3486,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (roleSelect && currentRole && roleSelect.value !== currentRole) {
       roleSelect.value = currentRole;
     }
+    syncSimulatedRoleWidth();
 
     if (!currentRole) {
       $('manage-sub-tabs').classList.add('hidden');
@@ -4123,8 +4124,28 @@ document.addEventListener("DOMContentLoaded", () => {
     toast('已清除舊快取並套用預設範例庫存資料，可直接進行查詢與單據操作。');
   });
 
+  const measureSelectTextWidth = (selEl) => {
+    if (!selEl) return 185;
+    const opt = selEl.options[selEl.selectedIndex];
+    const text = opt ? opt.textContent.trim() : '';
+    if (!text) return 185;
+    const canvas = measureSelectTextWidth._canvas || (measureSelectTextWidth._canvas = document.createElement('canvas'));
+    const ctx = canvas.getContext('2d');
+    const style = window.getComputedStyle(selEl);
+    ctx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    const textWidth = Math.ceil(ctx.measureText(text).width);
+    return Math.max(185, textWidth + 56);
+  };
+
+  const syncSimulatedRoleWidth = () => {
+    const selEl = $('simulated-role');
+    if (!selEl) return;
+    selEl.style.width = `${measureSelectTextWidth(selEl)}px`;
+  };
+
   $('simulated-role').addEventListener('change', (e) => {
     e.currentTarget.classList.remove('highlight-error');
+    syncSimulatedRoleWidth();
   });
 
   const confirmRoleBtn = $('btn-confirm-role');
@@ -4160,6 +4181,7 @@ document.addEventListener("DOMContentLoaded", () => {
     currentRole = '';
     const roleSelect = $('simulated-role');
     if (roleSelect) roleSelect.value = 'hq';
+    syncSimulatedRoleWidth();
     applyRoleUI();
   });
 });
