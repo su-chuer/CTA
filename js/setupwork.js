@@ -62,6 +62,25 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const areaInput = $('work-area-select');
+  const areaWrap = $('area-combo-wrap');
+
+  const measureAreaTextWidth = (text, inputEl) => {
+    if (!text) return 185;
+    const canvas = measureAreaTextWidth._canvas || (measureAreaTextWidth._canvas = document.createElement('canvas'));
+    const ctx = canvas.getContext('2d');
+    const style = window.getComputedStyle(inputEl);
+    ctx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    const textWidth = Math.ceil(ctx.measureText(text).width);
+    return Math.max(185, textWidth + 74);
+  };
+
+  const syncAreaComboWidth = (val) => {
+    if (!areaWrap || !areaInput) return;
+    const cleaned = cleanTrim(val != null ? val : areaInput.value);
+    areaInput.title = cleaned;
+    areaWrap.style.width = `${measureAreaTextWidth(cleaned, areaInput)}px`;
+  };
+
   const areaCombo = window.CTA.createComboSelect({
     inputId: 'work-area-select',
     wrapId: 'area-combo-wrap',
@@ -71,6 +90,9 @@ document.addEventListener("DOMContentLoaded", () => {
     getOptions: () => workAreas,
     beforeOpen: () => dataReady,
     emptyText: '無相符作業區',
+    onSelect: (val) => syncAreaComboWidth(val),
+    onInput: (val) => syncAreaComboWidth(val),
+    onClear: () => syncAreaComboWidth(''),
     onEnter: () => executeSearch()
   });
 
@@ -416,6 +438,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const runQuery = () => {
       areaCombo.close();
       areaCombo.setValue(matchedArea);
+      syncAreaComboWidth(matchedArea);
       $('table-loading').classList.remove('hidden');
       setTimeout(() => {
         loadAreaIntoDraft(matchedArea);
@@ -439,6 +462,7 @@ document.addEventListener("DOMContentLoaded", () => {
   $('btn-reset').addEventListener('click', () => {
     const runReset = () => {
       areaCombo.setValue('');
+      syncAreaComboWidth('');
       areaCombo.close();
       areaInput.classList.remove('highlight-error');
       activeArea = '';
