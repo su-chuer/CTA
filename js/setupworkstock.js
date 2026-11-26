@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   const { $, cleanTrim, escapeAttr, toast, alert: openAlertModal, confirm: openConfirmModal } = window.CTA;
 
-  const SETUP_WORKSTOCK_STORAGE_KEY = 'cta_setupworkstock_state_v1';
+  const SETUP_WORKSTOCK_STORAGE_KEY = 'cta_setupworkstock_state_v2';
 
   let relayWarehouses = [];            // ['北', '中', '南', '東']
   let areaWarehousesByRelay = {};      // { '南': ['(大林)嘉義', '台南', '高雄', '屏東'], ... }
@@ -44,7 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!loaded) {
       try {
-        const res = await fetch('json/setup_workstock_data.json?v=398', { cache: 'no-store' });
+        const res = await fetch('json/setup_workstock_data.json?v=399', { cache: 'no-store' });
         if (res && res.ok) {
           loaded = await res.json();
         }

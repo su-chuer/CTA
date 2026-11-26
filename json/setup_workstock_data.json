@@ -31,10 +31,6 @@
   },
   "allTeams": [
     {
-      "code": "ATA00",
-      "name": "無組別"
-    },
-    {
       "code": "ATA01",
       "name": "國新和氣"
     },
@@ -63,20 +59,8 @@
       "name": "玉里和氣"
     },
     {
-      "code": "ATB00",
-      "name": "無組別"
-    },
-    {
       "code": "ATB01",
       "name": "台東和氣"
-    },
-    {
-      "code": "ATZ01",
-      "name": "僧團和氣"
-    },
-    {
-      "code": "CTC00",
-      "name": "無組別"
     },
     {
       "code": "NTN35",
@@ -257,6 +241,50 @@
     {
       "code": "ILN02",
       "name": "宜蘭和氣二"
+    },
+    {
+      "code": "CYI01",
+      "name": "嘉義和氣一"
+    },
+    {
+      "code": "CYI02",
+      "name": "嘉義和氣二"
+    },
+    {
+      "code": "CYI03",
+      "name": "大林和氣"
+    },
+    {
+      "code": "PIF01",
+      "name": "屏東和氣一"
+    },
+    {
+      "code": "PIF02",
+      "name": "屏東和氣二"
+    },
+    {
+      "code": "PIF03",
+      "name": "潮州和氣"
+    },
+    {
+      "code": "TPE01",
+      "name": "大安和氣一"
+    },
+    {
+      "code": "TPE02",
+      "name": "大安和氣二"
+    },
+    {
+      "code": "NTP01",
+      "name": "蘆洲和氣一"
+    },
+    {
+      "code": "NTP02",
+      "name": "蘆洲和氣二"
+    },
+    {
+      "code": "PEN01",
+      "name": "澎湖和氣"
     }
   ],
   "warehouseAssignments": {
