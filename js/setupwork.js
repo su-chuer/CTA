@@ -167,8 +167,9 @@ document.addEventListener("DOMContentLoaded", () => {
       checkAllEl.checked = false;
       checkAllEl.indeterminate = false;
       checkAllEl.disabled = true;
+      const colSpan = side === 'right' ? 5 : 4;
       const emptyMsg = side === 'left' ? '無可選取的未分配組隊' : '尚未設定所屬組隊（可由左側移轉或拖曳加入）';
-      tbodyEl.innerHTML = `<tr><td colspan="4" class="empty" style="padding: 36px 12px;">${emptyMsg}</td></tr>`;
+      tbodyEl.innerHTML = `<tr><td colspan="${colSpan}" class="empty" style="padding: 36px 12px;">${emptyMsg}</td></tr>`;
       return;
     }
 
@@ -178,12 +179,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     tbodyEl.innerHTML = list.map(team => {
       const isChecked = checkedSet.has(team.code);
+      const delCellHtml = side === 'right'
+        ? `<td class="center"><button type="button" class="btn btn-danger-solid small btn-del-right-row" data-code="${escapeAttr(team.code)}">刪除</button></td>`
+        : '';
       return `
         <tr class="${isChecked ? 'is-checked' : ''}" draggable="true" data-side="${side}" data-code="${escapeAttr(team.code)}">
           <td class="center"><input type="checkbox" class="submit-row-checkbox row-chk" data-code="${escapeAttr(team.code)}" ${isChecked ? 'checked' : ''} aria-label="選取 ${escapeAttr(team.code)} ${escapeAttr(team.name)}"></td>
           <td class="center"><span class="shuttle-drag-handle" title="拖曳移動">⋮⋮</span></td>
           <td style="font-weight: 600; color: #14264b;">${escapeAttr(team.code)}</td>
           <td>${escapeAttr(team.name)}</td>
+          ${delCellHtml}
         </tr>
       `;
     }).join('');
@@ -198,6 +203,14 @@ document.addEventListener("DOMContentLoaded", () => {
         else checkedSet.delete(code);
         renderBothTables();
       });
+
+      const delBtn = tr.querySelector('.btn-del-right-row');
+      if (delBtn) {
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          moveCodesToLeft([code]);
+        });
+      }
 
       tr.addEventListener('click', () => {
         if (checkedSet.has(code)) checkedSet.delete(code);
