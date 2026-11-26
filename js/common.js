@@ -351,37 +351,27 @@
     return Math.max(minWidth, textWidth + extraPadding);
   };
 
-  const syncComboAutoWidth = (wrapEl, inputEl, { minWidth = 185, extraPadding = 52, emptyExtraPadding = 56 } = {}) => {
+  const syncComboAutoWidth = (wrapEl, inputEl, { minWidth = 185, extraPadding = 76 } = {}) => {
     if (!wrapEl || !inputEl) return;
     const cleaned = cleanTrim(inputEl.value);
     inputEl.title = cleaned;
-    if (cleaned) {
-      const w = measureControlTextWidth(cleaned, inputEl, { minWidth, extraPadding });
-      wrapEl.style.minWidth = `${minWidth}px`;
-      wrapEl.style.width = `${w}px`;
-    } else {
-      const placeholderText = cleanTrim(inputEl.getAttribute('placeholder') || '');
-      const defaultW = measureControlTextWidth(placeholderText, inputEl, { minWidth, extraPadding: emptyExtraPadding });
-      wrapEl.style.minWidth = `${defaultW}px`;
-      wrapEl.style.width = `${defaultW}px`;
-    }
+    wrapEl.classList.toggle('has-value', Boolean(cleaned));
+    wrapEl.style.minWidth = `${minWidth}px`;
+    wrapEl.style.width = `${measureControlTextWidth(cleaned, inputEl, { minWidth, extraPadding })}px`;
   };
 
   const bindSelectAutoWidth = (selectId, { minWidth = 185, extraPadding = 56 } = {}) => {
     const sel = $(selectId);
     if (!sel) return () => {};
-    const placeholderOpt = Array.from(sel.options).find(o => !o.value);
-    const placeholderText = placeholderOpt ? placeholderOpt.textContent : '';
-    const defaultW = measureControlTextWidth(placeholderText, sel, { minWidth, extraPadding });
-    sel.style.minWidth = `${defaultW}px`;
-    sel.style.width = `${defaultW}px`;
+    sel.style.minWidth = `${minWidth}px`;
+    sel.style.width = `${minWidth}px`;
     sel.style.maxWidth = '100%';
     sel.style.transition = 'width 0.15s ease';
     const sync = () => {
       const opt = sel.options[sel.selectedIndex];
-      const text = (sel.value && opt) ? opt.textContent : placeholderText;
-      sel.title = sel.value ? cleanTrim(text) : '';
-      sel.style.width = `${measureControlTextWidth(text, sel, { minWidth: defaultW, extraPadding })}px`;
+      const text = (sel.value && opt) ? opt.textContent : '';
+      sel.title = cleanTrim(text);
+      sel.style.width = `${measureControlTextWidth(text, sel, { minWidth, extraPadding })}px`;
     };
     sel.addEventListener('change', sync);
     sync();

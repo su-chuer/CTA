@@ -625,9 +625,15 @@ select.highlight-error {
 }
 .combo-select-wrap.group-select-auto {
   min-width: 185px;
-  width: 218px;
+  width: 185px;
   max-width: 100%;
   transition: width 0.15s ease;
+}
+.combo-select-wrap.group-select-auto .filter-input {
+  padding-right: 32px;
+}
+.combo-select-wrap.group-select-auto.has-value .filter-input {
+  padding-right: 54px;
 }
 .combo-select-wrap.group-select-auto .combo-dropdown-menu {
   min-width: 100%;
