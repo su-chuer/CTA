@@ -64,16 +64,6 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const ldapInput = $('ldap-account-input');
-  const ldapWrap = $('ldap-combo-wrap');
-
-  const getLdapOptions = () => {
-    return Object.entries(ldapDirectory).map(([ldap, name]) => ({
-      value: ldap,
-      ldap,
-      name,
-      label: `${ldap}（${name}）`
-    }));
-  };
 
   const resolveLdapKey = (rawVal) => {
     const cleaned = cleanTrim(rawVal);
@@ -81,16 +71,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const lower = cleaned.toLowerCase();
     if (ldapDirectory[lower]) return lower;
     const exactEntry = Object.entries(ldapDirectory).find(([ldap, name]) =>
-      ldap.toLowerCase() === lower ||
-      name === cleaned ||
-      `${ldap}（${name}）`.toLowerCase() === lower ||
-      `${ldap} (${name})`.toLowerCase() === lower
+      ldap.toLowerCase() === lower || name === cleaned
     );
-    if (exactEntry) return exactEntry[0];
-    const partialEntry = Object.entries(ldapDirectory).find(([ldap, name]) =>
-      ldap.toLowerCase().includes(lower) || name.toLowerCase().includes(lower)
-    );
-    return partialEntry ? partialEntry[0] : '';
+    return exactEntry ? exactEntry[0] : '';
   };
 
   const formatPersonDisplay = (ldap) => {
@@ -99,50 +82,15 @@ document.addEventListener("DOMContentLoaded", () => {
     return name ? `${name} (${ldap})` : ldap;
   };
 
-  const measureLdapTextWidth = (text, inputEl) => {
-    if (!text) return 215;
-    const canvas = measureLdapTextWidth._canvas || (measureLdapTextWidth._canvas = document.createElement('canvas'));
-    const ctx = canvas.getContext('2d');
-    const style = window.getComputedStyle(inputEl);
-    ctx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
-    const textWidth = Math.ceil(ctx.measureText(text).width);
-    return Math.max(215, textWidth + 76);
-  };
+  ldapInput.addEventListener('input', () => {
+    ldapInput.classList.remove('highlight-error');
+  });
 
-  const syncLdapComboWidth = (val) => {
-    if (!ldapWrap || !ldapInput) return;
-    const cleaned = cleanTrim(val != null ? val : ldapInput.value);
-    ldapInput.title = cleaned;
-    ldapWrap.style.width = `${measureLdapTextWidth(cleaned, ldapInput)}px`;
-  };
-
-  const ldapCombo = window.CTA.createComboSelect({
-    inputId: 'ldap-account-input',
-    wrapId: 'ldap-combo-wrap',
-    menuId: 'ldap-combo-menu',
-    clearBtnId: 'btn-clear-ldap',
-    toggleBtnId: 'btn-toggle-ldap',
-    getOptions: () => getLdapOptions(),
-    getOptionValue: (opt) => opt.ldap,
-    beforeOpen: () => dataReady,
-    emptyText: '無相符 LDAP 帳號或姓名',
-    filterOptions: (all, kw) => {
-      if (!kw) return all;
-      return all.filter(opt =>
-        opt.ldap.toLowerCase().includes(kw) ||
-        opt.name.toLowerCase().includes(kw)
-      );
-    },
-    renderOption: (opt, { isSelected, isHighlighted, idx }) => `
-      <div class="combo-option-item ${isSelected ? 'selected' : ''} ${isHighlighted ? 'highlighted' : ''}" role="option" data-idx="${idx}" data-val="${escapeAttr(opt.ldap)}">
-        <span><strong>${escapeAttr(opt.ldap)}</strong></span>
-        <span class="combo-option-tag">${escapeAttr(opt.name)}</span>
-      </div>
-    `,
-    onSelect: (val) => syncLdapComboWidth(val),
-    onInput: (val) => syncLdapComboWidth(val),
-    onClear: () => syncLdapComboWidth(''),
-    onEnter: () => executeSearch()
+  ldapInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      executeSearch();
+    }
   });
 
   const getSavedCodesForLdap = (ldap) => {
@@ -462,21 +410,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!rawVal) {
       ldapInput.classList.add('highlight-error');
-      openAlertModal('請先輸入或選擇「LDAP帳號」！', () => ldapInput.focus());
+      openAlertModal('請先輸入「LDAP帳號」！', () => ldapInput.focus());
       return;
     }
 
     const matchedLdap = resolveLdapKey(rawVal);
     if (!matchedLdap) {
       ldapInput.classList.add('highlight-error');
-      openAlertModal(`查無人員「${rawVal}」，請確認 LDAP 帳號或從選單選擇！`, () => ldapInput.focus());
+      openAlertModal(`查無 LDAP 帳號「${rawVal}」，請確認後重新輸入！`, () => ldapInput.focus());
       return;
     }
 
     const runQuery = () => {
-      ldapCombo.close();
-      ldapCombo.setValue(matchedLdap);
-      syncLdapComboWidth(matchedLdap);
+      ldapInput.value = matchedLdap;
       $('table-loading').classList.remove('hidden');
       setTimeout(() => {
         loadLdapIntoDraft(matchedLdap);
@@ -499,9 +445,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   $('btn-reset').addEventListener('click', () => {
     const runReset = () => {
-      ldapCombo.setValue('');
-      syncLdapComboWidth('');
-      ldapCombo.close();
+      ldapInput.value = '';
       ldapInput.classList.remove('highlight-error');
       activeLdap = '';
       draftAssignedCodes = [];

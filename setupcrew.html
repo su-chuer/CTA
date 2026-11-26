@@ -18,13 +18,8 @@ html, body {
 .page {
   min-height: calc(100vh - 58px);
 }
-#ldap-combo-wrap {
-  min-width: 185px;
-  max-width: 100%;
-  transition: width 0.15s ease;
-}
-#ldap-combo-menu {
-  max-height: 360px;
+#ldap-account-input {
+  width: 240px;
 }
 .shuttle-layout {
   display: grid;
@@ -239,14 +234,7 @@ html, body {
   <section class="panel filters" aria-label="人員查詢條件">
     <div class="field">
       <label for="ldap-account-input">LDAP帳號 <b>*</b></label>
-      <div class="combo-select-wrap group-select-auto" id="ldap-combo-wrap">
-        <input type="text" id="ldap-account-input" class="filter-input" autocomplete="off" placeholder="請輸入 LDAP 帳號或姓名" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="ldap-combo-menu">
-        <button type="button" class="combo-clear-btn hidden" id="btn-clear-ldap" title="清除 LDAP 帳號" aria-label="清除 LDAP 帳號">&times;</button>
-        <button type="button" class="combo-arrow-btn" id="btn-toggle-ldap" title="展開人員選單" aria-label="展開人員選單">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-        </button>
-        <div class="combo-dropdown-menu hidden" id="ldap-combo-menu" role="listbox"></div>
-      </div>
+      <input type="text" id="ldap-account-input" class="filter-input" autocomplete="off" placeholder="請輸入 LDAP 帳號">
     </div>
 
     <div class="search-actions" style="margin-left: 6px;">
@@ -387,7 +375,7 @@ html, body {
 
 <script src="js/navbar.js?v=392"></script>
 <script src="js/common.js?v=390"></script>
-<script src="js/setupcrew.js?v=392"></script>
+<script src="js/setupcrew.js?v=393"></script>
 
 </body>
 </html>
