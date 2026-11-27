@@ -3443,8 +3443,8 @@ document.addEventListener("DOMContentLoaded", () => {
         rawQueriedRegional = [];
       }
 
-      // 查詢期間總庫存量 = 前期庫存量 + 當前倉庫存量（單倉結存制，與下轄明細合計獨立顯示）
-      const grandTotalStock = Math.max(0, openingStock + currentWarehouseStock);
+      // 查詢期間總庫存量 = 前期庫存量 + 當前倉庫存量 + 下轄倉庫明細合計（本會含中繼合計、中繼含作業區合計、作業區則無下轄）
+      const grandTotalStock = Math.max(0, openingStock + currentWarehouseStock + subTableTotal);
 
       $('kpi-safety-stock').textContent = money(safetyStock);
       $('kpi-opening-stock').textContent = money(openingStock);
