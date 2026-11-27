@@ -1016,23 +1016,22 @@ document.addEventListener("DOMContentLoaded", () => {
                 };
               }
               const regItemBook = regionalInventoryDatasets[rec.outWarehouse][rec.goodsItem];
-              if (!isToAreaWarehouse) {
-                const outRegMovNow = getNowMsRecord();
-                regItemBook.movements.push({
-                  id: nextMovementId++,
-                  date: outRegMovNow.hyphen,
-                  warehouse: rec.inWarehouse,
-                  inQty: 0,
-                  outQty: isTransferBetweenRegions ? 0 : qty,
-                  transferQty: isTransferBetweenRegions ? -qty : 0,
-                  diffQty: 0,
-                  diffReason: '',
-                  createdAtStr: outRegMovNow.isoMs,
-                  createdAtMs: outRegMovNow.ms,
-                  updatedAtStr: outRegMovNow.isoMs,
-                  updatedAtMs: outRegMovNow.ms
-                });
-              } else {
+              const outRegMovNow = getNowMsRecord();
+              regItemBook.movements.push({
+                id: nextMovementId++,
+                date: outRegMovNow.hyphen,
+                warehouse: rec.inWarehouse,
+                inQty: 0,
+                outQty: isTransferBetweenRegions ? 0 : qty,
+                transferQty: isTransferBetweenRegions ? -qty : 0,
+                diffQty: 0,
+                diffReason: '',
+                createdAtStr: outRegMovNow.isoMs,
+                createdAtMs: outRegMovNow.ms,
+                updatedAtStr: outRegMovNow.isoMs,
+                updatedAtMs: outRegMovNow.ms
+              });
+              if (isToAreaWarehouse) {
                 // 出庫至下轄作業區倉庫（如：北 → 台北）：反映在下方「作業區庫存明細」，不混入上方中繼區倉庫明細
                 if (!Array.isArray(regItemBook.areaStocks)) regItemBook.areaStocks = [];
                 let areaRow = regItemBook.areaStocks.find(a => a.warehouse === rec.inWarehouse);
@@ -3307,7 +3306,6 @@ document.addEventListener("DOMContentLoaded", () => {
         openingStock += Math.max(0, baseOpening + priorDelta);
 
         allMovs.forEach(m => {
-          if (currentRole === 'region' && areaWarehouses.includes(m.warehouse)) return;
           const d = String(m.date || '').trim();
           if ((!startVal || d >= startVal) && (!endVal || d <= endVal)) {
             combinedMovements.push({
@@ -3388,11 +3386,22 @@ document.addEventListener("DOMContentLoaded", () => {
             }, 0);
             const openQty = Number(regBook.openingStock || 0);
             const totalTransferredToArea = directOutToArea + areaOutFromTransfers;
+            // 中繼倉自身結存 = 期初 + 本會入庫 - 撥出作業區 + 調貨 + 盤差；再加上下轄作業區現存，即為該中繼區總庫存
+            const regionSelfStock = openQty + sums.inQty - totalTransferredToArea + sums.transferQty + sums.diffQty;
+            const childAreaStockSum = childAreas.reduce((sum, areaName) => {
+              const aBook = areaInventoryDatasets[areaName] && areaInventoryDatasets[areaName][itemVal];
+              if (aBook) {
+                const aOpen = Number(aBook.openingStock || 0);
+                const aNet = (Array.isArray(aBook.movements) ? aBook.movements : []).reduce((s, m) => s + Number(m.inQty || 0) - Number(m.outQty || 0) + Number(m.transferQty || 0) + Number(m.diffQty || 0), 0);
+                return sum + Math.max(0, aOpen + aNet);
+              }
+              return sum;
+            }, 0);
             baseRow.inQty = sums.inQty;
             baseRow.receiveQty = areaReceivedTotal;
             baseRow.transferQty = sums.transferQty;
             baseRow.diffQty = sums.diffQty;
-            baseRow.stockQty = openQty + sums.inQty - areaReceivedTotal - totalTransferredToArea + sums.transferQty + sums.diffQty;
+            baseRow.stockQty = Math.max(0, regionSelfStock + childAreaStockSum);
           } else {
             baseRow.receiveQty = areaReceivedTotal;
           }
@@ -3820,7 +3829,8 @@ document.addEventListener("DOMContentLoaded", () => {
           openingStock: 2,
           movements: [
             { id: 121, date: todayHyphen, warehouse: '花蓮本會', inQty: 8, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-            { id: 122, date: todayHyphen, warehouse: '中', inQty: 0, outQty: 0, transferQty: -2, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
+            { id: 122, date: todayHyphen, warehouse: '中', inQty: 0, outQty: 0, transferQty: -2, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
+            { id: 129, date: todayHyphen, warehouse: '台北', inQty: 0, outQty: 3, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
           ],
           areaStocks: [
             { warehouse: '台北', inQty: 3, receiveQty: 1, transferQty: 0, diffQty: 0, stockQty: 2 },
@@ -3847,7 +3857,8 @@ document.addEventListener("DOMContentLoaded", () => {
           openingStock: 0,
           movements: [
             { id: 124, date: todayHyphen, warehouse: '內湖倉儲', inQty: 6, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-            { id: 125, date: todayHyphen, warehouse: '北', inQty: 0, outQty: 0, transferQty: 2, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
+            { id: 125, date: todayHyphen, warehouse: '北', inQty: 0, outQty: 0, transferQty: 2, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
+            { id: 130, date: todayHyphen, warehouse: '台中', inQty: 0, outQty: 3, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
           ],
           areaStocks: [
             { warehouse: '台中', inQty: 3, receiveQty: 1, transferQty: 0, diffQty: 0, stockQty: 2 }
@@ -3869,7 +3880,8 @@ document.addEventListener("DOMContentLoaded", () => {
           safetyStock: 2,
           openingStock: 3,
           movements: [
-            { id: 127, date: todayHyphen, warehouse: '花蓮本會', inQty: 5, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
+            { id: 127, date: todayHyphen, warehouse: '花蓮本會', inQty: 5, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
+            { id: 128, date: todayHyphen, warehouse: '台南', inQty: 0, outQty: 4, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
           ],
           areaStocks: [
             { warehouse: '(大林)嘉義', inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0, stockQty: 0 },
