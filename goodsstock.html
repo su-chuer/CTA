@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>系統設定｜安全庫存量設定</title>
+<link rel="stylesheet" href="css/style.css?v=384">
+<link rel="icon" href="images/logo.png" type="image/png">
+<style>
+html, body {
+  min-height: 100%;
+  background: linear-gradient(120deg, #f0f5fb, #f9fbff) fixed;
+}
+.page {
+  min-height: calc(100vh - 58px);
+}
+.goodsstock-split-layout {
+  display: grid;
+  grid-template-columns: 1.48fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.goodsstock-split-layout > * {
+  min-width: 0;
+}
+#goodsstock-table {
+  min-width: 0;
+  width: 100%;
+}
+.safety-qty-input {
+  width: 140px;
+  max-width: 100%;
+  height: 36px;
+  border: 1px solid #c7d3e3;
+  border-radius: 6px;
+  padding: 0 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #14264b;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  background: #ffffff;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+.safety-qty-input:focus {
+  border-color: #0869ed;
+  box-shadow: 0 0 0 2px rgba(8, 105, 237, 0.16);
+}
+.safety-qty-input.is-modified {
+  border-color: #0869ed;
+  background: #f0f7ff;
+}
+.safety-qty-input:disabled {
+  background: #f4f7fb;
+  color: #8a97ab;
+  cursor: not-allowed;
+}
+.goodsstock-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e5ebf5;
+}
+@media (max-width: 960px) {
+  .goodsstock-split-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+</style>
+</head>
+<body>
+
+<main class="page">
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+    <nav class="crumb" id="page-crumb" style="margin: 0;">
+      <span class="home-icon">
+        <svg class="ico" aria-hidden="true"><use href="#ico-warehouse"></use></svg>
+      </span>
+      <span class="sep">│</span>
+      <span>系統設定</span>
+      <span class="sep">/</span>
+      <strong id="crumb-current">安全庫存量設定</strong>
+    </nav>
+    <div class="search-actions" style="margin-left: auto;">
+      <button type="button" class="btn danger" id="btn-clear-all-sample">清空名單</button>
+      <button type="button" class="btn primary" id="btn-view-sample">觀看範例</button>
+    </div>
+  </div>
+
+  <section class="panel table-panel" style="margin-top: 6px;" aria-label="安全庫存量設定">
+    <div id="table-loading" class="block-loading hidden"><div class="spinner"></div></div>
+
+    <div class="goodsstock-split-layout">
+      <!-- 左側：該倉庫各物品安全庫存量設定表 -->
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; min-height: 36px;">
+          <div style="font-size: 15px; color: #556477; font-weight: 600;">
+            查詢倉庫：<span id="active-warehouse-badge" style="color: #0869ed; font-weight: 700;">尚未查詢</span>
+          </div>
+          <div style="font-size: 14px; color: #556477; font-weight: 600;">
+            物資項目：<span id="item-count-display" style="color: #14264b; font-weight: 700;">0</span> 項
+          </div>
+        </div>
+
+        <div class="table-scroll">
+          <table class="detail-table" id="goodsstock-table">
+            <thead>
+              <tr>
+                <th class="center" style="width: 68px;">序號</th>
+                <th>物品</th>
+                <th class="num-col" style="width: 190px;">安全庫存量</th>
+              </tr>
+            </thead>
+            <tbody id="goodsstock-tbody">
+              <tr><td colspan="3" class="empty">請於右側選擇倉庫後點擊「查詢」</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 右側：倉庫層級單選（本會倉庫 / 中繼倉庫 / 作業區倉庫）＋ 查詢 / 清除 -->
+      <div class="claim-add-box" aria-label="倉庫層級篩選">
+        <div class="claim-field">
+          <label>倉庫層級 <b>*</b></label>
+          <div class="choice diff-tier-choice" role="radiogroup" aria-label="倉庫層級">
+            <label><input type="radio" name="stock-wh-tier" value="hq" checked>本會倉庫</label>
+            <label><input type="radio" name="stock-wh-tier" value="region">中繼倉庫</label>
+            <label><input type="radio" name="stock-wh-tier" value="area">作業區倉庫</label>
+          </div>
+          <div class="diff-wh-stack">
+            <select id="stock-wh-hq" class="claim-control" aria-label="本會倉庫">
+              <option value="" selected disabled>請選擇</option>
+            </select>
+            <select id="stock-wh-region" class="claim-control hidden" aria-label="中繼倉庫">
+              <option value="" selected disabled>請選擇</option>
+            </select>
+            <select id="stock-wh-area" class="claim-control hidden" aria-label="作業區倉庫" disabled>
+              <option value="" selected disabled>請選擇</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <button type="button" class="btn primary" id="btn-stock-search" style="width: 100%; height: 42px; font-size: 15px; font-weight: 600;">
+            <svg class="ico" aria-hidden="true"><use href="#ico-search"></use></svg>查詢
+          </button>
+          <button type="button" class="btn" id="btn-stock-reset" style="width: 100%; height: 42px; font-size: 15px; font-weight: 600;">
+            <svg class="ico" aria-hidden="true"><use href="#ico-eraser"></use></svg>清除
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部狀態與儲存列 -->
+    <div class="goodsstock-footer">
+      <div style="font-size: 14px; color: #64748b;" id="dirty-status-hint">請先於右側選擇倉庫並點擊「查詢」</div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <button type="button" class="btn" id="btn-stock-revert" disabled>還原變更</button>
+        <button type="button" class="btn primary" id="btn-stock-save" style="min-width: 96px; height: 38px; font-size: 15px; font-weight: 600;" disabled>儲存</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- 操作確認彈窗 -->
+<div class="overlay hidden" id="confirm-modal" style="z-index: 1320;">
+  <div class="modal dialog-modal">
+    <div class="modal-head dialog-head">
+      <h2 id="confirm-modal-title">操作確認</h2>
+      <button type="button" class="x" id="close-confirm" aria-label="關閉">&times;</button>
+    </div>
+    <div class="modal-body dialog-body" id="confirm-modal-body"></div>
+    <div class="modal-foot dialog-foot">
+      <button type="button" class="btn primary" id="btn-confirm-ok">確定</button>
+      <button type="button" class="btn" id="btn-confirm-cancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 單一按鈕提示彈窗 -->
+<div class="overlay hidden" id="alert-modal" style="z-index: 1360;">
+  <div class="modal dialog-modal">
+    <div class="modal-head dialog-head">
+      <h2>提示訊息</h2>
+      <button type="button" class="x" id="close-alert" aria-label="關閉">&times;</button>
+    </div>
+    <div class="modal-body dialog-body" id="alert-modal-body">提示訊息</div>
+    <div class="modal-foot dialog-foot">
+      <button type="button" class="btn primary" id="btn-alert-ok">確定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 觀看範例：安全庫存量預設範例總表彈窗 -->
+<div class="overlay hidden" id="sample-data-modal" style="z-index: 1320;">
+  <div class="modal" style="width: min(1040px, 100%); display: flex; flex-direction: column; max-height: 92vh; padding: 0;">
+    <div class="modal-head" style="padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e1e7f0; background: #fff;">
+      <h2 style="margin: 0; font-size: 17px; color: #14264b;" id="sample-modal-title">安全庫存量設定｜預設範例總表</h2>
+      <button type="button" class="x" id="close-sample-modal" aria-label="關閉">&times;</button>
+    </div>
+    <div class="modal-body" style="padding: 20px 24px; overflow-y: auto; flex: 1; background: #f8fafc;" id="sample-data-modal-body"></div>
+    <div class="modal-foot" style="padding: 14px 24px; border-top: 1px solid #e1e7f0; background: #fff; display: flex; justify-content: flex-end; gap: 10px;">
+      <button type="button" class="btn primary" id="btn-load-sample-data">套用此範例資料至系統</button>
+      <button type="button" class="btn" id="btn-sample-modal-close">關閉</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="js/navbar.js?v=414"></script>
+<script src="js/common.js?v=412"></script>
+<script src="js/goodsstock.js?v=414"></script>
+
+</body>
+</html>
