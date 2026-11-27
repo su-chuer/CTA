@@ -3333,15 +3333,23 @@ document.addEventListener("DOMContentLoaded", () => {
       const currentWarehouseStock = totals.inQty - totals.outQty + totals.transferQty + totals.diffQty;
       let subTableTotal = 0;
 
+      const isInQueryRange = (dStr) => {
+        const d = String(dStr || '').trim();
+        if (startVal && d < startVal) return false;
+        if (endVal && d > endVal) return false;
+        return true;
+      };
+      const isUpToEndDate = (dStr) => {
+        const d = String(dStr || '').trim();
+        if (endVal && d > endVal) return false;
+        return true;
+      };
+
       if (currentRole === 'hq') {
-        // 固定顯示「北、中、南、東」四個中繼倉庫明細，並同步彙整各中繼倉庫該物品的入庫、領用、調貨、盤差與庫存量
+        // 固定顯示「北、中、南、東」四個中繼倉庫明細，並依查詢日期區間（startVal ~ endVal）動態彙整期間異動與截至結束日的結存量
         const regList = (regionalWarehouses.length > 0 ? regionalWarehouses : ['北', '中', '南', '東']);
-        const itemRecord = (inventoryDatasets[matchedWarehouse] || {})[itemVal] || {};
-        const hqRegMap = new Map(
-          (Array.isArray(itemRecord.regionalStocks) ? itemRecord.regionalStocks : []).map(r => [r.warehouse, { ...r }])
-        );
         const mergedRegions = regList.map(rgName => {
-          const baseRow = hqRegMap.get(rgName) || {
+          const baseRow = {
             warehouse: rgName,
             inQty: 0,
             receiveQty: 0,
@@ -3351,54 +3359,55 @@ document.addEventListener("DOMContentLoaded", () => {
           };
           const regBook = regionalInventoryDatasets[rgName] && regionalInventoryDatasets[rgName][itemVal];
           const childAreas = areaWarehouses.filter(a => areaWarehouseRegions[a] === rgName);
-          // 領用量（receiveQty）：統計該中繼區下轄所有作業區在【聯誼物資領取作業】實際領取的數量
-          const areaReceivedTotal = childAreas.reduce((sum, areaName) => {
+
+          // 期間領用量（receiveQty）：統計查詢區間內（startVal ~ endVal）該中繼區下轄所有作業區的實際領取數量
+          const periodAreaReceived = childAreas.reduce((sum, areaName) => {
             const aBook = areaInventoryDatasets[areaName] && areaInventoryDatasets[areaName][itemVal];
             if (aBook && Array.isArray(aBook.movements)) {
-              const movRecv = aBook.movements.reduce((s, m) => s + Number(m.outQty || 0), 0);
-              return sum + movRecv;
+              return sum + aBook.movements.reduce((s, m) => (isInQueryRange(m.date) ? s + Number(m.outQty || 0) : s), 0);
             }
-            const aRow = regBook && Array.isArray(regBook.areaStocks)
-              ? regBook.areaStocks.find(a => a.warehouse === areaName)
-              : null;
-            return sum + Number(aRow ? aRow.receiveQty : 0);
+            return sum;
+          }, 0);
+
+          // 截至結束日（<= endVal）各下轄作業區的結存總和
+          const endAreaStockSum = childAreas.reduce((sum, areaName) => {
+            const aBook = areaInventoryDatasets[areaName] && areaInventoryDatasets[areaName][itemVal];
+            if (!aBook) return sum;
+            const aOpen = Number(aBook.openingStock || 0);
+            const aMovsUpToEnd = (Array.isArray(aBook.movements) ? aBook.movements : []).filter(m => isUpToEndDate(m.date));
+            const aNet = aMovsUpToEnd.reduce((s, m) => s + Number(m.inQty || 0) - Number(m.outQty || 0) + Number(m.transferQty || 0) + Number(m.diffQty || 0), 0);
+            return sum + Math.max(0, aOpen + aNet);
           }, 0);
 
           if (regBook) {
-            const movs = Array.isArray(regBook.movements) ? regBook.movements : [];
-            let directOutToArea = 0;
-            const sums = movs.reduce((acc, m) => {
-              if (areaWarehouses.includes(m.warehouse)) {
-                directOutToArea += Number(m.outQty || 0);
-                return acc;
+            const allRegMovs = Array.isArray(regBook.movements) ? regBook.movements : [];
+            const periodMovs = allRegMovs.filter(m => isInQueryRange(m.date));
+            const upToEndMovs = allRegMovs.filter(m => isUpToEndDate(m.date));
+
+            const periodSums = periodMovs.reduce((acc, m) => {
+              if (!areaWarehouses.includes(m.warehouse)) {
+                acc.inQty += Number(m.inQty || 0);
+                acc.transferQty += Number(m.transferQty || 0);
+                acc.diffQty += Number(m.diffQty || 0);
               }
-              acc.inQty += Number(m.inQty || 0);
-              directOutToArea += Number(m.outQty || 0);
-              acc.transferQty += Number(m.transferQty || 0);
-              acc.diffQty += Number(m.diffQty || 0);
               return acc;
             }, { inQty: 0, transferQty: 0, diffQty: 0 });
-            // directOutToArea 已包含所有已簽收撥出至作業區的 movement（不再重複累加 transferOutRecords）
-            const openQty = Number(regBook.openingStock || 0);
-            const totalTransferredToArea = directOutToArea;
-            // 中繼倉自身結存 = 期初 + 本會入庫 - 撥出作業區 + 調貨 + 盤差；再加上下轄作業區現存，即為該中繼區總庫存
-            const regionSelfStock = openQty + sums.inQty - totalTransferredToArea + sums.transferQty + sums.diffQty;
-            const childAreaStockSum = childAreas.reduce((sum, areaName) => {
-              const aBook = areaInventoryDatasets[areaName] && areaInventoryDatasets[areaName][itemVal];
-              if (aBook) {
-                const aOpen = Number(aBook.openingStock || 0);
-                const aNet = (Array.isArray(aBook.movements) ? aBook.movements : []).reduce((s, m) => s + Number(m.inQty || 0) - Number(m.outQty || 0) + Number(m.transferQty || 0) + Number(m.diffQty || 0), 0);
-                return sum + Math.max(0, aOpen + aNet);
-              }
-              return sum;
+
+            const endNetMov = upToEndMovs.reduce((acc, m) => {
+              return acc + Number(m.inQty || 0) - Number(m.outQty || 0) + Number(m.transferQty || 0) + Number(m.diffQty || 0);
             }, 0);
-            baseRow.inQty = sums.inQty;
-            baseRow.receiveQty = areaReceivedTotal;
-            baseRow.transferQty = sums.transferQty;
-            baseRow.diffQty = sums.diffQty;
-            baseRow.stockQty = Math.max(0, regionSelfStock + childAreaStockSum);
+
+            const openQty = Number(regBook.openingStock || 0);
+            const regionSelfEndStock = Math.max(0, openQty + endNetMov);
+
+            baseRow.inQty = periodSums.inQty;
+            baseRow.receiveQty = periodAreaReceived;
+            baseRow.transferQty = periodSums.transferQty;
+            baseRow.diffQty = periodSums.diffQty;
+            baseRow.stockQty = Math.max(0, regionSelfEndStock + endAreaStockSum);
           } else {
-            baseRow.receiveQty = areaReceivedTotal;
+            baseRow.receiveQty = periodAreaReceived;
+            baseRow.stockQty = Math.max(0, endAreaStockSum);
           }
           return baseRow;
         });
@@ -3408,13 +3417,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const targetRegions = matchedWarehouse ? [matchedWarehouse] : [...regionalWarehouses];
         const mergedAreas = [];
         targetRegions.forEach(rg => {
-          const itemRecord = (regionalInventoryDatasets[rg] || {})[itemVal] || {};
-          const existingMap = new Map(
-            (Array.isArray(itemRecord.areaStocks) ? itemRecord.areaStocks : []).map(r => [r.warehouse, { ...r }])
-          );
           const childAreas = areaWarehouses.filter(a => areaWarehouseRegions[a] === rg);
           childAreas.forEach(areaName => {
-            const baseRow = existingMap.get(areaName) || {
+            const baseRow = {
               warehouse: areaName,
               inQty: 0,
               receiveQty: 0,
@@ -3423,20 +3428,29 @@ document.addEventListener("DOMContentLoaded", () => {
               stockQty: 0
             };
             const areaBook = areaInventoryDatasets[areaName] && areaInventoryDatasets[areaName][itemVal];
-            if (areaBook && Array.isArray(areaBook.movements) && areaBook.movements.length > 0) {
-              const sums = areaBook.movements.reduce((acc, m) => {
+            if (areaBook) {
+              const allAreaMovs = Array.isArray(areaBook.movements) ? areaBook.movements : [];
+              const periodMovs = allAreaMovs.filter(m => isInQueryRange(m.date));
+              const upToEndMovs = allAreaMovs.filter(m => isUpToEndDate(m.date));
+
+              const periodSums = periodMovs.reduce((acc, m) => {
                 acc.inQty += Number(m.inQty || 0);
                 acc.receiveQty += Number(m.outQty || 0);
                 acc.transferQty += Number(m.transferQty || 0);
                 acc.diffQty += Number(m.diffQty || 0);
                 return acc;
               }, { inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0 });
+
+              const endNetMov = upToEndMovs.reduce((acc, m) => {
+                return acc + Number(m.inQty || 0) - Number(m.outQty || 0) + Number(m.transferQty || 0) + Number(m.diffQty || 0);
+              }, 0);
+
               const openQty = Number(areaBook.openingStock || 0);
-              baseRow.inQty = sums.inQty;
-              baseRow.receiveQty = sums.receiveQty;
-              baseRow.transferQty = sums.transferQty;
-              baseRow.diffQty = sums.diffQty;
-              baseRow.stockQty = Math.max(0, openQty + sums.inQty - sums.receiveQty + sums.transferQty + sums.diffQty);
+              baseRow.inQty = periodSums.inQty;
+              baseRow.receiveQty = periodSums.receiveQty;
+              baseRow.transferQty = periodSums.transferQty;
+              baseRow.diffQty = periodSums.diffQty;
+              baseRow.stockQty = Math.max(0, openQty + endNetMov);
             }
             mergedAreas.push(baseRow);
           });
@@ -3667,54 +3681,89 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   });
 
-  // ==================== 觀看範例：預設倉庫庫存總表（嚴格勾稽計算） ====================
+  // ==================== 觀看範例：預設倉庫庫存總表（嚴格勾稽計算，含多日歷史明細與作業區期初） ====================
   const buildDefaultSampleDataset = () => {
-    const todayHyphen = getTodayDates().hyphen;
+    const shiftDaysHyphen = (offsetDays) => {
+      const d = new Date();
+      d.setDate(d.getDate() + offsetDays);
+      const pad = n => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    };
+    const day0 = shiftDaysHyphen(0);   // 今天（例如 2026-11-27）
+    const day1 = shiftDaysHyphen(-1);  // 昨天（例如 2026-11-26）
+    const day2 = shiftDaysHyphen(-2);  // 前天（例如 2026-11-25）
+    const day3 = shiftDaysHyphen(-3);  // 3天前（例如 2026-11-24）
+    const todayHyphen = day0;
     const sampleTs = `${todayHyphen} 09:00:00.000`;
     const sampleMs = Date.now();
 
-    // 預設單據與異動（所有庫存數字皆由期初 + 廠商入庫 - 已簽收出庫 ± 調貨 - 作業區領用 ± 盤差精確推導）
-    // 北、中、南、東中繼倉庫與本會倉庫期初庫存皆調高，方便後續進行出庫、調貨與領用測試：
-    // 1. 「飛天」帳務流向：
-    //    - 花蓮本會：期初 100 + 廠商入庫 50 - 出庫至北(已簽收) 20 - 出庫至南(已簽收) 15 + 盤差(-1, 包裝不完整有瑕疵) = 114
-    //    - 內湖倉儲：期初 80 + 廠商入庫 40 - 出庫至中(已簽收) 15 - 出庫至東(待簽收, 未扣帳) 10 = 105 (待簽收 10)
-    //    - 北中繼：期初 120 + 本會入庫 20 - 調貨至中(已簽收) 10 - 下撥台北(已簽收) 15 = 115；下轄台北進貨 15 - 領用 2 = 13（北區總庫存 128）
-    //    - 中中繼：期初 100 + 內湖入庫 15 + 北調入(已簽收) 10 - 下撥台中(已簽收) 12 = 113；下轄台中進貨 12 - 領用 1 = 11（中區總庫存 124）
-    //    - 南中繼：期初 110 + 花蓮入庫 15 - 下撥台南(已簽收) 15 = 110；下轄台南進貨 15 - 領用 3 = 12（南區總庫存 122）
-    //    - 東中繼：期初 60 + 盤差(+1, 到貨點收誤差) = 61（另有內湖出庫 10 件待簽收）（東區總庫存 61）
-    // 2. 「生育禮盒」帳務流向：
-    //    - 三重國際倉儲：期初 80 + 廠商入庫 30 - 出庫至北(已簽收) 15 = 95
-    //    - 北中繼：期初 50 + 三重入庫 15 - 下撥大安(已簽收) 10 = 55；下轄大安進貨 10 - 領用 2 = 8（北區總庫存 63）
-    //    - 中中繼：期初 40（中區總庫存 40）
-    //    - 南中繼：期初 45（南區總庫存 45）
-    //    - 東中繼：期初 30（東區總庫存 30）
-    // 3. 「賀匾」帳務流向：
-    //    - 台中清水：期初 70 + 廠商入庫 25 - 出庫至中(已簽收) 12 = 83
-    //    - 北中繼：期初 35；中中繼：期初 40 + 台中清水入庫 12 = 52；南中繼：期初 35；東中繼：期初 25
-    // 4. 「法船」帳務流向：
-    //    - 花蓮本會：期初 60 + 廠商入庫 20 = 80
-    //    - 北中繼：期初 30；中中繼：期初 30；南中繼：期初 30；東中繼：期初 20
+    // 多日流水帳規劃（每一天、每一倉、每一筆單據皆嚴格勾稽）：
+    // 【飛天】
+    //   1. 本會倉庫：
+    //      - 花蓮本會：期初 80
+    //        * day3 (3天前)：廠商入庫 +30
+    //        * day2 (前天)：出庫至北 -10、出庫至南 -10
+    //        * day1 (昨天)：廠商入庫 +20、盤差 -1（包裝不完整有瑕疵）
+    //        * day0 (今天)：出庫至北 -15、出庫至南 -15
+    //        => 截至 day2 結存：80 + 30 - 20 = 90；截至 day1 結存：90 + 20 - 1 = 109；截至 day0 結存：109 - 30 = 79
+    //      - 內湖倉儲：期初 60
+    //        * day2 (前天)：廠商入庫 +35
+    //        * day1 (昨天)：出庫至中 -15
+    //        * day0 (今天)：出庫至東(待簽收, 未扣帳) -10
+    //        => 截至 day0 帳面結存：60 + 35 - 15 = 80（另有待簽收 10）
+    //   2. 中繼倉庫（北、中、南、東）：
+    //      - 北中繼：期初 90
+    //        * day2：花蓮本會入庫 +10、出庫至台北 -8
+    //        * day1：調貨至中 -6
+    //        * day0：花蓮本會入庫 +15、出庫至台北 -10
+    //        => 北中繼自身結存：day2 = 92，day1 = 86，day0 = 91
+    //      - 中中繼：期初 80
+    //        * day1：內湖倉儲入庫 +15、北調入 +6、出庫至台中 -10
+    //        * day0：出庫至台中 -8
+    //        => 中中繼自身結存：day2 = 80，day1 = 91，day0 = 83
+    //      - 南中繼：期初 85
+    //        * day2：花蓮本會入庫 +10、出庫至台南 -12
+    //        * day1：出庫至高雄 -8
+    //        * day0：花蓮本會入庫 +15、出庫至台南 -10
+    //        => 南中繼自身結存：day2 = 83，day1 = 75，day0 = 80
+    //      - 東中繼：期初 50
+    //        * day1：盤差 +2（到貨點收誤差）
+    //        * day0：內湖出庫 10 件待簽收（尚未入帳）
+    //        => 東中繼自身結存：day2 = 50，day1 = 52，day0 = 52
+    //   3. 作業區倉庫（皆設定期初庫存，並分佈在 day2 / day1 / day0）：
+    //      - 台北（北）：期初 20；day2 北撥入 +8、聯誼領取 -2；day0 北撥入 +10、聯誼領取 -3 => day2=26, day1=26, day0=33
+    //      - 台中（中）：期初 18；day1 中撥入 +10、聯誼領取 -2；day0 中撥入 +8、聯誼領取 -2 => day2=18, day1=26, day0=32
+    //      - 台南（南）：期初 25；day2 南撥入 +12、聯誼領取 -3；day0 南撥入 +10、聯誼領取 -4 => day2=34, day1=34, day0=40
+    //      - 高雄（南）：期初 15；day1 南撥入 +8、聯誼領取 -2 => day2=15, day1=21, day0=21
+    //      - (大林)嘉義（南）：期初 10 => 維持 10（南區下轄作業區合計：day2=59, day1=65, day0=71）
 
     const sampleVendorIn = [
-      { id: 1, movementId: 101, date: todayHyphen, warehouse: '花蓮本會', goodsItem: '飛天', inQty: 50, operator: '蘇2', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-      { id: 2, movementId: 102, date: todayHyphen, warehouse: '內湖倉儲', goodsItem: '飛天', inQty: 40, operator: '蘇2', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-      { id: 3, movementId: 103, date: todayHyphen, warehouse: '三重國際倉儲', goodsItem: '生育禮盒', inQty: 30, operator: '蘇2', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-      { id: 4, movementId: 104, date: todayHyphen, warehouse: '台中清水', goodsItem: '賀匾', inQty: 25, operator: '蘇2', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-      { id: 5, movementId: 105, date: todayHyphen, warehouse: '花蓮本會', goodsItem: '法船', inQty: 20, operator: '蘇2', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
+      { id: 1, movementId: 101, date: day3, warehouse: '花蓮本會', goodsItem: '飛天', inQty: 30, operator: '蘇2', createdAtStr: `${day3} 09:00:00.000`, createdAtMs: sampleMs - 259200000, updatedAtStr: `${day3} 09:00:00.000`, updatedAtMs: sampleMs - 259200000 },
+      { id: 2, movementId: 102, date: day2, warehouse: '內湖倉儲', goodsItem: '飛天', inQty: 35, operator: '蘇2', createdAtStr: `${day2} 09:30:00.000`, createdAtMs: sampleMs - 172800000, updatedAtStr: `${day2} 09:30:00.000`, updatedAtMs: sampleMs - 172800000 },
+      { id: 3, movementId: 103, date: day1, warehouse: '花蓮本會', goodsItem: '飛天', inQty: 20, operator: '蘇2', createdAtStr: `${day1} 10:00:00.000`, createdAtMs: sampleMs - 86400000, updatedAtStr: `${day1} 10:00:00.000`, updatedAtMs: sampleMs - 86400000 },
+      { id: 4, movementId: 104, date: day1, warehouse: '三重國際倉儲', goodsItem: '生育禮盒', inQty: 25, operator: '蘇2', createdAtStr: `${day1} 11:00:00.000`, createdAtMs: sampleMs - 82800000, updatedAtStr: `${day1} 11:00:00.000`, updatedAtMs: sampleMs - 82800000 },
+      { id: 5, movementId: 105, date: day0, warehouse: '台中清水', goodsItem: '賀匾', inQty: 20, operator: '蘇2', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
+      { id: 6, movementId: 106, date: day0, warehouse: '花蓮本會', goodsItem: '法船', inQty: 15, operator: '蘇2', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
     ];
 
     const sampleTransfers = [
-      { id: 1, signInId: 1, date: todayHyphen, mode: '出庫', outWarehouse: '花蓮本會', inWarehouse: '北', goodsItem: '飛天', outQty: 20, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-      { id: 2, signInId: 2, date: todayHyphen, mode: '出庫', outWarehouse: '花蓮本會', inWarehouse: '南', goodsItem: '飛天', outQty: 15, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-      { id: 3, signInId: 3, date: todayHyphen, mode: '出庫', outWarehouse: '內湖倉儲', inWarehouse: '中', goodsItem: '飛天', outQty: 15, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-      { id: 4, signInId: 4, date: todayHyphen, mode: '調貨', outWarehouse: '北', inWarehouse: '中', goodsItem: '飛天', outQty: 10, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-      { id: 5, signInId: 5, date: todayHyphen, mode: '出庫', outWarehouse: '北', inWarehouse: '台北', goodsItem: '飛天', outQty: 15, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-      { id: 6, signInId: 6, date: todayHyphen, mode: '出庫', outWarehouse: '中', inWarehouse: '台中', goodsItem: '飛天', outQty: 12, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-      { id: 7, signInId: 7, date: todayHyphen, mode: '出庫', outWarehouse: '南', inWarehouse: '台南', goodsItem: '飛天', outQty: 15, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-      { id: 8, signInId: 8, date: todayHyphen, mode: '出庫', outWarehouse: '內湖倉儲', inWarehouse: '東', goodsItem: '飛天', outQty: 10, operator: '蘇2', signed: false, returned: false, status: '待簽收', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-      { id: 9, signInId: 9, date: todayHyphen, mode: '出庫', outWarehouse: '三重國際倉儲', inWarehouse: '北', goodsItem: '生育禮盒', outQty: 15, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-      { id: 10, signInId: 10, date: todayHyphen, mode: '出庫', outWarehouse: '北', inWarehouse: '大安', goodsItem: '生育禮盒', outQty: 10, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-      { id: 11, signInId: 11, date: todayHyphen, mode: '出庫', outWarehouse: '台中清水', inWarehouse: '中', goodsItem: '賀匾', outQty: 12, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
+      { id: 1, signInId: 1, date: day2, mode: '出庫', outWarehouse: '花蓮本會', inWarehouse: '北', goodsItem: '飛天', outQty: 10, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: `${day2} 10:00:00.000`, createdAtMs: sampleMs - 170000000, updatedAtStr: `${day2} 10:00:00.000`, updatedAtMs: sampleMs - 170000000 },
+      { id: 2, signInId: 2, date: day2, mode: '出庫', outWarehouse: '花蓮本會', inWarehouse: '南', goodsItem: '飛天', outQty: 10, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: `${day2} 10:15:00.000`, createdAtMs: sampleMs - 169000000, updatedAtStr: `${day2} 10:15:00.000`, updatedAtMs: sampleMs - 169000000 },
+      { id: 3, signInId: 3, date: day2, mode: '出庫', outWarehouse: '北', inWarehouse: '台北', goodsItem: '飛天', outQty: 8, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: `${day2} 14:00:00.000`, createdAtMs: sampleMs - 155000000, updatedAtStr: `${day2} 14:00:00.000`, updatedAtMs: sampleMs - 155000000 },
+      { id: 4, signInId: 4, date: day2, mode: '出庫', outWarehouse: '南', inWarehouse: '台南', goodsItem: '飛天', outQty: 12, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: `${day2} 14:30:00.000`, createdAtMs: sampleMs - 153000000, updatedAtStr: `${day2} 14:30:00.000`, updatedAtMs: sampleMs - 153000000 },
+      { id: 5, signInId: 5, date: day1, mode: '出庫', outWarehouse: '內湖倉儲', inWarehouse: '中', goodsItem: '飛天', outQty: 15, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: `${day1} 09:30:00.000`, createdAtMs: sampleMs - 85000000, updatedAtStr: `${day1} 09:30:00.000`, updatedAtMs: sampleMs - 85000000 },
+      { id: 6, signInId: 6, date: day1, mode: '調貨', outWarehouse: '北', inWarehouse: '中', goodsItem: '飛天', outQty: 6, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: `${day1} 11:20:00.000`, createdAtMs: sampleMs - 79000000, updatedAtStr: `${day1} 11:20:00.000`, updatedAtMs: sampleMs - 79000000 },
+      { id: 7, signInId: 7, date: day1, mode: '出庫', outWarehouse: '中', inWarehouse: '台中', goodsItem: '飛天', outQty: 10, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: `${day1} 15:00:00.000`, createdAtMs: sampleMs - 65000000, updatedAtStr: `${day1} 15:00:00.000`, updatedAtMs: sampleMs - 65000000 },
+      { id: 8, signInId: 8, date: day1, mode: '出庫', outWarehouse: '南', inWarehouse: '高雄', goodsItem: '飛天', outQty: 8, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: `${day1} 15:30:00.000`, createdAtMs: sampleMs - 63000000, updatedAtStr: `${day1} 15:30:00.000`, updatedAtMs: sampleMs - 63000000 },
+      { id: 9, signInId: 9, date: day0, mode: '出庫', outWarehouse: '花蓮本會', inWarehouse: '北', goodsItem: '飛天', outQty: 15, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
+      { id: 10, signInId: 10, date: day0, mode: '出庫', outWarehouse: '花蓮本會', inWarehouse: '南', goodsItem: '飛天', outQty: 15, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
+      { id: 11, signInId: 11, date: day0, mode: '出庫', outWarehouse: '北', inWarehouse: '台北', goodsItem: '飛天', outQty: 10, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
+      { id: 12, signInId: 12, date: day0, mode: '出庫', outWarehouse: '中', inWarehouse: '台中', goodsItem: '飛天', outQty: 8, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
+      { id: 13, signInId: 13, date: day0, mode: '出庫', outWarehouse: '南', inWarehouse: '台南', goodsItem: '飛天', outQty: 10, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
+      { id: 14, signInId: 14, date: day0, mode: '出庫', outWarehouse: '內湖倉儲', inWarehouse: '東', goodsItem: '飛天', outQty: 10, operator: '蘇2', signed: false, returned: false, status: '待簽收', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
+      { id: 15, signInId: 15, date: day1, mode: '出庫', outWarehouse: '三重國際倉儲', inWarehouse: '北', goodsItem: '生育禮盒', outQty: 12, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: `${day1} 14:00:00.000`, createdAtMs: sampleMs - 68000000, updatedAtStr: `${day1} 14:00:00.000`, updatedAtMs: sampleMs - 68000000 },
+      { id: 16, signInId: 16, date: day0, mode: '出庫', outWarehouse: '北', inWarehouse: '大安', goodsItem: '生育禮盒', outQty: 8, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
+      { id: 17, signInId: 17, date: day0, mode: '出庫', outWarehouse: '台中清水', inWarehouse: '中', goodsItem: '賀匾', outQty: 10, operator: '蘇2', signed: true, returned: false, status: '已簽收', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
     ];
 
     const sampleSignIns = sampleTransfers.map(t => ({
@@ -3729,95 +3778,73 @@ document.addEventListener("DOMContentLoaded", () => {
       signed: t.signed,
       returned: false,
       status: t.status,
-      createdAtStr: sampleTs,
-      createdAtMs: sampleMs,
-      updatedAtStr: sampleTs,
-      updatedAtMs: sampleMs
+      createdAtStr: t.createdAtStr,
+      createdAtMs: t.createdAtMs,
+      updatedAtStr: t.updatedAtStr,
+      updatedAtMs: t.updatedAtMs
     }));
 
     const sampleDiffs = [
-      { id: 1, movementId: 201, date: todayHyphen, warehouse: '花蓮本會', goodsItem: '飛天', diffQty: -1, diffReason: '包裝不完整有瑕疵', operator: '蘇2', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-      { id: 2, movementId: 202, date: todayHyphen, warehouse: '東', goodsItem: '飛天', diffQty: 1, diffReason: '到貨點收誤差', operator: '蘇2', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
+      { id: 1, movementId: 201, date: day1, warehouse: '花蓮本會', goodsItem: '飛天', diffQty: -1, diffReason: '包裝不完整有瑕疵', operator: '蘇2', createdAtStr: `${day1} 16:00:00.000`, createdAtMs: sampleMs - 60000000, updatedAtStr: `${day1} 16:00:00.000`, updatedAtMs: sampleMs - 60000000 },
+      { id: 2, movementId: 202, date: day1, warehouse: '東', goodsItem: '飛天', diffQty: 2, diffReason: '到貨點收誤差', operator: '蘇2', createdAtStr: `${day1} 16:10:00.000`, createdAtMs: sampleMs - 59000000, updatedAtStr: `${day1} 16:10:00.000`, updatedAtMs: sampleMs - 59000000 }
     ];
 
     const sampleInv = {
       '花蓮本會': {
         '飛天': {
           safetyStock: 5,
-          openingStock: 100,
+          openingStock: 80,
           movements: [
-            { id: 101, date: todayHyphen, warehouse: '廠商', inQty: 50, outQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-            { id: 111, date: todayHyphen, warehouse: '北', inQty: 0, outQty: 20, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-            { id: 112, date: todayHyphen, warehouse: '南', inQty: 0, outQty: 15, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-            { id: 201, date: todayHyphen, warehouse: '花蓮本會', inQty: 0, outQty: 0, diffQty: -1, diffReason: '包裝不完整有瑕疵', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
+            { id: 101, date: day3, warehouse: '廠商', inQty: 30, outQty: 0, diffQty: 0, diffReason: '', createdAtStr: `${day3} 09:00:00.000`, createdAtMs: sampleMs - 259200000, updatedAtStr: `${day3} 09:00:00.000`, updatedAtMs: sampleMs - 259200000 },
+            { id: 111, date: day2, warehouse: '北', inQty: 0, outQty: 10, diffQty: 0, diffReason: '', createdAtStr: `${day2} 10:00:00.000`, createdAtMs: sampleMs - 170000000, updatedAtStr: `${day2} 10:00:00.000`, updatedAtMs: sampleMs - 170000000 },
+            { id: 112, date: day2, warehouse: '南', inQty: 0, outQty: 10, diffQty: 0, diffReason: '', createdAtStr: `${day2} 10:15:00.000`, createdAtMs: sampleMs - 169000000, updatedAtStr: `${day2} 10:15:00.000`, updatedAtMs: sampleMs - 169000000 },
+            { id: 103, date: day1, warehouse: '廠商', inQty: 20, outQty: 0, diffQty: 0, diffReason: '', createdAtStr: `${day1} 10:00:00.000`, createdAtMs: sampleMs - 86400000, updatedAtStr: `${day1} 10:00:00.000`, updatedAtMs: sampleMs - 86400000 },
+            { id: 201, date: day1, warehouse: '花蓮本會', inQty: 0, outQty: 0, diffQty: -1, diffReason: '包裝不完整有瑕疵', createdAtStr: `${day1} 16:00:00.000`, createdAtMs: sampleMs - 60000000, updatedAtStr: `${day1} 16:00:00.000`, updatedAtMs: sampleMs - 60000000 },
+            { id: 113, date: day0, warehouse: '北', inQty: 0, outQty: 15, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
+            { id: 114, date: day0, warehouse: '南', inQty: 0, outQty: 15, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
           ],
-          regionalStocks: [
-            { warehouse: '北', inQty: 20, receiveQty: 2, transferQty: -10, diffQty: 0, stockQty: 128 },
-            { warehouse: '中', inQty: 15, receiveQty: 1, transferQty: 10, diffQty: 0, stockQty: 124 },
-            { warehouse: '南', inQty: 15, receiveQty: 3, transferQty: 0, diffQty: 0, stockQty: 122 },
-            { warehouse: '東', inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 1, stockQty: 61 }
-          ]
+          regionalStocks: []
         },
         '法船': {
           safetyStock: 3,
-          openingStock: 60,
+          openingStock: 50,
           movements: [
-            { id: 105, date: todayHyphen, warehouse: '廠商', inQty: 20, outQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
+            { id: 106, date: day0, warehouse: '廠商', inQty: 15, outQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
           ],
-          regionalStocks: [
-            { warehouse: '北', inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0, stockQty: 30 },
-            { warehouse: '中', inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0, stockQty: 30 },
-            { warehouse: '南', inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0, stockQty: 30 },
-            { warehouse: '東', inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0, stockQty: 20 }
-          ]
+          regionalStocks: []
         }
       },
       '內湖倉儲': {
         '飛天': {
           safetyStock: 5,
-          openingStock: 80,
+          openingStock: 60,
           movements: [
-            { id: 102, date: todayHyphen, warehouse: '廠商', inQty: 40, outQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-            { id: 113, date: todayHyphen, warehouse: '中', inQty: 0, outQty: 15, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
+            { id: 102, date: day2, warehouse: '廠商', inQty: 35, outQty: 0, diffQty: 0, diffReason: '', createdAtStr: `${day2} 09:30:00.000`, createdAtMs: sampleMs - 172800000, updatedAtStr: `${day2} 09:30:00.000`, updatedAtMs: sampleMs - 172800000 },
+            { id: 115, date: day1, warehouse: '中', inQty: 0, outQty: 15, diffQty: 0, diffReason: '', createdAtStr: `${day1} 09:30:00.000`, createdAtMs: sampleMs - 85000000, updatedAtStr: `${day1} 09:30:00.000`, updatedAtMs: sampleMs - 85000000 }
           ],
-          regionalStocks: [
-            { warehouse: '北', inQty: 20, receiveQty: 2, transferQty: -10, diffQty: 0, stockQty: 128 },
-            { warehouse: '中', inQty: 15, receiveQty: 1, transferQty: 10, diffQty: 0, stockQty: 124 },
-            { warehouse: '南', inQty: 15, receiveQty: 3, transferQty: 0, diffQty: 0, stockQty: 122 },
-            { warehouse: '東', inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 1, stockQty: 61 }
-          ]
+          regionalStocks: []
         }
       },
       '三重國際倉儲': {
         '生育禮盒': {
           safetyStock: 4,
-          openingStock: 80,
+          openingStock: 60,
           movements: [
-            { id: 103, date: todayHyphen, warehouse: '廠商', inQty: 30, outQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-            { id: 114, date: todayHyphen, warehouse: '北', inQty: 0, outQty: 15, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
+            { id: 104, date: day1, warehouse: '廠商', inQty: 25, outQty: 0, diffQty: 0, diffReason: '', createdAtStr: `${day1} 11:00:00.000`, createdAtMs: sampleMs - 82800000, updatedAtStr: `${day1} 11:00:00.000`, updatedAtMs: sampleMs - 82800000 },
+            { id: 116, date: day1, warehouse: '北', inQty: 0, outQty: 12, diffQty: 0, diffReason: '', createdAtStr: `${day1} 14:00:00.000`, createdAtMs: sampleMs - 68000000, updatedAtStr: `${day1} 14:00:00.000`, updatedAtMs: sampleMs - 68000000 }
           ],
-          regionalStocks: [
-            { warehouse: '北', inQty: 15, receiveQty: 2, transferQty: 0, diffQty: 0, stockQty: 63 },
-            { warehouse: '中', inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0, stockQty: 40 },
-            { warehouse: '南', inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0, stockQty: 45 },
-            { warehouse: '東', inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0, stockQty: 30 }
-          ]
+          regionalStocks: []
         }
       },
       '台中清水': {
         '賀匾': {
           safetyStock: 4,
-          openingStock: 70,
+          openingStock: 55,
           movements: [
-            { id: 104, date: todayHyphen, warehouse: '廠商', inQty: 25, outQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-            { id: 115, date: todayHyphen, warehouse: '中', inQty: 0, outQty: 12, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
+            { id: 105, date: day0, warehouse: '廠商', inQty: 20, outQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
+            { id: 117, date: day0, warehouse: '中', inQty: 0, outQty: 10, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
           ],
-          regionalStocks: [
-            { warehouse: '北', inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0, stockQty: 35 },
-            { warehouse: '中', inQty: 12, receiveQty: 0, transferQty: 0, diffQty: 0, stockQty: 52 },
-            { warehouse: '南', inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0, stockQty: 35 },
-            { warehouse: '東', inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0, stockQty: 25 }
-          ]
+          regionalStocks: []
         }
       }
     };
@@ -3826,140 +3853,80 @@ document.addEventListener("DOMContentLoaded", () => {
       '北': {
         '飛天': {
           safetyStock: 2,
-          openingStock: 120,
+          openingStock: 90,
           movements: [
-            { id: 121, date: todayHyphen, warehouse: '花蓮本會', inQty: 20, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-            { id: 122, date: todayHyphen, warehouse: '中', inQty: 0, outQty: 0, transferQty: -10, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-            { id: 129, date: todayHyphen, warehouse: '台北', inQty: 0, outQty: 15, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
+            { id: 121, date: day2, warehouse: '花蓮本會', inQty: 10, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: `${day2} 10:00:00.000`, createdAtMs: sampleMs - 170000000, updatedAtStr: `${day2} 10:00:00.000`, updatedAtMs: sampleMs - 170000000 },
+            { id: 122, date: day2, warehouse: '台北', inQty: 0, outQty: 8, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: `${day2} 14:00:00.000`, createdAtMs: sampleMs - 155000000, updatedAtStr: `${day2} 14:00:00.000`, updatedAtMs: sampleMs - 155000000 },
+            { id: 123, date: day1, warehouse: '中', inQty: 0, outQty: 0, transferQty: -6, diffQty: 0, diffReason: '', createdAtStr: `${day1} 11:20:00.000`, createdAtMs: sampleMs - 79000000, updatedAtStr: `${day1} 11:20:00.000`, updatedAtMs: sampleMs - 79000000 },
+            { id: 124, date: day0, warehouse: '花蓮本會', inQty: 15, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
+            { id: 125, date: day0, warehouse: '台北', inQty: 0, outQty: 10, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
           ],
-          areaStocks: [
-            { warehouse: '台北', inQty: 15, receiveQty: 2, transferQty: 0, diffQty: 0, stockQty: 13 },
-            { warehouse: '大安', inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0, stockQty: 0 },
-            { warehouse: '蘆洲', inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0, stockQty: 0 }
-          ]
-        },
-        '生育禮盒': {
-          safetyStock: 2,
-          openingStock: 50,
-          movements: [
-            { id: 123, date: todayHyphen, warehouse: '三重國際倉儲', inQty: 15, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-            { id: 141, date: todayHyphen, warehouse: '大安', inQty: 0, outQty: 10, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
-          ],
-          areaStocks: [
-            { warehouse: '台北', inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0, stockQty: 0 },
-            { warehouse: '大安', inQty: 10, receiveQty: 2, transferQty: 0, diffQty: 0, stockQty: 8 },
-            { warehouse: '蘆洲', inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0, stockQty: 0 }
-          ]
-        },
-        '賀匾': {
-          safetyStock: 2,
-          openingStock: 35,
-          movements: [],
           areaStocks: []
-        },
-        '法船': {
-          safetyStock: 1,
-          openingStock: 30,
-          movements: [],
-          areaStocks: []
-        }
-      },
-      '中': {
-        '飛天': {
-          safetyStock: 2,
-          openingStock: 100,
-          movements: [
-            { id: 124, date: todayHyphen, warehouse: '內湖倉儲', inQty: 15, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-            { id: 125, date: todayHyphen, warehouse: '北', inQty: 0, outQty: 0, transferQty: 10, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-            { id: 130, date: todayHyphen, warehouse: '台中', inQty: 0, outQty: 12, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
-          ],
-          areaStocks: [
-            { warehouse: '台中', inQty: 12, receiveQty: 1, transferQty: 0, diffQty: 0, stockQty: 11 }
-          ]
-        },
-        '生育禮盒': {
-          safetyStock: 2,
-          openingStock: 40,
-          movements: [],
-          areaStocks: []
-        },
-        '賀匾': {
-          safetyStock: 2,
-          openingStock: 40,
-          movements: [
-            { id: 126, date: todayHyphen, warehouse: '台中清水', inQty: 12, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
-          ],
-          areaStocks: [
-            { warehouse: '台中', inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0, stockQty: 0 }
-          ]
-        },
-        '法船': {
-          safetyStock: 1,
-          openingStock: 30,
-          movements: [],
-          areaStocks: []
-        }
-      },
-      '南': {
-        '飛天': {
-          safetyStock: 2,
-          openingStock: 110,
-          movements: [
-            { id: 127, date: todayHyphen, warehouse: '花蓮本會', inQty: 15, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-            { id: 128, date: todayHyphen, warehouse: '台南', inQty: 0, outQty: 15, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
-          ],
-          areaStocks: [
-            { warehouse: '(大林)嘉義', inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0, stockQty: 0 },
-            { warehouse: '台南', inQty: 15, receiveQty: 3, transferQty: 0, diffQty: 0, stockQty: 12 },
-            { warehouse: '高雄', inQty: 0, receiveQty: 0, transferQty: 0, diffQty: 0, stockQty: 0 }
-          ]
         },
         '生育禮盒': {
           safetyStock: 2,
           openingStock: 45,
-          movements: [],
+          movements: [
+            { id: 126, date: day1, warehouse: '三重國際倉儲', inQty: 12, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: `${day1} 14:00:00.000`, createdAtMs: sampleMs - 68000000, updatedAtStr: `${day1} 14:00:00.000`, updatedAtMs: sampleMs - 68000000 },
+            { id: 127, date: day0, warehouse: '大安', inQty: 0, outQty: 8, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
+          ],
           areaStocks: []
         },
+        '賀匾': { safetyStock: 2, openingStock: 35, movements: [], areaStocks: [] },
+        '法船': { safetyStock: 1, openingStock: 30, movements: [], areaStocks: [] }
+      },
+      '中': {
+        '飛天': {
+          safetyStock: 2,
+          openingStock: 80,
+          movements: [
+            { id: 128, date: day1, warehouse: '內湖倉儲', inQty: 15, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: `${day1} 09:30:00.000`, createdAtMs: sampleMs - 85000000, updatedAtStr: `${day1} 09:30:00.000`, updatedAtMs: sampleMs - 85000000 },
+            { id: 129, date: day1, warehouse: '北', inQty: 0, outQty: 0, transferQty: 6, diffQty: 0, diffReason: '', createdAtStr: `${day1} 11:20:00.000`, createdAtMs: sampleMs - 79000000, updatedAtStr: `${day1} 11:20:00.000`, updatedAtMs: sampleMs - 79000000 },
+            { id: 130, date: day1, warehouse: '台中', inQty: 0, outQty: 10, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: `${day1} 15:00:00.000`, createdAtMs: sampleMs - 65000000, updatedAtStr: `${day1} 15:00:00.000`, updatedAtMs: sampleMs - 65000000 },
+            { id: 131, date: day0, warehouse: '台中', inQty: 0, outQty: 8, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
+          ],
+          areaStocks: []
+        },
+        '生育禮盒': { safetyStock: 2, openingStock: 40, movements: [], areaStocks: [] },
         '賀匾': {
           safetyStock: 2,
-          openingStock: 35,
-          movements: [],
+          openingStock: 40,
+          movements: [
+            { id: 132, date: day0, warehouse: '台中清水', inQty: 10, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
+          ],
           areaStocks: []
         },
-        '法船': {
-          safetyStock: 1,
-          openingStock: 30,
-          movements: [],
+        '法船': { safetyStock: 1, openingStock: 30, movements: [], areaStocks: [] }
+      },
+      '南': {
+        '飛天': {
+          safetyStock: 2,
+          openingStock: 85,
+          movements: [
+            { id: 133, date: day2, warehouse: '花蓮本會', inQty: 10, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: `${day2} 10:15:00.000`, createdAtMs: sampleMs - 169000000, updatedAtStr: `${day2} 10:15:00.000`, updatedAtMs: sampleMs - 169000000 },
+            { id: 134, date: day2, warehouse: '台南', inQty: 0, outQty: 12, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: `${day2} 14:30:00.000`, createdAtMs: sampleMs - 153000000, updatedAtStr: `${day2} 14:30:00.000`, updatedAtMs: sampleMs - 153000000 },
+            { id: 135, date: day1, warehouse: '高雄', inQty: 0, outQty: 8, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: `${day1} 15:30:00.000`, createdAtMs: sampleMs - 63000000, updatedAtStr: `${day1} 15:30:00.000`, updatedAtMs: sampleMs - 63000000 },
+            { id: 136, date: day0, warehouse: '花蓮本會', inQty: 15, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
+            { id: 137, date: day0, warehouse: '台南', inQty: 0, outQty: 10, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
+          ],
           areaStocks: []
-        }
+        },
+        '生育禮盒': { safetyStock: 2, openingStock: 45, movements: [], areaStocks: [] },
+        '賀匾': { safetyStock: 2, openingStock: 35, movements: [], areaStocks: [] },
+        '法船': { safetyStock: 1, openingStock: 30, movements: [], areaStocks: [] }
       },
       '東': {
         '飛天': {
           safetyStock: 2,
-          openingStock: 60,
+          openingStock: 50,
           movements: [
-            { id: 202, date: todayHyphen, warehouse: '東', inQty: 0, outQty: 0, transferQty: 0, diffQty: 1, diffReason: '到貨點收誤差', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
+            { id: 202, date: day1, warehouse: '東', inQty: 0, outQty: 0, transferQty: 0, diffQty: 2, diffReason: '到貨點收誤差', createdAtStr: `${day1} 16:10:00.000`, createdAtMs: sampleMs - 59000000, updatedAtStr: `${day1} 16:10:00.000`, updatedAtMs: sampleMs - 59000000 }
           ],
           areaStocks: []
         },
-        '生育禮盒': {
-          safetyStock: 1,
-          openingStock: 30,
-          movements: [],
-          areaStocks: []
-        },
-        '賀匾': {
-          safetyStock: 1,
-          openingStock: 25,
-          movements: [],
-          areaStocks: []
-        },
-        '法船': {
-          safetyStock: 1,
-          openingStock: 20,
-          movements: [],
-          areaStocks: []
-        }
+        '生育禮盒': { safetyStock: 1, openingStock: 30, movements: [], areaStocks: [] },
+        '賀匾': { safetyStock: 1, openingStock: 25, movements: [], areaStocks: [] },
+        '法船': { safetyStock: 1, openingStock: 20, movements: [], areaStocks: [] }
       }
     };
 
@@ -3967,40 +3934,63 @@ document.addEventListener("DOMContentLoaded", () => {
       '台北': {
         '飛天': {
           safetyStock: 2,
-          openingStock: 0,
+          openingStock: 20,
           movements: [
-            { id: 131, date: todayHyphen, warehouse: '北', inQty: 15, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-            { id: 132, date: todayHyphen, warehouse: '聯誼領取', inQty: 0, outQty: 2, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
+            { id: 141, date: day2, warehouse: '北', inQty: 8, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: `${day2} 14:00:00.000`, createdAtMs: sampleMs - 155000000, updatedAtStr: `${day2} 14:00:00.000`, updatedAtMs: sampleMs - 155000000 },
+            { id: 142, date: day2, warehouse: '聯誼領取', inQty: 0, outQty: 2, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: `${day2} 16:00:00.000`, createdAtMs: sampleMs - 148000000, updatedAtStr: `${day2} 16:00:00.000`, updatedAtMs: sampleMs - 148000000 },
+            { id: 143, date: day0, warehouse: '北', inQty: 10, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
+            { id: 144, date: day0, warehouse: '聯誼領取', inQty: 0, outQty: 3, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
           ]
         }
       },
       '大安': {
         '生育禮盒': {
           safetyStock: 2,
-          openingStock: 0,
+          openingStock: 12,
           movements: [
-            { id: 133, date: todayHyphen, warehouse: '北', inQty: 10, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-            { id: 134, date: todayHyphen, warehouse: '聯誼領取', inQty: 0, outQty: 2, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
+            { id: 145, date: day0, warehouse: '北', inQty: 8, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
+            { id: 146, date: day0, warehouse: '聯誼領取', inQty: 0, outQty: 2, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
           ]
         }
       },
       '台中': {
         '飛天': {
           safetyStock: 2,
-          openingStock: 0,
+          openingStock: 18,
           movements: [
-            { id: 135, date: todayHyphen, warehouse: '中', inQty: 12, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-            { id: 136, date: todayHyphen, warehouse: '聯誼領取', inQty: 0, outQty: 1, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
+            { id: 147, date: day1, warehouse: '中', inQty: 10, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: `${day1} 15:00:00.000`, createdAtMs: sampleMs - 65000000, updatedAtStr: `${day1} 15:00:00.000`, updatedAtMs: sampleMs - 65000000 },
+            { id: 148, date: day1, warehouse: '聯誼領取', inQty: 0, outQty: 2, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: `${day1} 16:30:00.000`, createdAtMs: sampleMs - 58000000, updatedAtStr: `${day1} 16:30:00.000`, updatedAtMs: sampleMs - 58000000 },
+            { id: 149, date: day0, warehouse: '中', inQty: 8, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
+            { id: 150, date: day0, warehouse: '聯誼領取', inQty: 0, outQty: 2, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
           ]
+        }
+      },
+      '(大林)嘉義': {
+        '飛天': {
+          safetyStock: 2,
+          openingStock: 10,
+          movements: []
         }
       },
       '台南': {
         '飛天': {
           safetyStock: 2,
-          openingStock: 0,
+          openingStock: 25,
           movements: [
-            { id: 137, date: todayHyphen, warehouse: '南', inQty: 15, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
-            { id: 138, date: todayHyphen, warehouse: '聯誼領取', inQty: 0, outQty: 3, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
+            { id: 151, date: day2, warehouse: '南', inQty: 12, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: `${day2} 14:30:00.000`, createdAtMs: sampleMs - 153000000, updatedAtStr: `${day2} 14:30:00.000`, updatedAtMs: sampleMs - 153000000 },
+            { id: 152, date: day2, warehouse: '聯誼領取', inQty: 0, outQty: 3, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: `${day2} 16:15:00.000`, createdAtMs: sampleMs - 147000000, updatedAtStr: `${day2} 16:15:00.000`, updatedAtMs: sampleMs - 147000000 },
+            { id: 153, date: day0, warehouse: '南', inQty: 10, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs },
+            { id: 154, date: day0, warehouse: '聯誼領取', inQty: 0, outQty: 4, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: sampleTs, createdAtMs: sampleMs, updatedAtStr: sampleTs, updatedAtMs: sampleMs }
+          ]
+        }
+      },
+      '高雄': {
+        '飛天': {
+          safetyStock: 2,
+          openingStock: 15,
+          movements: [
+            { id: 155, date: day1, warehouse: '南', inQty: 8, outQty: 0, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: `${day1} 15:30:00.000`, createdAtMs: sampleMs - 63000000, updatedAtStr: `${day1} 15:30:00.000`, updatedAtMs: sampleMs - 63000000 },
+            { id: 156, date: day1, warehouse: '聯誼領取', inQty: 0, outQty: 2, transferQty: 0, diffQty: 0, diffReason: '', createdAtStr: `${day1} 17:00:00.000`, createdAtMs: sampleMs - 55000000, updatedAtStr: `${day1} 17:00:00.000`, updatedAtMs: sampleMs - 55000000 }
           ]
         }
       }
@@ -4008,6 +3998,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     return {
       todayHyphen,
+      dateRangeText: `${day3} ～ ${day0}`,
       inventoryDatasets: sampleInv,
       regionalInventoryDatasets: sampleRegionalInv,
       areaInventoryDatasets: sampleAreaInv,
@@ -4022,10 +4013,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const sample = buildDefaultSampleDataset();
     const hqList = warehouses.length > 0 ? warehouses : ['花蓮本會', '內湖倉儲', '三重國際倉儲', '台中清水'];
     const regList = regionalWarehouses.length > 0 ? regionalWarehouses : ['北', '中', '南', '東'];
-    const areaList = ['台北', '大安', '台中', '台南'];
+    const areaList = ['台北', '大安', '台中', '(大林)嘉義', '台南', '高雄'];
     const items = goodsItems.length > 0 ? goodsItems : ['飛天', '生育禮盒', '賀匾', '法船'];
 
-    // 1. 計算本會倉庫各物品精確明細（期初 + 入庫 - 已簽收出庫 ± 盤差 = 當前庫存；另列待簽收保留數）
     const hqRows = [];
     hqList.forEach(wh => {
       items.forEach(it => {
@@ -4044,7 +4034,6 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
 
-    // 2. 計算中繼倉庫（北、中、南、東）各物品精確明細（期初 + 本會入庫 ± 調貨 - 已簽收下撥作業區 ± 盤差 = 中繼現存）
     const regRows = [];
     regList.forEach(rg => {
       items.forEach(it => {
@@ -4063,7 +4052,6 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
 
-    // 3. 計算作業區倉庫各物品精確明細（中繼撥入 - 聯誼領用 = 作業區現存）
     const areaRows = [];
     areaList.forEach(ar => {
       items.forEach(it => {
@@ -4080,7 +4068,6 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
 
-    // 4. 全系統「飛天」總庫存核對（本會現存 + 中繼現存 + 作業區現存 = 全系統總庫存）
     const feitianHqTotal = hqRows.filter(r => r.item === '飛天').reduce((s, r) => s + r.stockQty, 0);
     const feitianRegTotal = regRows.filter(r => r.item === '飛天').reduce((s, r) => s + r.stockQty, 0);
     const feitianAreaTotal = areaRows.filter(r => r.item === '飛天').reduce((s, r) => s + r.stockQty, 0);
@@ -4088,21 +4075,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const bodyEl = $('sample-inventory-modal-body');
     bodyEl.innerHTML = `
       <div style="background: #eef5ff; border: 1px solid #c9ddf8; border-radius: 8px; padding: 12px 16px; margin-bottom: 18px; color: #14264b; font-size: 14px; line-height: 1.65;">
-        <strong>計算公式驗證（範例基準日：${sample.todayHyphen}）：</strong><br>
-        • <strong>本會倉庫現存</strong> ＝ 期初庫存 ＋ 廠商入庫 － 已簽收出庫 ± 盤差（註：未簽收之「待簽收」單據尚未扣減帳面庫存）。<br>
-        • <strong>中繼倉庫現存</strong> ＝ 期初庫存 ＋ 本會撥入 ± 區間調貨 － 撥出至作業區 ± 盤差。<br>
-        • <strong>作業區倉庫現存</strong> ＝ 期初庫存 ＋ 中繼撥入 － 聯誼物資領用量。<br>
-        • 以「<strong>飛天</strong>」為例：本會現存 <strong>${feitianHqTotal}</strong> ＋ 中繼現存 <strong>${feitianRegTotal}</strong> ＋ 作業區現存 <strong>${feitianAreaTotal}</strong> ＝ 全系統總庫存 <strong>${feitianHqTotal + feitianRegTotal + feitianAreaTotal}</strong> 件。
+        <strong>多日範例帳務說明（涵蓋日期區間：${sample.dateRangeText}）：</strong><br>
+        • 範例資料已包含 <strong>近 4 天</strong>（前 3 天、前 2 天、昨天、今天）的入庫、出庫、調貨、領用與盤差流水帳，且 <strong>作業區倉庫皆設有期初庫存</strong>。<br>
+        • 查詢任意「起始日 ～ 結束日」時，上下兩張明細表的入庫、領用、調貨、盤差皆會依日期區間即時重算，「前期庫存量」與「查詢期間總庫存量」亦同步連動。<br>
+        • 以「<strong>飛天</strong>」截至 ${sample.todayHyphen} 為例：本會現存 <strong>${feitianHqTotal}</strong> ＋ 中繼現存 <strong>${feitianRegTotal}</strong> ＋ 作業區現存 <strong>${feitianAreaTotal}</strong> ＝ 全系統總庫存 <strong>${feitianHqTotal + feitianRegTotal + feitianAreaTotal}</strong> 件。
       </div>
 
-      <h3 style="margin: 0 0 10px; font-size: 16px; color: #14264b;">一、本會倉庫庫存預設表</h3>
+      <h3 style="margin: 0 0 10px; font-size: 16px; color: #14264b;">一、本會倉庫庫存預設表（截至 ${sample.todayHyphen}）</h3>
       <div class="table-scroll" style="margin-bottom: 20px; background: #fff;">
         <table class="detail-table" style="min-width: 780px;">
           <thead>
             <tr>
               <th>倉庫</th>
               <th>物品</th>
-              <th class="num-col">前期庫存</th>
+              <th class="num-col">期初庫存</th>
               <th class="num-col">廠商入庫</th>
               <th class="num-col">已簽收出庫</th>
               <th class="num-col">盤差</th>
@@ -4127,14 +4113,14 @@ document.addEventListener("DOMContentLoaded", () => {
         </table>
       </div>
 
-      <h3 style="margin: 0 0 10px; font-size: 16px; color: #14264b;">二、中繼倉庫庫存預設表（北、中、南、東）</h3>
+      <h3 style="margin: 0 0 10px; font-size: 16px; color: #14264b;">二、中繼倉庫庫存預設表（北、中、南、東，截至 ${sample.todayHyphen}）</h3>
       <div class="table-scroll" style="margin-bottom: 20px; background: #fff;">
         <table class="detail-table" style="min-width: 780px;">
           <thead>
             <tr>
               <th>中繼倉庫</th>
               <th>物品</th>
-              <th class="num-col">前期庫存</th>
+              <th class="num-col">期初庫存</th>
               <th class="num-col">本會入庫</th>
               <th class="num-col">區間調貨</th>
               <th class="num-col">撥出作業區</th>
@@ -4159,7 +4145,7 @@ document.addEventListener("DOMContentLoaded", () => {
         </table>
       </div>
 
-      <h3 style="margin: 0 0 10px; font-size: 16px; color: #14264b;">三、作業區倉庫庫存預設表</h3>
+      <h3 style="margin: 0 0 10px; font-size: 16px; color: #14264b;">三、作業區倉庫庫存預設表（含期初庫存，截至 ${sample.todayHyphen}）</h3>
       <div class="table-scroll" style="background: #fff;">
         <table class="detail-table" style="min-width: 680px;">
           <thead>
@@ -4167,7 +4153,7 @@ document.addEventListener("DOMContentLoaded", () => {
               <th>所屬中繼</th>
               <th>作業區倉庫</th>
               <th>物品</th>
-              <th class="num-col">前期庫存</th>
+              <th class="num-col">期初庫存</th>
               <th class="num-col">中繼撥入</th>
               <th class="num-col">聯誼領用量</th>
               <th class="num-col">當前庫存量</th>
