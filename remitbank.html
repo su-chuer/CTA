@@ -677,7 +677,7 @@
 <div id="toast" class="toast hidden"></div>
 
 <script src="js/navbar.js?v=402"></script>
-<script src="js/common.js?v=412"></script>
+<script src="js/common.js?v=413"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const filterBankInput = document.getElementById('filter-bank-code');
@@ -687,20 +687,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnReset = document.getElementById('btn-reset');
   const bankModalTbody = document.getElementById('bank-modal-tbody');
   const bankModalFilter = document.getElementById('bank-modal-filter');
+  const formBankInput = document.getElementById('form-bank-code');
   const openFilterBankBtn = document.getElementById('btn-open-filter-bank-modal');
   const openFormBankBtn = document.getElementById('btn-open-form-bank-modal');
 
   let activeBankPickerTarget = 'filter';
   if (filterBankInput) filterBankInput.addEventListener('click', () => { activeBankPickerTarget = 'filter'; }, true);
   if (openFilterBankBtn) openFilterBankBtn.addEventListener('click', () => { activeBankPickerTarget = 'filter'; }, true);
+  if (formBankInput) formBankInput.addEventListener('click', () => { activeBankPickerTarget = 'form'; }, true);
   if (openFormBankBtn) openFormBankBtn.addEventListener('click', () => { activeBankPickerTarget = 'form'; }, true);
 
   // 當上方查詢欄開啟銀行選擇彈窗時，於最上方動態補入「全部帳號」選項，並依目前選取狀態顯示「已選擇」
   if (bankModalTbody) {
     let isInjectingAllRow = false;
     const injectAllAccountsOption = () => {
-      if (isInjectingAllRow || activeBankPickerTarget !== 'filter') return;
-      if (bankModalTbody.querySelector('tr[data-all-accounts="1"]')) return;
+      if (isInjectingAllRow) return;
+      const existingAllRow = bankModalTbody.querySelector('tr[data-all-accounts="1"]');
+      if (activeBankPickerTarget !== 'filter') {
+        if (existingAllRow) existingAllRow.remove();
+        return;
+      }
+      if (existingAllRow) return;
       const kw = (bankModalFilter ? bankModalFilter.value : '').trim();
       if (kw && !'全部帳號'.includes(kw) && !'全部'.includes(kw)) return;
       isInjectingAllRow = true;
@@ -774,7 +781,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 </script>
-<script src="js/remitbank.js?v=410"></script>
+<script src="js/remitbank.js?v=413"></script>
 
 </body>
 </html>
