@@ -3579,6 +3579,26 @@ document.addEventListener("DOMContentLoaded", () => {
     if (typeof diffFilter !== 'undefined') diffFilter.reset();
   };
 
+  const cleanCacheBtn = $('btn-clean-obsolete-cache');
+  if (cleanCacheBtn) {
+    cleanCacheBtn.addEventListener('click', () => {
+      openConfirmModal(
+        '確定要清理瀏覽器中已棄用的舊版歷史快取（如 _v2 鍵值及冗餘選單快取）嗎？<br>（不會清除您目前的庫存與有效設定資料）',
+        { title: '清理歷史快取確認', okClass: 'btn primary', okText: '確定清理' },
+        () => {
+          const count = typeof window.CTA.cleanObsoleteStorage === 'function'
+            ? window.CTA.cleanObsoleteStorage()
+            : 0;
+          if (count > 0) {
+            toast(`已手動清理 ${count} 筆歷史垃圾快取。`);
+          } else {
+            toast('目前沒有殘留的歷史垃圾快取需要清理。');
+          }
+        }
+      );
+    });
+  }
+
   $('btn-clear-all-inventory').addEventListener('click', () => {
     openConfirmModal(
       '確定要清空所有庫存與單據紀錄嗎？<br>清空後所有倉庫存量與入庫、出庫、簽收、盤差紀錄皆會歸零。',

@@ -2,17 +2,39 @@
 (() => {
   'use strict';
 
-  // 自動清除已棄用的舊版 localStorage 快取鍵值，避免殘留垃圾資料
-  (() => {
+  // 手動清除已棄用的舊版／冗餘 localStorage 快取鍵值
+  const cleanObsoleteStorage = () => {
+    const obsoleteKeys = [
+      'cta_stockmanager_state_v2',
+      'cta_setupcrew_state_v2',
+      'cta_remitbank_state_v2'
+    ];
+    let removedCount = 0;
     try {
-      const obsoleteKeys = [
-        'cta_stockmanager_state_v2',
-        'cta_setupcrew_state_v2',
-        'cta_remitbank_state_v2'
+      obsoleteKeys.forEach(k => {
+        if (localStorage.getItem(k) !== null) {
+          localStorage.removeItem(k);
+          removedCount++;
+        }
+      });
+      // 同步將既有的 _v1 設定快取瘦身（移除冗餘下拉選單與 LDAP 對照表）
+      const slimRules = [
+        { key: 'cta_stockmanager_state_v1', keep: 'managersByWarehouse', legacy: ['hqWarehouses', 'regionalWarehouses', 'areaWarehousesByRelay', 'ldapDirectory'] },
+        { key: 'cta_setupcrew_state_v1', keep: 'crewAssignments', legacy: ['allTeams', 'ldapDirectory'] },
+        { key: 'cta_remitbank_state_v1', keep: 'accounts', legacy: ['banks', 'heqiTeams', 'ldapDirectory'] }
       ];
-      obsoleteKeys.forEach(k => localStorage.removeItem(k));
+      slimRules.forEach(({ key, keep, legacy }) => {
+        const raw = localStorage.getItem(key);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object' && keep in parsed && legacy.some(f => f in parsed)) {
+          localStorage.setItem(key, JSON.stringify({ [keep]: parsed[keep] }));
+          removedCount++;
+        }
+      });
     } catch (_) {}
-  })();
+    return removedCount;
+  };
 
   const $ = id => document.getElementById(id);
 
@@ -745,6 +767,7 @@
     resolveOptionKey, measureControlTextWidth, syncComboAutoWidth, bindSelectAutoWidth, createComboSelect,
     bindFormLeaveGuard,
     openPersonSelectModal, closePersonSelectModal, lookupMemberByCode,
-    sortByApplyDateDesc
+    sortByApplyDateDesc,
+    cleanObsoleteStorage
   });
 })();
