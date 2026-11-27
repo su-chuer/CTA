@@ -3378,14 +3378,9 @@ document.addEventListener("DOMContentLoaded", () => {
               acc.diffQty += Number(m.diffQty || 0);
               return acc;
             }, { inQty: 0, transferQty: 0, diffQty: 0 });
-            const areaOutFromTransfers = transferOutRecords.reduce((sum, t) => {
-              if ((t.signed || t.status === '已簽收') && t.outWarehouse === rgName && t.goodsItem === itemVal && areaWarehouses.includes(t.inWarehouse)) {
-                return sum + Number(t.outQty || 0);
-              }
-              return sum;
-            }, 0);
+            // directOutToArea 已包含所有已簽收撥出至作業區的 movement（不再重複累加 transferOutRecords）
             const openQty = Number(regBook.openingStock || 0);
-            const totalTransferredToArea = directOutToArea + areaOutFromTransfers;
+            const totalTransferredToArea = directOutToArea;
             // 中繼倉自身結存 = 期初 + 本會入庫 - 撥出作業區 + 調貨 + 盤差；再加上下轄作業區現存，即為該中繼區總庫存
             const regionSelfStock = openQty + sums.inQty - totalTransferredToArea + sums.transferQty + sums.diffQty;
             const childAreaStockSum = childAreas.reduce((sum, areaName) => {
