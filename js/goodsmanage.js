@@ -3583,17 +3583,19 @@ document.addEventListener("DOMContentLoaded", () => {
   if (cleanCacheBtn) {
     cleanCacheBtn.addEventListener('click', () => {
       openConfirmModal(
-        '確定要清理瀏覽器中已棄用的舊版歷史快取（如 _v2 鍵值及冗餘選單快取）嗎？<br>（不會清除您目前的庫存與有效設定資料）',
-        { title: '清理歷史快取確認', okClass: 'btn primary', okText: '確定清理' },
+        '確定要清除瀏覽器中所有 <strong>cta_*</strong> 暫存資料嗎？<br>清除後所有模組的暫存快取將清空，並恢復為預設初始資料。',
+        { title: '清除全部快取確認', okClass: 'btn btn-danger-solid', okText: '確定清除' },
         () => {
-          const count = typeof window.CTA.cleanObsoleteStorage === 'function'
-            ? window.CTA.cleanObsoleteStorage()
+          const count = typeof window.CTA.clearAllCtaStorage === 'function'
+            ? window.CTA.clearAllCtaStorage()
             : 0;
-          if (count > 0) {
-            toast(`已手動清理 ${count} 筆歷史垃圾快取。`);
-          } else {
-            toast('目前沒有殘留的歷史垃圾快取需要清理。');
-          }
+          try {
+            Object.keys(sessionStorage).forEach(k => {
+              if (k.toLowerCase().startsWith('cta_')) sessionStorage.removeItem(k);
+            });
+          } catch (_) {}
+          toast(`已清除 ${count} 筆 cta_* 快取資料，即將重新載入頁面。`);
+          setTimeout(() => window.location.reload(), 650);
         }
       );
     });

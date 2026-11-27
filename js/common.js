@@ -2,35 +2,20 @@
 (() => {
   'use strict';
 
-  // 手動清除已棄用的舊版／冗餘 localStorage 快取鍵值
-  const cleanObsoleteStorage = () => {
-    const obsoleteKeys = [
-      'cta_stockmanager_state_v2',
-      'cta_setupcrew_state_v2',
-      'cta_remitbank_state_v2'
-    ];
+  // 一次性清除所有 cta_ / CTA_ 開頭的 localStorage 快取資料
+  const clearAllCtaStorage = () => {
     let removedCount = 0;
     try {
-      obsoleteKeys.forEach(k => {
-        if (localStorage.getItem(k) !== null) {
-          localStorage.removeItem(k);
-          removedCount++;
+      const targetKeys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.toLowerCase().startsWith('cta_')) {
+          targetKeys.push(k);
         }
-      });
-      // 同步將既有的 _v1 設定快取瘦身（移除冗餘下拉選單與 LDAP 對照表）
-      const slimRules = [
-        { key: 'cta_stockmanager_state_v1', keep: 'managersByWarehouse', legacy: ['hqWarehouses', 'regionalWarehouses', 'areaWarehousesByRelay', 'ldapDirectory'] },
-        { key: 'cta_setupcrew_state_v1', keep: 'crewAssignments', legacy: ['allTeams', 'ldapDirectory'] },
-        { key: 'cta_remitbank_state_v1', keep: 'accounts', legacy: ['banks', 'heqiTeams', 'ldapDirectory'] }
-      ];
-      slimRules.forEach(({ key, keep, legacy }) => {
-        const raw = localStorage.getItem(key);
-        if (!raw) return;
-        const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === 'object' && keep in parsed && legacy.some(f => f in parsed)) {
-          localStorage.setItem(key, JSON.stringify({ [keep]: parsed[keep] }));
-          removedCount++;
-        }
+      }
+      targetKeys.forEach(k => {
+        localStorage.removeItem(k);
+        removedCount++;
       });
     } catch (_) {}
     return removedCount;
@@ -768,6 +753,6 @@
     bindFormLeaveGuard,
     openPersonSelectModal, closePersonSelectModal, lookupMemberByCode,
     sortByApplyDateDesc,
-    cleanObsoleteStorage
+    clearAllCtaStorage
   });
 })();
