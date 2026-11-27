@@ -31,6 +31,22 @@ document.addEventListener("DOMContentLoaded", () => {
   const GOODS_MANAGE_ROLE_KEY = 'cta_goodsmanage_role';
   const GOODS_MANAGE_TAB_KEY = 'cta_goodsmanage_active_tab';
   const GOODS_MANAGE_STORAGE_KEY = 'cta_goodsmanage_state_v1';
+  const GOODS_STOCK_STORAGE_KEY = 'cta_goodsstock_state_v1';
+
+  const getConfiguredSafetyStock = (whName, itemName, fallbackVal = 0) => {
+    try {
+      const raw = localStorage.getItem(GOODS_STOCK_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const map = parsed && parsed.safetyStocksByWarehouse;
+        if (map && map[whName] && Object.prototype.hasOwnProperty.call(map[whName], itemName)) {
+          const v = Number(map[whName][itemName]);
+          if (Number.isFinite(v) && v >= 0) return Math.floor(v);
+        }
+      }
+    } catch (_) {}
+    return Number(fallbackVal || 0);
+  };
 
   const saveGoodsManageSessionUI = (tabKey = '') => {
     try {
@@ -3276,9 +3292,9 @@ document.addEventListener("DOMContentLoaded", () => {
       targetWarehouses.forEach(whName => {
         const warehouseBook = tierDatasets[whName] || {};
         const itemRecord = warehouseBook[itemVal] || null;
+        safetyStock += getConfiguredSafetyStock(whName, itemVal, itemRecord ? itemRecord.safetyStock : 0);
         if (!itemRecord) return;
         foundAnyRecord = true;
-        safetyStock += Number(itemRecord.safetyStock || 0);
         const baseOpening = Number(itemRecord.openingStock || 0);
         const allMovs = Array.isArray(itemRecord.movements) ? itemRecord.movements : [];
         const priorDelta = allMovs.reduce((acc, m) => {
@@ -3315,8 +3331,8 @@ document.addEventListener("DOMContentLoaded", () => {
       rawQueriedMovements = combinedMovements;
       activeSummaryTotals = totals;
 
-      const rawCurrentWarehouseStock = totals.inQty - totals.outQty + totals.transferQty + totals.diffQty;
-      const currentWarehouseStock = Math.max(0, rawCurrentWarehouseStock);
+      // 當前倉庫存量 = 入庫數量 - 出庫數量 + 調貨 + 盤差（保留正負值，如前期 31、本期出庫 1 則當前為 -1）
+      const currentWarehouseStock = totals.inQty - totals.outQty + totals.transferQty + totals.diffQty;
       let subTableTotal = 0;
 
       if (currentRole === 'hq') {
@@ -3427,7 +3443,8 @@ document.addEventListener("DOMContentLoaded", () => {
         rawQueriedRegional = [];
       }
 
-      const grandTotalStock = Math.max(0, openingStock + rawCurrentWarehouseStock + subTableTotal);
+      // 查詢期間總庫存量 = 前期庫存量 + 當前倉庫存量（單倉結存制，與下轄明細合計獨立顯示）
+      const grandTotalStock = Math.max(0, openingStock + currentWarehouseStock);
 
       $('kpi-safety-stock').textContent = money(safetyStock);
       $('kpi-opening-stock').textContent = money(openingStock);
